@@ -1,0 +1,6 @@
+Packages that need to be installed to make Oasis controller work:
+Python 3.6.2
+
+pip3 install PyQt5
+pip3 install pyserial
+pip3 install numpy
