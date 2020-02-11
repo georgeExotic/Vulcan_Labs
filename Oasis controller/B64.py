@@ -19,6 +19,8 @@
 #from 0-63: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/
 #signs can be used as follows: -L2a, making the L2a number negative
 
+def Jorge:
+    echo "hola"
 #todo:
 
 def B64ToLookup(temp_input):
