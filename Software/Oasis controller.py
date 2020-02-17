@@ -14,7 +14,7 @@
 
 #You should have received a copy of the GNU General Public License
 #along with Oasis controller.  If not, see <https://www.gnu.org/licenses/>.
-
+#TESTE
 
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
