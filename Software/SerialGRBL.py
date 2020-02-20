@@ -46,7 +46,7 @@ class GRBL(serial.Serial):
         self.motion_state_index_set = 0 #the set number of the index
         self.motion_state_changed = 1 #whether the index has changed since a set
         self.motion_state_index_limit = 100 #the max index number
-        self.homed_state = 0 #if printer is homed
+        self.homed_state = 1 #if printer is homed
         
         self.send_get_status = 0 #whether to send ?
         self.motion_x_pos = 0.0
