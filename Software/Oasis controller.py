@@ -17,7 +17,7 @@
 #TESTE
 
 import sys
-sys.path.append('/usr/local/lib/python3.7/site-packages')
+# sys.path.append('/usr/local/lib/python3.7/site-packages')
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QMessageBox, QComboBox
