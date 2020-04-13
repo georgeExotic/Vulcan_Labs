@@ -11,13 +11,11 @@
 #MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #GNU General Public License for more details.
 
-
 #You should have received a copy of the GNU General Public License
 #along with Oasis controller.  If not, see <https://www.gnu.org/licenses/>.
 
 
 import sys
-# sys.path.append('/usr/local/lib/python3.7/site-packages')
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QMessageBox, QComboBox
@@ -39,33 +37,33 @@ import time
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        super(MainWindow, self).__init__()        
-        self.ui = Interface()
-        self.ui.initUI()
-        self.ui.show()
+        super(MainWindow, self).__init__()              #super used to gain access to inherited methods (from other classes/modules/windows)
+        self.ui = Interface()                           #calls Interface.py from directory and assigns to MainWindow.ui
+        self.ui.initUI()                                #calls initUI() from Interface.py - initializes labels/buttons/inputs/windowwidgets
+        self.ui.show()                                  #displays UI
         
-        self.grbl = GRBL()
-        self.inkjet = HP45()
-        self.imageconverter = ImageConverter()
+        self.grbl = GRBL()                              #calls serialGRBL.py from directory and sets as MainWindow.grbl()
+        self.inkjet = HP45()                            #calls serialHP45.py from directory and sets as MainWindow.inkjet()
+        self.imageconverter = ImageConverter()          #calls ImageConverter.py from directory and sets as MainWindow.imageconverter()
         
-        self.printing_state = 0 #whether the printer is printing
-        self.printing_abort_flag = 0
-        self.printing_pause_flag = 0
+        self.printing_state = 0                         #local variable that shows whether the printer is printing
+        self.printing_abort_flag = 0                    #holds abort flag
+        self.printing_pause_flag = 0                    #holds pause flag
         
         #grbl connect button
-        self.grbl_connection_state = 0 #connected state of grbl
-        self.ui.motion_connect.clicked.connect(self.GrblConnect)
-        self.ui.motion_set_port.returnPressed.connect(self.GrblConnect)
+        self.grbl_connection_state = 0                                              #connected state of grbl
+        self.ui.motion_connect.clicked.connect(self.GrblConnect)                    #attempts to connect port on button press
+        self.ui.motion_set_port.returnPressed.connect(self.GrblConnect)             #displays returned port to UI
         
         #grbl send command button
-        self.ui.motion_send_line.clicked.connect(self.GrblSendCommand)
-        self.ui.motion_write_line.returnPressed.connect(self.GrblSendCommand)
+        self.ui.motion_send_line.clicked.connect(self.GrblSendCommand)              #Gets the command from the textedit and prints it to Grbl on button press
+        self.ui.motion_write_line.returnPressed.connect(self.GrblSendCommand)       #displays returned on UI
         
         #grbl home button
-        self.ui.motion_home.clicked.connect(self.grbl.Home)
+        self.ui.motion_home.clicked.connect(self.grbl.Home)                         #input handling for home button will tell system components to go to home state
         
         #grbl jog buttons
-        self.ui.motion_xp.clicked.connect(lambda: self.grbl.Jog('X', '10', '6000'))
+        self.ui.motion_xp.clicked.connect(lambda: self.grbl.Jog('X', '10', '6000'))     #establishes jog button links to actual values; assuming these values can be adjusted to change magnitude of jog
         self.ui.motion_xn.clicked.connect(lambda: self.grbl.Jog('X', '-10', '6000'))
         self.ui.motion_yp.clicked.connect(lambda: self.grbl.Jog('Y', '10', '6000'))
         self.ui.motion_yn.clicked.connect(lambda: self.grbl.Jog('Y', '-10', '6000'))
@@ -79,63 +77,62 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.motion_prime_layer.clicked.connect(self.GRBLPrimeLayer)
         
         #inkjet connect button
-        self.inkjet_connection_state = 0 #connected state of inkjet
-        self.ui.inkjet_connect.clicked.connect(self.InkjetConnect)
-        self.ui.inkjet_set_port.returnPressed.connect(self.InkjetConnect)
+        self.inkjet_connection_state = 0                                            #connected state of inkjet
+        self.ui.inkjet_connect.clicked.connect(self.InkjetConnect)                  #tells serialHP45.py connect button was pressed
+        self.ui.inkjet_set_port.returnPressed.connect(self.InkjetConnect)           #tells UI the button was pressed
         
         #inkjet send command button
-        self.ui.inkjet_send_line.clicked.connect(self.InkjetSendCommand)
-        self.ui.inkjet_write_line.returnPressed.connect(self.InkjetSendCommand)
+        self.ui.inkjet_send_line.clicked.connect(self.InkjetSendCommand)            #tells serialHP45.py inkjet connect button was pressed
+        self.ui.inkjet_write_line.returnPressed.connect(self.InkjetSendCommand)     #shows connect status on UI
         
         #inkjet function buttons
-        self.ui.inkjet_preheat.clicked.connect(lambda: self.inkjet.Preheat(5000))
-        self.ui.inkjet_prime.clicked.connect(lambda: self.inkjet.Prime(100))
-        self.ui.inkjet_set_pos.clicked.connect(self.InkjetSetPosition)
-        #self.ui.inkjet_set_dpi.clicked.connect(self.InkjetSetDPI)
-        self.ui.dpi_combo.currentIndexChanged.connect(self.InkjetSetDPI)
-        #self.ui.inkjet_dpi.returnPressed.connect(self.InkjetSetDPI)
-        self.ui.inkjet_set_density.clicked.connect(self.InkjetSetDensity)
-        self.ui.inkjet_density.returnPressed.connect(self.InkjetSetDensity)
-        self.ui.inkjet_test_button.clicked.connect(self.inkjet.TestPrinthead)
+        self.ui.inkjet_preheat.clicked.connect(lambda: self.inkjet.Preheat(5000))   #sends 5000 (num of pulses) to preheat method in SerialHP45 on button press
+        self.ui.inkjet_prime.clicked.connect(lambda: self.inkjet.Prime(100))        #sends 100 (num of pulses) to prime method in SerialHP45 on button press
+        self.ui.inkjet_set_pos.clicked.connect(self.InkjetSetPosition)              #sends input position in microns and sends it to setposition method in SerialHP45 on button press
+        #self.ui.inkjet_set_dpi.clicked.connect(self.InkjetSetDPI)                  # -- uncomment to change DPI to numerical input instead of indexed dropdown
+        self.ui.dpi_combo.currentIndexChanged.connect(self.InkjetSetDPI)            #sends DPI value from dropdown list to setDPI method in SerialHP45 when changed
+        #self.ui.inkjet_dpi.returnPressed.connect(self.InkjetSetDPI)                # -- uncomment to change DPI to numerical input instead of indexed dropdown
+        self.ui.inkjet_set_density.clicked.connect(self.InkjetSetDensity)           #sends density value from user input to setdensity method in SerialHP45 on button press
+        self.ui.inkjet_density.returnPressed.connect(self.InkjetSetDensity)         #displays the sent density value on UI so user can see what was set
+        self.ui.inkjet_test_button.clicked.connect(self.inkjet.TestPrinthead)       #sends test input from user to testprinthead method in SerialHP45
         
         #file buttons
-        self.file_loaded = 0
-        self.ui.file_open_button.clicked.connect(self.OpenFile)
-        self.ui.file_convert_button.clicked.connect(self.RenderOutput)
-        self.ui.file_print_button.clicked.connect(self.RunPrintArray)
-        self.ui.pause_button.clicked.connect(self.PausePrint)
-        self.ui.abort_button.clicked.connect(self.AbortPrint)
-        #self.ui.file_print_button.clicked.connect(self.RenderRGB)
-        self.ui.layer_slider.valueChanged.connect(self.UpdateLayer) 
+        self.file_loaded = 0                                                        #file load status
+        self.ui.file_open_button.clicked.connect(self.OpenFile)                     #file (image) open button / runs OpenFile()
+        self.ui.file_convert_button.clicked.connect(self.RenderOutput)              #file (image) convert button / runs RenderOutput()
+        self.ui.file_print_button.clicked.connect(self.RunPrintArray)               #print button / runs RunPrintArray()
+        self.ui.pause_button.clicked.connect(self.PausePrint)                       #pause button / runs PausePrint()
+        self.ui.abort_button.clicked.connect(self.AbortPrint)                       #abort button / runs AbortPrint()
+        #self.ui.file_print_button.clicked.connect(self.RenderRGB)                  # -- uncomment for a RenderRGB button
+        self.ui.layer_slider.valueChanged.connect(self.UpdateLayer)                 #Image layer slider / runs UpdateLayer()
         
-        #self.ui.save_png.clicked.connect(self.SavePng)
+        #self.ui.save_png.clicked.connect(self.SavePng)                             # -- uncomment for a save png button
         
         
     
-    def GrblConnect(self):
+    def GrblConnect(self):                                                                  #Gets the GRBL serial port and attempt to connect to it
         """Gets the GRBL serial port and attempt to connect to it"""
         
-        if (self.grbl_connection_state == 0): #get connection state, if 0 (not connected)
-            #print("Attempting connection with GRBL")
-            temp_port = str(self.ui.motion_set_port.text()) #get text
-            temp_succes = self.grbl.Connect(temp_port) #attempt to connect
-            if (temp_succes == 1): #on success, 
-                self.ui.motion_connect.setText("Disconnect")#rewrite button text
-                self.grbl_connection_state = 1 #set  state
-                self.ui.motion_set_port.clear()
-                #start a thread that will update the serial in and output for GRBL
-                self._grbl_stop_event = threading.Event()
-                self.grbl_update_thread = threading.Thread(target=self.GrblUpdate)
+        if (self.grbl_connection_state == 0):                                               #get connection state, if 0 (not connected)
+            #print("Attempting connection with GRBL")                                       # -- uncomment to print out connection attempt string
+            temp_port = str(self.ui.motion_set_port.text())                                 #get text
+            temp_succes = self.grbl.Connect(temp_port)                                      #attempt to connect
+            if (temp_succes == 1):                                                          #on success, 
+                self.ui.motion_connect.setText("Disconnect")                                #rewrite button text
+                self.grbl_connection_state = 1                                              #set  state
+                self.ui.motion_set_port.clear()                                             #clear ports
+                self._grbl_stop_event = threading.Event()                                   #start a thread that will update the serial in and output for GRBL
+                self.grbl_update_thread = threading.Thread(target=self.GrblUpdate)          #runs GrblUpdate()
                 self.grbl_update_thread.start()
                 
             else:
                 print("Connection with GRBL failed")
-        else: #on state 1
-            #print("disconnecting from GRBL")
-            self.grbl.Disconnect() #disconnect
-            self.grbl_connection_state = 0 #set state to disconnected
-            self.ui.motion_connect.setText("Connect") #rewrite button
-            self._grbl_stop_event.set() #close the grbl serial thread
+        else:                                                                               #on state 1
+            #print("disconnecting from GRBL")                                               # -- uncomment to print out when GRBL is disconnecting
+            self.grbl.Disconnect()                                                          #disconnect
+            self.grbl_connection_state = 0                                                  #set state to disconnected
+            self.ui.motion_connect.setText("Connect")                                       #rewrite button
+            self._grbl_stop_event.set()                                                     #close the grbl serial thread
             
     def GrblUpdate(self):
         """updates serial in and output for the GRBL window"""
@@ -928,8 +925,8 @@ class MainWindow(QtWidgets.QMainWindow):
         
         
 if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
-    gui = MainWindow()
-    sys.exit(app.exec_())
+    app = QtWidgets.QApplication(sys.argv) #argv is the name of the script, Qt launches the python script here
+    gui = MainWindow() #opens main window as 'gui'
+    sys.exit(app.exec_()) #system exits when given exit command from app
 
 

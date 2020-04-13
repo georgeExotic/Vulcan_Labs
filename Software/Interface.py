@@ -268,7 +268,7 @@ class Interface(QWidget):
     def center(self):
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
+        qr.Center(cp)
         self.move(qr.topLeft())
         
     def UpdateThresholdSliderValue(self):
