@@ -929,4 +929,3 @@ if __name__ == '__main__':
     gui = MainWindow() #opens main window as 'gui'
     sys.exit(app.exec_()) #system exits when given exit command from app
 
-
