@@ -261,7 +261,7 @@ class Interface(QWidget):
         
         self.setFixedSize(1200, 800)
         self.center()
-        self.setWindowTitle('Oasis Controller')
+        self.setWindowTitle('Vulcan Labs Controller')
         self.setWindowIcon(QIcon('yteclogo.png')) 
         self.show()
         
