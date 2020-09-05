@@ -40,7 +40,9 @@
 ## $QT_END_LICENSE$
 ##
 #############################################################################
-
+import math
+import time
+import random
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt
 from PyQt5.QtWidgets import (QSizePolicy,
@@ -422,7 +424,26 @@ class Ui_MainWindow(QMainWindow):
         self.label_7.setText(_translate("MainWindow", "Current Pressure: Null"))
         self.label_8.setText(_translate("MainWindow", "Current Position: Null"))
 
+        # MIDDLEWARE
+        # self.
+        # .valueChanged.connect(self.UpdateForceSliderValue)
 
+    def UpdateForceReadingValue(self):
+        """Updates the LCD Force Reading Value"""
+        #force_reading_raw = self.pressure_slider.value()       ---- THIS IS WHERE WE PUT THE FORCE VALUE ----- #
+        force_reading_raw = random.randint(1,101)
+        force_reading_kg = force_reading_raw/1000            #(grams to kg)
+        force_reading_N = force_reading_kg*9.81
+        r = 10 #mm
+        r_m = r/1000
+        Area = math.pi*math.pow(r_m,2)
+        pressure_reading = force_reading_N/Area
+
+        self.lcdNumber.display(pressure_reading)
+        self.update()
+
+    def UpdateGUI(self):
+        self.UpdateForceReadingValue()
 
 if __name__ == '__main__':
 
@@ -431,4 +452,11 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     mainWin = Ui_MainWindow()
     mainWin.show()
+
+    fps = 1
+    timer = QtCore.QTimer()
+    timer.timeout.connect(mainWin.UpdateGUI)
+    timer.setInterval(1000 / fps)
+    timer.start()
+
     sys.exit(app.exec_())
