@@ -48,7 +48,7 @@ from PyQt5.QtWidgets import (QSizePolicy,
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QDialogButtonBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLayout, 
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
-        QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView)
+        QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow)
 
 
 # class Window(QWidget):
@@ -66,14 +66,15 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
 #         self.setWindowTitle("Flow Layout")
 
 
-class Ui_MainWindow(QWidget):
+class Ui_MainWindow(QMainWindow):
     def __init__(self):
-        super().__init__()
-        #self.initUI()
+        super(Ui_MainWindow, self).__init__()
+        self.setupUi()
        
-    def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(478, 302)
+    def setupUi(self):
+        MainWindow = self
+        MainWindow.setObjectName("Vulcan Labs")
+        MainWindow.resize(1024, 600)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.frame = QFrame(self.centralwidget)
@@ -215,7 +216,7 @@ class Ui_MainWindow(QWidget):
         self.tabWidget.addTab(self.widget, "")
         self.tab_2 = QWidget()
         self.tab_2.setObjectName("tab_2")
-        self.lcdNumber = QLCDNumber(self.tab_2)
+        self.lcdNumber = QLCDNumber(self.tab_2)                     #VALUE DISPLAY
         self.lcdNumber.setGeometry(QtCore.QRect(230, 70, 191, 51))
         self.lcdNumber.setObjectName("lcdNumber")
         self.label_21 = QLabel(self.tab_2)
@@ -337,7 +338,7 @@ class Ui_MainWindow(QWidget):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("Vulcan Labs", "Vulcan Labs"))
         self.groupBox_2.setTitle(_translate("MainWindow", "Mode Select"))
         self.comboBox.setItemText(0, _translate("MainWindow", "Motion Limiting"))
         self.comboBox.setItemText(1, _translate("MainWindow", "Pressure Limiting"))
@@ -429,5 +430,5 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     mainWin = Ui_MainWindow()
-    mainWin.setupUi(mainWin)
+    mainWin.show()
     sys.exit(app.exec_())
