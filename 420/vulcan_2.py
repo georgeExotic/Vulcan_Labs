@@ -162,22 +162,22 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.setGeometry(QtCore.QRect(300, 350, 141, 21)) # STOP Button
         self.pushButton.setObjectName("pushButton")
         self.pushButton_2 = QPushButton(self.widget)
-        self.pushButton_2.setGeometry(QtCore.QRect(370, 70, 51, 21)) # Home Button
+        self.pushButton_2.setGeometry(QtCore.QRect(700, 300, 51, 21)) # Home Button
         self.pushButton_2.setObjectName("pushButton_2")
         self.pushButton_5 = QPushButton(self.widget)
-        self.pushButton_5.setGeometry(QtCore.QRect(369, 100, 60, 30)) # Down Button
+        self.pushButton_5.setGeometry(QtCore.QRect(700, 350, 60, 30)) # Down Button
         self.pushButton_5.setObjectName("pushButton_5")
         self.pushButton_6 = QPushButton(self.widget)
-        self.pushButton_6.setGeometry(QtCore.QRect(369, 40, 60, 30)) # up Button
+        self.pushButton_6.setGeometry(QtCore.QRect(700, 250, 60, 30)) # up Button
         self.pushButton_6.setObjectName("pushButton_6")
         self.groupBox_4 = QGroupBox(self.widget)
-        self.groupBox_4.setGeometry(QtCore.QRect(360, 20, 91, 111)) # Jogging box
+        self.groupBox_4.setGeometry(QtCore.QRect(690, 220, 200, 200)) # Jogging box
         self.groupBox_4.setObjectName("groupBox_4")
-        self.groupBox_5 = QGroupBox(self.groupBox_4)
-        self.groupBox_5.setGeometry(QtCore.QRect(-80, 0, 81, 111)) # IDK what this is
-        self.groupBox_5.setObjectName("groupBox_5")
+        # self.groupBox_5 = QGroupBox(self.groupBox_4)
+        # self.groupBox_5.setGeometry(QtCore.QRect(90, 70, 90, 30)) # extra jog box
+        # self.groupBox_5.setObjectName("groupBox_5")
         self.comboBox_4 = QComboBox(self.groupBox_4)
-        self.comboBox_4.setGeometry(QtCore.QRect(240, 220, 50, 20)) # IDK what this is either
+        self.comboBox_4.setGeometry(QtCore.QRect(90, 30, 90, 30)) # Jog UP step size select
         self.comboBox_4.setAutoFillBackground(False)
         self.comboBox_4.setEditable(False)
         self.comboBox_4.setObjectName("comboBox_4")
@@ -185,7 +185,7 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox_4.addItem("")
         self.comboBox_4.addItem("")
         self.comboBox_5 = QComboBox(self.groupBox_4)
-        self.comboBox_5.setGeometry(QtCore.QRect(40, 80, 80, 20)) # IDK what this is part 3
+        self.comboBox_5.setGeometry(QtCore.QRect(90, 130, 90, 30)) # Jog DOWN step size select
         self.comboBox_5.setAutoFillBackground(False)
         self.comboBox_5.setEditable(False)
         self.comboBox_5.setObjectName("comboBox_5")
@@ -193,16 +193,16 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox_5.addItem("")
         self.comboBox_5.addItem("")
         self.groupBox_6 = QGroupBox(self.widget)
-        self.groupBox_6.setGeometry(QtCore.QRect(290, 20, 71, 111)) # Program group box
+        self.groupBox_6.setGeometry(QtCore.QRect(690, 20, 200, 200)) # Program group box
         self.groupBox_6.setObjectName("groupBox_6")
         self.pushButton_3 = QPushButton(self.widget)
-        self.pushButton_3.setGeometry(QtCore.QRect(300, 70, 51, 21)) # pause button
+        self.pushButton_3.setGeometry(QtCore.QRect(700, 70, 51, 21)) # pause button
         self.pushButton_3.setObjectName("pushButton_3")
         self.pushButton_4 = QPushButton(self.widget)
-        self.pushButton_4.setGeometry(QtCore.QRect(300, 40, 51, 21)) # run button
+        self.pushButton_4.setGeometry(QtCore.QRect(700, 40, 51, 21)) # run button
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_7 = QPushButton(self.widget)
-        self.pushButton_7.setGeometry(QtCore.QRect(300, 100, 51, 21)) # resume button
+        self.pushButton_7.setGeometry(QtCore.QRect(700, 100, 51, 21)) # resume button
         self.pushButton_7.setObjectName("pushButton_7")
         self.groupBox_6.raise_()
         self.groupBox_4.raise_()
@@ -318,16 +318,16 @@ class Ui_MainWindow(QMainWindow):
         self.label_4.setGeometry(QtCore.QRect(120, 30, 61, 20)) # Bottom Area, Error Label
         self.label_4.setObjectName("label_4")
         self.label_5 = QLabel(self.groupBox)
-        self.label_5.setGeometry(QtCore.QRect(220, 10, 91, 20)) 
+        self.label_5.setGeometry(QtCore.QRect(220, 10, 91, 20)) # Bottom Area, Desired Position Label
         self.label_5.setObjectName("label_5")
         self.label_6 = QLabel(self.groupBox)
-        self.label_6.setGeometry(QtCore.QRect(320, 30, 81, 20))
+        self.label_6.setGeometry(QtCore.QRect(320, 30, 81, 20)) # Bottom Area, Desired Pressure Label
         self.label_6.setObjectName("label_6")
         self.label_7 = QLabel(self.groupBox)
-        self.label_7.setGeometry(QtCore.QRect(320, 10, 91, 20))
+        self.label_7.setGeometry(QtCore.QRect(320, 10, 91, 20)) # Bottom Area, Current Pressure Label
         self.label_7.setObjectName("label_7")
         self.label_8 = QLabel(self.groupBox)
-        self.label_8.setGeometry(QtCore.QRect(220, 30, 81, 20))
+        self.label_8.setGeometry(QtCore.QRect(220, 30, 81, 20)) # Bottom Area, Desired Position Label
         self.label_8.setObjectName("label_8")
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
@@ -362,7 +362,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_5.setText(_translate("MainWindow", "Down"))
         self.pushButton_6.setText(_translate("MainWindow", "Up"))
         self.groupBox_4.setTitle(_translate("MainWindow", "Jogging"))
-        self.groupBox_5.setTitle(_translate("MainWindow", "Jogging"))
+        # self.groupBox_5.setTitle(_translate("MainWindow", "Jogging"))
         self.comboBox_4.setItemText(0, _translate("MainWindow", "1 mm"))
         self.comboBox_4.setItemText(1, _translate("MainWindow", "10 mm"))
         self.comboBox_4.setItemText(2, _translate("MainWindow", "50 mm"))
