@@ -80,104 +80,104 @@ class Ui_MainWindow(QMainWindow):
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.frame = QFrame(self.centralwidget)
-        self.frame.setGeometry(QtCore.QRect(9, 9, 461, 271))
+        self.frame.setGeometry(QtCore.QRect(9, 9, 1024, 600))
         self.frame.setFrameShape(QFrame.StyledPanel)
         self.frame.setFrameShadow(QFrame.Raised)
         self.frame.setObjectName("frame")
         self.tabWidget = QTabWidget(self.frame)
-        self.tabWidget.setGeometry(QtCore.QRect(0, 0, 461, 211))
+        self.tabWidget.setGeometry(QtCore.QRect(0, 0, 1024, 460))
         self.tabWidget.setObjectName("tabWidget")
         self.widget = QWidget()
         self.widget.setObjectName("widget")
         self.groupBox_2 = QGroupBox(self.widget)
-        self.groupBox_2.setGeometry(QtCore.QRect(10, 20, 141, 161))
+        self.groupBox_2.setGeometry(QtCore.QRect(10, 20, 380, 360)) # Mode select group box, mode tab
         self.groupBox_2.setObjectName("groupBox_2")
         self.frame_3 = QFrame(self.groupBox_2)
-        self.frame_3.setGeometry(QtCore.QRect(10, 10, 121, 141))
+        self.frame_3.setGeometry(QtCore.QRect(30, 20, 328, 360)) # Mode select dropdown, mode tab
         self.frame_3.setFrameShape(QFrame.StyledPanel)
         self.frame_3.setFrameShadow(QFrame.Raised)
         self.frame_3.setObjectName("frame_3")
         self.comboBox = QComboBox(self.frame_3)
-        self.comboBox.setGeometry(QtCore.QRect(0, 10, 121, 16))
+        self.comboBox.setGeometry(QtCore.QRect(0, 10, 200, 30)) # Mode select dropdown, mode tab
         self.comboBox.setAutoFillBackground(False)
         self.comboBox.setEditable(False)
         self.comboBox.setObjectName("comboBox")
         self.comboBox.addItem("")
         self.comboBox.addItem("")
         self.groupBox_3 = QGroupBox(self.widget)
-        self.groupBox_3.setGeometry(QtCore.QRect(160, 20, 121, 161))
+        self.groupBox_3.setGeometry(QtCore.QRect(360, 20, 328, 360)) # Parameter Input group box, mode tab 1
         self.groupBox_3.setObjectName("groupBox_3")
         self.lineEdit = QLineEdit(self.groupBox_3)
-        self.lineEdit.setGeometry(QtCore.QRect(10, 30, 51, 16))
+        self.lineEdit.setGeometry(QtCore.QRect(160, 30, 61, 26)) # Initial layer line edit, tab 1
         self.lineEdit.setObjectName("lineEdit")
         self.comboBox_2 = QComboBox(self.groupBox_3)
-        self.comboBox_2.setGeometry(QtCore.QRect(60, 30, 51, 16))
+        self.comboBox_2.setGeometry(QtCore.QRect(210, 30, 61, 26)) # Initial layer height unit select, tab 1
         self.comboBox_2.setAutoFillBackground(False)
         self.comboBox_2.setEditable(False)
         self.comboBox_2.setObjectName("comboBox_2")
         self.comboBox_2.addItem("")
         self.comboBox_2.addItem("")
         self.label_9 = QLabel(self.groupBox_3)
-        self.label_9.setGeometry(QtCore.QRect(10, 20, 71, 10))
+        self.label_9.setGeometry(QtCore.QRect(90, 30, 120, 20)) # Initial layer height label
         self.label_9.setObjectName("label_9")
         self.comboBox_3 = QComboBox(self.groupBox_3)
-        self.comboBox_3.setGeometry(QtCore.QRect(60, 60, 51, 16))
+        self.comboBox_3.setGeometry(QtCore.QRect(260, 60, 51, 16)) # Final layer Unit selector
         self.comboBox_3.setAutoFillBackground(False)
         self.comboBox_3.setEditable(False)
         self.comboBox_3.setObjectName("comboBox_3")
         self.comboBox_3.addItem("")
         self.comboBox_3.addItem("")
         self.lineEdit_2 = QLineEdit(self.groupBox_3)
-        self.lineEdit_2.setGeometry(QtCore.QRect(10, 60, 51, 16))
+        self.lineEdit_2.setGeometry(QtCore.QRect(210, 60, 51, 16)) # Final layer Line Edit
         self.lineEdit_2.setObjectName("lineEdit_2")
         self.label_10 = QLabel(self.groupBox_3)
-        self.label_10.setGeometry(QtCore.QRect(10, 50, 71, 10))
+        self.label_10.setGeometry(QtCore.QRect(210, 50, 71, 10)) # Final layer Label
         self.label_10.setObjectName("label_10")
         self.label_11 = QLabel(self.groupBox_3)
-        self.label_11.setGeometry(QtCore.QRect(10, 80, 71, 10))
+        self.label_11.setGeometry(QtCore.QRect(210, 80, 71, 10)) # Number of layers label
         self.label_11.setObjectName("label_11")
         self.lineEdit_3 = QLineEdit(self.groupBox_3)
-        self.lineEdit_3.setGeometry(QtCore.QRect(10, 90, 51, 16))
+        self.lineEdit_3.setGeometry(QtCore.QRect(210, 90, 51, 16)) # Number of layers line edit
         self.lineEdit_3.setObjectName("lineEdit_3")
         self.label_12 = QLabel(self.groupBox_3)
-        self.label_12.setGeometry(QtCore.QRect(10, 110, 71, 10))
+        self.label_12.setGeometry(QtCore.QRect(210, 110, 71, 10)) # Desired Pressure label
         self.label_12.setObjectName("label_12")
         self.lineEdit_4 = QLineEdit(self.groupBox_3)
-        self.lineEdit_4.setGeometry(QtCore.QRect(10, 120, 51, 16))
+        self.lineEdit_4.setGeometry(QtCore.QRect(210, 120, 51, 16)) # Desired Pressure Line Edit
         self.lineEdit_4.setObjectName("lineEdit_4")
         self.comboBox_6 = QComboBox(self.groupBox_3)
-        self.comboBox_6.setGeometry(QtCore.QRect(60, 120, 51, 16))
+        self.comboBox_6.setGeometry(QtCore.QRect(260, 120, 51, 16)) # Desired Pressure unit Select
         self.comboBox_6.setAutoFillBackground(False)
         self.comboBox_6.setEditable(False)
         self.comboBox_6.setObjectName("comboBox_6")
         self.comboBox_6.addItem("")
         self.comboBox_6.addItem("")
         self.label_13 = QLabel(self.groupBox_3)
-        self.label_13.setGeometry(QtCore.QRect(70, 90, 21, 16))
+        self.label_13.setGeometry(QtCore.QRect(270, 90, 21, 16)) # Max layers label
         self.label_13.setObjectName("label_13")
         self.label_14 = QLabel(self.groupBox_3)
-        self.label_14.setGeometry(QtCore.QRect(90, 90, 21, 16))
+        self.label_14.setGeometry(QtCore.QRect(290, 90, 21, 16)) # Max layers value placeholder
         self.label_14.setObjectName("label_14")
         self.pushButton = QPushButton(self.widget)
-        self.pushButton.setGeometry(QtCore.QRect(300, 150, 141, 21))
+        self.pushButton.setGeometry(QtCore.QRect(300, 350, 141, 21)) # STOP Button
         self.pushButton.setObjectName("pushButton")
         self.pushButton_2 = QPushButton(self.widget)
-        self.pushButton_2.setGeometry(QtCore.QRect(370, 70, 51, 21))
+        self.pushButton_2.setGeometry(QtCore.QRect(370, 70, 51, 21)) # Home Button
         self.pushButton_2.setObjectName("pushButton_2")
         self.pushButton_5 = QPushButton(self.widget)
-        self.pushButton_5.setGeometry(QtCore.QRect(369, 100, 30, 20))
+        self.pushButton_5.setGeometry(QtCore.QRect(369, 100, 60, 30)) # Down Button
         self.pushButton_5.setObjectName("pushButton_5")
         self.pushButton_6 = QPushButton(self.widget)
-        self.pushButton_6.setGeometry(QtCore.QRect(369, 40, 30, 20))
+        self.pushButton_6.setGeometry(QtCore.QRect(369, 40, 60, 30)) # up Button
         self.pushButton_6.setObjectName("pushButton_6")
         self.groupBox_4 = QGroupBox(self.widget)
-        self.groupBox_4.setGeometry(QtCore.QRect(360, 20, 91, 111))
+        self.groupBox_4.setGeometry(QtCore.QRect(360, 20, 91, 111)) # Jogging box
         self.groupBox_4.setObjectName("groupBox_4")
         self.groupBox_5 = QGroupBox(self.groupBox_4)
-        self.groupBox_5.setGeometry(QtCore.QRect(-80, 0, 81, 111))
+        self.groupBox_5.setGeometry(QtCore.QRect(-80, 0, 81, 111)) # IDK what this is
         self.groupBox_5.setObjectName("groupBox_5")
         self.comboBox_4 = QComboBox(self.groupBox_4)
-        self.comboBox_4.setGeometry(QtCore.QRect(40, 20, 50, 20))
+        self.comboBox_4.setGeometry(QtCore.QRect(240, 220, 50, 20)) # IDK what this is either
         self.comboBox_4.setAutoFillBackground(False)
         self.comboBox_4.setEditable(False)
         self.comboBox_4.setObjectName("comboBox_4")
@@ -185,7 +185,7 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox_4.addItem("")
         self.comboBox_4.addItem("")
         self.comboBox_5 = QComboBox(self.groupBox_4)
-        self.comboBox_5.setGeometry(QtCore.QRect(40, 80, 50, 20))
+        self.comboBox_5.setGeometry(QtCore.QRect(40, 80, 80, 20)) # IDK what this is part 3
         self.comboBox_5.setAutoFillBackground(False)
         self.comboBox_5.setEditable(False)
         self.comboBox_5.setObjectName("comboBox_5")
@@ -193,16 +193,16 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox_5.addItem("")
         self.comboBox_5.addItem("")
         self.groupBox_6 = QGroupBox(self.widget)
-        self.groupBox_6.setGeometry(QtCore.QRect(290, 20, 71, 111))
+        self.groupBox_6.setGeometry(QtCore.QRect(290, 20, 71, 111)) # Program group box
         self.groupBox_6.setObjectName("groupBox_6")
         self.pushButton_3 = QPushButton(self.widget)
-        self.pushButton_3.setGeometry(QtCore.QRect(300, 70, 51, 21))
+        self.pushButton_3.setGeometry(QtCore.QRect(300, 70, 51, 21)) # pause button
         self.pushButton_3.setObjectName("pushButton_3")
         self.pushButton_4 = QPushButton(self.widget)
-        self.pushButton_4.setGeometry(QtCore.QRect(300, 40, 51, 21))
+        self.pushButton_4.setGeometry(QtCore.QRect(300, 40, 51, 21)) # run button
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_7 = QPushButton(self.widget)
-        self.pushButton_7.setGeometry(QtCore.QRect(300, 100, 51, 21))
+        self.pushButton_7.setGeometry(QtCore.QRect(300, 100, 51, 21)) # resume button
         self.pushButton_7.setObjectName("pushButton_7")
         self.groupBox_6.raise_()
         self.groupBox_4.raise_()
@@ -218,11 +218,11 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.addTab(self.widget, "")
         self.tab_2 = QWidget()
         self.tab_2.setObjectName("tab_2")
-        self.lcdNumber = QLCDNumber(self.tab_2)                     #VALUE DISPLAY
-        self.lcdNumber.setGeometry(QtCore.QRect(230, 70, 191, 51))
+        self.lcdNumber = QLCDNumber(self.tab_2)                     #VALUE DISPLAY ON TAB 3
+        self.lcdNumber.setGeometry(QtCore.QRect(350, 70, 191, 51))
         self.lcdNumber.setObjectName("lcdNumber")
         self.label_21 = QLabel(self.tab_2)
-        self.label_21.setGeometry(QtCore.QRect(20, 70, 171, 51))
+        self.label_21.setGeometry(QtCore.QRect(20, 70, 300, 51))
         font = QtGui.QFont()
         font.setPointSize(18)
         self.label_21.setFont(font)
@@ -231,10 +231,10 @@ class Ui_MainWindow(QMainWindow):
         self.tab_3 = QWidget()
         self.tab_3.setObjectName("tab_3")
         self.widget_2 = QWidget(self.tab_3)
-        self.widget_2.setGeometry(QtCore.QRect(9, 9, 441, 181))
+        self.widget_2.setGeometry(QtCore.QRect(9, 9, 800, 300)) # data table
         self.widget_2.setObjectName("widget_2")
         self.tableWidget = QTableWidget(self.widget_2)
-        self.tableWidget.setGeometry(QtCore.QRect(0, 0, 441, 171))
+        self.tableWidget.setGeometry(QtCore.QRect(0, 0, 800, 400)) # data table
         self.tableWidget.setObjectName("tableWidget")
         self.tableWidget.setColumnCount(5)
         self.tableWidget.setRowCount(9)
@@ -270,55 +270,55 @@ class Ui_MainWindow(QMainWindow):
         self.tab_4 = QWidget()
         self.tab_4.setObjectName("tab_4")
         self.groupBox_7 = QGroupBox(self.tab_4)
-        self.groupBox_7.setGeometry(QtCore.QRect(10, 10, 120, 161))
+        self.groupBox_7.setGeometry(QtCore.QRect(10, 30, 400, 300)) # Communication group box
         self.groupBox_7.setObjectName("groupBox_7")
         self.label_15 = QLabel(self.groupBox_7)
-        self.label_15.setGeometry(QtCore.QRect(10, 30, 51, 16))
+        self.label_15.setGeometry(QtCore.QRect(10, 30, 200, 16)) # Connection label
         self.label_15.setObjectName("label_15")
         self.label_16 = QLabel(self.groupBox_7)
-        self.label_16.setGeometry(QtCore.QRect(10, 60, 51, 16))
+        self.label_16.setGeometry(QtCore.QRect(10, 60, 100, 16)) # System IP label
         self.label_16.setObjectName("label_16")
         self.label_17 = QLabel(self.groupBox_7)
-        self.label_17.setGeometry(QtCore.QRect(10, 90, 81, 21))
+        self.label_17.setGeometry(QtCore.QRect(10, 90, 200, 21)) # Connection Device IP label
         self.label_17.setObjectName("label_17")
         self.groupBox_9 = QGroupBox(self.tab_4)
-        self.groupBox_9.setGeometry(QtCore.QRect(140, 10, 301, 161))
+        self.groupBox_9.setGeometry(QtCore.QRect(440, 30, 401, 300)) # System group box
         self.groupBox_9.setObjectName("groupBox_9")
         self.label_18 = QLabel(self.groupBox_9)
-        self.label_18.setGeometry(QtCore.QRect(10, 30, 51, 16))
+        self.label_18.setGeometry(QtCore.QRect(10, 30, 200, 16)) # System Time
         self.label_18.setObjectName("label_18")
         self.label_19 = QLabel(self.groupBox_9)
-        self.label_19.setGeometry(QtCore.QRect(10, 60, 51, 16))
+        self.label_19.setGeometry(QtCore.QRect(10, 60, 200, 16)) # System Date
         self.label_19.setObjectName("label_19")
         self.label_20 = QLabel(self.groupBox_9)
-        self.label_20.setGeometry(QtCore.QRect(10, 90, 61, 16))
+        self.label_20.setGeometry(QtCore.QRect(10, 90, 200, 16)) # System Runtime
         self.label_20.setObjectName("label_20")
         self.tabWidget.addTab(self.tab_4, "")
         self.frame_2 = QFrame(self.frame)
-        self.frame_2.setGeometry(QtCore.QRect(0, 220, 461, 61))
+        self.frame_2.setGeometry(QtCore.QRect(0, 470, 1000, 261)) # Bottom Area
         self.frame_2.setFrameShape(QFrame.StyledPanel)
         self.frame_2.setFrameShadow(QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
         self.groupBox = QGroupBox(self.frame_2)
-        self.groupBox.setGeometry(QtCore.QRect(0, 0, 461, 61))
+        self.groupBox.setGeometry(QtCore.QRect(0, 0, 1000, 300)) # Bottom Box
         self.groupBox.setObjectName("groupBox")
         self.tableView = QTableView(self.groupBox)
-        self.tableView.setGeometry(QtCore.QRect(10, 10, 441, 41))
+        self.tableView.setGeometry(QtCore.QRect(10, 10, 990, 241)) # Bottom Text Area
         self.tableView.setObjectName("tableView")
         self.label = QLabel(self.groupBox)
-        self.label.setGeometry(QtCore.QRect(20, 30, 81, 20))
+        self.label.setGeometry(QtCore.QRect(20, 30, 81, 20)) # Bottom Area, Connected label
         self.label.setObjectName("label")
         self.label_2 = QLabel(self.groupBox)
-        self.label_2.setGeometry(QtCore.QRect(20, 10, 71, 20))
+        self.label_2.setGeometry(QtCore.QRect(20, 10, 71, 20)) # Bottom Area, System Status label
         self.label_2.setObjectName("label_2")
         self.label_3 = QLabel(self.groupBox)
-        self.label_3.setGeometry(QtCore.QRect(120, 10, 71, 20))
+        self.label_3.setGeometry(QtCore.QRect(120, 10, 71, 20)) # Bottom Area, Mode Label
         self.label_3.setObjectName("label_3")
         self.label_4 = QLabel(self.groupBox)
-        self.label_4.setGeometry(QtCore.QRect(120, 30, 61, 20))
+        self.label_4.setGeometry(QtCore.QRect(120, 30, 61, 20)) # Bottom Area, Error Label
         self.label_4.setObjectName("label_4")
         self.label_5 = QLabel(self.groupBox)
-        self.label_5.setGeometry(QtCore.QRect(220, 10, 91, 20))
+        self.label_5.setGeometry(QtCore.QRect(220, 10, 91, 20)) 
         self.label_5.setObjectName("label_5")
         self.label_6 = QLabel(self.groupBox)
         self.label_6.setGeometry(QtCore.QRect(320, 30, 81, 20))
