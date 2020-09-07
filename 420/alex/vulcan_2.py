@@ -44,6 +44,7 @@ import math
 import time
 import random
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt
 from PyQt5.QtWidgets import (QSizePolicy,
         QWidget, QFrame)
@@ -93,7 +94,7 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox_2.setGeometry(QtCore.QRect(20, 20, 300, 360)) # Mode select group box, mode tab
         self.groupBox_2.setObjectName("groupBox_2")
         self.frame_3 = QFrame(self.groupBox_2)
-        self.frame_3.setGeometry(QtCore.QRect(30, 20, 328, 360)) # Mode select dropdown, mode tab
+        self.frame_3.setGeometry(QtCore.QRect(30, 20, 428, 460)) # Mode select dropdown, mode tab
         self.frame_3.setFrameShape(QFrame.StyledPanel)
         self.frame_3.setFrameShadow(QFrame.Raised)
         self.frame_3.setObjectName("frame_3")
@@ -104,6 +105,13 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox.setObjectName("comboBox")
         self.comboBox.addItem("")
         self.comboBox.addItem("")
+        self.pixmap = QPixmap('VulcanLabsLogo.png')
+        self.pixmap2 = self.pixmap.scaled(260, 200, QtCore.Qt.KeepAspectRatio) # Logo
+        self.labelLogo = QLabel(self.groupBox_2)
+        self.labelLogo.setPixmap(self.pixmap2)
+        self.labelLogo.setGeometry(20,80,300,300)
+        self.setWindowIcon(QtGui.QIcon('3DPrinterLogo.png')) # Logo as Icon
+        #self.setStyleSheet("background-color: rgb(255, 255, 255)")
         self.groupBox_3 = QGroupBox(self.widget)
         self.groupBox_3.setGeometry(QtCore.QRect(350, 20, 300, 360)) # Parameter Input group box, mode tab 1
         self.groupBox_3.setObjectName("groupBox_3")
@@ -160,6 +168,7 @@ class Ui_MainWindow(QMainWindow):
         self.label_14.setObjectName("label_14")
         self.pushButton = QPushButton(self.widget)
         self.pushButton.setGeometry(QtCore.QRect(700, 110, 260, 60)) # STOP Button = 700, 50, 80, 40
+        self.pushButton.setFont(QFont('Arial', 14))#, QFont.Bold)) #adjust font
         self.pushButton.setObjectName("pushButton")
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(700, 280, 140, 30)) # Home Button
@@ -333,6 +342,12 @@ class Ui_MainWindow(QMainWindow):
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+
+        ### --- ADDITIONAL COMPONENTS GO HERE --- ###
+        # self.pixmap = QPixmap('VulcanLabsLogo.png')
+        # self.labelLogo = QLabel(self)
+        # self.labelLogo.setPixmap(self.pixmap)
+        # self.labelLogo.setGeometry(30,30,100,100)
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
