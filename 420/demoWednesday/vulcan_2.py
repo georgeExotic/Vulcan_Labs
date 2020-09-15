@@ -238,12 +238,19 @@ class Ui_MainWindow(QMainWindow):
         self.lcdNumber2 = QLCDNumber(self.tab_2)                     #VALUE DISPLAY ON TAB 3
         self.lcdNumber2.setGeometry(QtCore.QRect(350, 270, 191, 51))
         self.lcdNumber2.setObjectName("lcdNumber2")
+        self.lcdNumber3 = QLCDNumber(self.tab_2)                     #VALUE DISPLAY ON TAB 3
+        self.lcdNumber3.setGeometry(QtCore.QRect(350, 170, 191, 51))
+        self.lcdNumber3.setObjectName("lcdNumber3")
         self.label_21 = QLabel(self.tab_2)
         self.label_21.setGeometry(QtCore.QRect(20, 70, 300, 51))
         self.label_tab2_pressure = QLabel(self.tab_2)
         self.label_tab2_pressure.setGeometry(QtCore.QRect(20, 270, 300, 51))
         self.label_tab2_pressure_units = QLabel(self.tab_2)
         self.label_tab2_pressure_units.setGeometry(QtCore.QRect(550, 270, 300, 51))
+        self.label_tab2_force = QLabel(self.tab_2)
+        self.label_tab2_force.setGeometry(QtCore.QRect(20, 170, 300, 51))
+        self.label_tab2_force_units = QLabel(self.tab_2)
+        self.label_tab2_force_units.setGeometry(QtCore.QRect(550, 170, 300, 51))
         self.label_tab2_load_units = QLabel(self.tab_2)
         self.label_tab2_load_units.setGeometry(QtCore.QRect(550, 70, 300, 51))
         self.pushButton_8 = QPushButton(self.tab_2)
@@ -260,8 +267,12 @@ class Ui_MainWindow(QMainWindow):
         self.label_tab2_pressure_units.setObjectName("label_tab2_pressure_units")
         self.label_tab2_pressure_units.setFont(QFont('Arial', 24))
         # self.label_tab2_load_units.setFont(font)
+        self.label_tab2_force.setObjectName('label_tab2_force')
         self.label_tab2_load_units.setObjectName("label_tab2_load_units")
         self.label_tab2_load_units.setFont(QFont('Arial', 24))
+        self.label_tab2_force_units.setObjectName("label_tab2_force_units")
+        self.label_tab2_force_units.setFont(QFont('Arial', 24))
+        self.label_tab2_force.setFont(font)
         self.tabWidget.addTab(self.tab_2, "")
         self.tab_3 = QWidget()
         self.tab_3.setObjectName("tab_3")
@@ -350,22 +361,22 @@ class Ui_MainWindow(QMainWindow):
         self.label_3.setGeometry(QtCore.QRect(200, 40, 150, 20)) # Bottom Area, Mode Label
         self.label_3.setObjectName("label_3")
         self.label_3_modeFeedback = QLabel(self.groupBox)
-        self.label_3_modeFeedback.setGeometry(QtCore.QRect(240, 40, 150, 20))
+        self.label_3_modeFeedback.setGeometry(QtCore.QRect(250, 40, 150, 20))
         self.label_3_modeFeedback.setObjectName("label_3_modeFeedback")
         self.label_4 = QLabel(self.groupBox)
         self.label_4.setGeometry(QtCore.QRect(200, 70, 150, 20)) # Bottom Area, Error Label
         self.label_4.setObjectName("label_4")
         self.label_5 = QLabel(self.groupBox)
-        self.label_5.setGeometry(QtCore.QRect(350, 40, 150, 20)) # Bottom Area, Desired Position Label
+        self.label_5.setGeometry(QtCore.QRect(480, 40, 150, 20)) # Bottom Area, Desired Position Label
         self.label_5.setObjectName("label_5")
         self.label_6 = QLabel(self.groupBox)
-        self.label_6.setGeometry(QtCore.QRect(350, 70, 150, 20)) # Bottom Area, Desired Pressure Label
+        self.label_6.setGeometry(QtCore.QRect(480, 70, 160, 20)) # Bottom Area, Desired Pressure Label
         self.label_6.setObjectName("label_6")
         self.label_7 = QLabel(self.groupBox)
-        self.label_7.setGeometry(QtCore.QRect(520, 70, 150, 20)) # Bottom Area, Current Pressure Label
+        self.label_7.setGeometry(QtCore.QRect(680, 70, 150, 20)) # Bottom Area, Current Pressure Label
         self.label_7.setObjectName("label_7")
         self.label_8 = QLabel(self.groupBox)
-        self.label_8.setGeometry(QtCore.QRect(520, 40, 150, 20)) # Bottom Area, Desired Position Label
+        self.label_8.setGeometry(QtCore.QRect(680, 40, 150, 20)) # Bottom Area, Desired Position Label
         self.label_8.setObjectName("label_8")
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
@@ -396,7 +407,7 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox_3.setItemText(1, _translate("MainWindow", "μm"))
         self.label_10.setText(_translate("MainWindow", "Final Layer Height"))
         self.label_11.setText(_translate("MainWindow", "Number of Layers"))
-        self.label_12.setText(_translate("MainWindow", "Desired Pressure"))
+        self.label_12.setText(_translate("MainWindow", "Target Pressure"))
         self.comboBox_6.setItemText(0, _translate("MainWindow", "kPa"))
         self.comboBox_6.setItemText(1, _translate("MainWindow", "MPa"))
         # self.label_13.setText(_translate("MainWindow", "max:"))
@@ -422,6 +433,8 @@ class Ui_MainWindow(QMainWindow):
         self.label_21.setText(_translate("MainWindow", "Load Cell Reading:"))
         self.label_tab2_pressure.setText(_translate("MainWindow", "Current Pressure:"))
         self.label_tab2_pressure_units.setText(_translate("MainWindow", " kPa"))
+        self.label_tab2_force.setText(_translate("MainWindow", "Current Force:"))
+        self.label_tab2_force_units.setText(_translate("MainWindow", " N"))
         self.label_tab2_load_units.setText(_translate("MainWindow", " kg"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "System"))
         item = self.tableWidget.verticalHeaderItem(0)
@@ -463,10 +476,10 @@ class Ui_MainWindow(QMainWindow):
         self.label_20.setText(_translate("MainWindow", "System Runtime:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "Configuration"))
         self.groupBox.setTitle(_translate("MainWindow", "System State"))
-        self.label.setText(_translate("MainWindow", "State"))
+        self.label.setText(_translate("MainWindow", "State: "))
         self.label_2.setText(_translate("MainWindow", "System Status: Null"))
-        self.label_3.setText(_translate("MainWindow", "Mode:"))
-        self.label_3_modeFeedback.setText(_translate("MainWindow", "Not selected"))
+        self.label_3.setText(_translate("MainWindow", "Mode: "))
+        self.label_3_modeFeedback.setText(_translate("MainWindow", "Motion Limiting"))
         self.label_4.setText(_translate("MainWindow", "Error: Null"))
         self.label_5.setText(_translate("MainWindow", "Desired Position: Null"))
         self.label_6.setText(_translate("MainWindow", "Desired Pressure: Null"))
@@ -491,16 +504,17 @@ class Ui_MainWindow(QMainWindow):
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
         force_reading_raw = cellInstance.cell.get_weight_mean(20)
-        force_reading_kg = force_reading_raw/1000            #(grams to kg)
-        force_reading_N = force_reading_kg*9.81
+        force_reading_kg = round(force_reading_raw/1000,3)            #(grams to kg)
+        force_reading_N = round(force_reading_kg*9.81,3)
         pistonDiameter = 20 #mm
         r = pistonDiameter/2 #mm
         r_m = r/1000    # [m]
         Area = math.pi*math.pow(r_m,2)
-        pressure_reading = (force_reading_N/Area)/1000  #Kpa
-
+        pressure_reading = round((force_reading_N/Area)/1000,3)  #Kpa
+        
         self.lcdNumber.display(force_reading_kg)
         self.lcdNumber2.display(pressure_reading)
+        self.lcdNumber3.display(force_reading_N)
         self.update()
 
 
