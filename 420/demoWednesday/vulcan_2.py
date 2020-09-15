@@ -40,14 +40,15 @@
 ## $QT_END_LICENSE$
 ##
 #############################################################################
+
 import math
 import time
 import random
 import sys
 import os
 import pickle
-import RPi.GPIO as GPIO #import I/O interface
-from hx711 import HX711 #import HX711 class
+# import RPi.GPIO as GPIO #import I/O interface
+# from hx711 import HX711 #import HX711 class
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt
@@ -58,28 +59,17 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow)
 
-
-# class Window(QWidget):
-#     def __init__(self):
-#         super(Window, self).__init__()
-
-#         flowLayout = FlowLayout()
-#         flowLayout.addWidget(QPushButton("Short"))
-#         flowLayout.addWidget(QPushButton("Longer"))
-#         flowLayout.addWidget(QPushButton("Different text"))
-#         flowLayout.addWidget(QPushButton("More text"))
-#         flowLayout.addWidget(QPushButton("Even longer button text"))
-#         self.setLayout(flowLayout)
-
-#         self.setWindowTitle("Flow Layout")
-
-
+# Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
     def __init__(self):
         super(Ui_MainWindow, self).__init__()
         self.setupUi()
        
     def setupUi(self):
+
+        # -- INITIALIZATION -- #
+
+        #Initializes window and parameters
         MainWindow = self
         MainWindow.setObjectName("Vulcan Labs")
         MainWindow.resize(1024, 600)
@@ -90,134 +80,170 @@ class Ui_MainWindow(QMainWindow):
         self.frame.setFrameShape(QFrame.StyledPanel)
         self.frame.setFrameShadow(QFrame.Raised)
         self.frame.setObjectName("frame")
+
+        #Initializes tab layout
         self.tabWidget = QTabWidget(self.frame)
         self.tabWidget.setGeometry(QtCore.QRect(0, 0, 1004, 420))
         self.tabWidget.setObjectName("tabWidget")
+
+        # TAB 1 #
+
+        #Inits box area on left
         self.widget = QWidget()
         self.widget.setObjectName("widget")
         self.groupBox_2 = QGroupBox(self.widget)
-        self.groupBox_2.setGeometry(QtCore.QRect(20, 20, 300, 360)) # Mode select group box, mode tab
+        self.groupBox_2.setGeometry(QtCore.QRect(20, 20, 300, 360)) # positioning and sizing
         self.groupBox_2.setObjectName("groupBox_2")
-        # self.frame_3 = QFrame(self.groupBox_2)
-        # self.frame_3.setGeometry(QtCore.QRect(0, 0, 428, 460)) # Mode select dropdown, mode tab
-        # self.frame_3.setFrameShape(QFrame.StyledPanel)
-        # self.frame_3.setFrameShadow(QFrame.Raised)
-        # self.frame_3.setObjectName("frame_3")
+
+        #Inits Mode select dropdown component
         self.comboBox = QComboBox(self.groupBox_2)
-        self.comboBox.setGeometry(QtCore.QRect(20, 40, 200, 30)) # Mode select dropdown, mode tab
+        self.comboBox.setGeometry(QtCore.QRect(20, 40, 200, 30)) # positioning and sizing
         self.comboBox.setAutoFillBackground(False)
         self.comboBox.setEditable(False)
         self.comboBox.setObjectName("comboBox")
         self.comboBox.addItem("")
         self.comboBox.addItem("")
+
+        #Inits Logo
         self.pixmap = QPixmap('VulcanLabsLogo.png')
         self.pixmap2 = self.pixmap.scaled(260, 200, QtCore.Qt.KeepAspectRatio) # Logo
         self.labelLogo = QLabel(self.groupBox_2)
         self.labelLogo.setPixmap(self.pixmap2)
         self.labelLogo.setGeometry(20,80,300,300)
+
+        #Inits window icon as logo
         self.setWindowIcon(QtGui.QIcon('3DPrinterLogo.png')) # Logo as Icon
-        #self.setStyleSheet("background-color: rgb(255, 255, 255)")
+        # self.setStyleSheet("background-color: rgb(255, 255, 255)") #Sets background color of GUI
+
+        #Inits Parameter Group Box
         self.groupBox_3 = QGroupBox(self.widget)
-        self.groupBox_3.setGeometry(QtCore.QRect(350, 20, 300, 360)) # Parameter Input group box, mode tab 1
+        self.groupBox_3.setGeometry(QtCore.QRect(350, 20, 300, 360)) # positioning and sizing
         self.groupBox_3.setObjectName("groupBox_3")
+
+        #Inits initial layer height input
         self.lineEdit = QLineEdit(self.groupBox_3)
-        self.lineEdit.setGeometry(QtCore.QRect(160, 40, 60, 30)) # Initial layer line edit, tab 1
+        self.lineEdit.setGeometry(QtCore.QRect(160, 40, 60, 30)) # pos and size
         self.lineEdit.setObjectName("lineEdit")
+
+        #Inits initial layer height unit select
         self.comboBox_2 = QComboBox(self.groupBox_3)
-        self.comboBox_2.setGeometry(QtCore.QRect(230, 40, 60, 30)) # Initial layer height unit select, tab 1
+        self.comboBox_2.setGeometry(QtCore.QRect(230, 40, 60, 30)) # pos and size
         self.comboBox_2.setAutoFillBackground(False)
         self.comboBox_2.setEditable(False)
         self.comboBox_2.setObjectName("comboBox_2")
         self.comboBox_2.addItem("")
         self.comboBox_2.addItem("")
+
+        #Inits initial layer height label
         self.label_9 = QLabel(self.groupBox_3)
-        self.label_9.setGeometry(QtCore.QRect(20, 40, 130, 20)) # Initial layer height label
+        self.label_9.setGeometry(QtCore.QRect(20, 40, 130, 20)) # pos and size
         self.label_9.setObjectName("label_9")
+
+        #Inits final layer height unit select
         self.comboBox_3 = QComboBox(self.groupBox_3)
-        self.comboBox_3.setGeometry(QtCore.QRect(230, 100, 60, 30)) # Final layer Unit selector
+        self.comboBox_3.setGeometry(QtCore.QRect(230, 100, 60, 30)) # pos and size
         self.comboBox_3.setAutoFillBackground(False)
         self.comboBox_3.setEditable(False)
         self.comboBox_3.setObjectName("comboBox_3")
         self.comboBox_3.addItem("")
         self.comboBox_3.addItem("")
+
+        #Inits final layer height input
         self.lineEdit_2 = QLineEdit(self.groupBox_3)
-        self.lineEdit_2.setGeometry(QtCore.QRect(160, 100, 60, 30)) # Final layer Line Edit
+        self.lineEdit_2.setGeometry(QtCore.QRect(160, 100, 60, 30)) # pos and size
         self.lineEdit_2.setObjectName("lineEdit_2")
+
+        #Inits final layer label
         self.label_10 = QLabel(self.groupBox_3)
-        self.label_10.setGeometry(QtCore.QRect(20, 100, 150, 20)) # Final layer Label
+        self.label_10.setGeometry(QtCore.QRect(20, 100, 150, 20)) # pos and size
         self.label_10.setObjectName("label_10")
+
+        #Inits number of layers label
         self.label_11 = QLabel(self.groupBox_3)
-        self.label_11.setGeometry(QtCore.QRect(20, 150, 150, 20)) # Number of layers label
+        self.label_11.setGeometry(QtCore.QRect(20, 150, 150, 20)) # pos and size
         self.label_11.setObjectName("label_11")
+
+        #Inits number of layers input
         self.lineEdit_3 = QLineEdit(self.groupBox_3)
-        self.lineEdit_3.setGeometry(QtCore.QRect(160, 150, 60, 30)) # Number of layers line edit
+        self.lineEdit_3.setGeometry(QtCore.QRect(160, 150, 60, 30)) # pos and size
         self.lineEdit_3.setObjectName("lineEdit_3")
+
+        #Inits desired pressure label
         self.label_12 = QLabel(self.groupBox_3)
-        self.label_12.setGeometry(QtCore.QRect(20, 200, 150, 20)) # Desired Pressure label
+        self.label_12.setGeometry(QtCore.QRect(20, 200, 150, 20)) # pos and size
         self.label_12.setObjectName("label_12")
+
+        #Inits desired pressure input
         self.lineEdit_4 = QLineEdit(self.groupBox_3)
-        self.lineEdit_4.setGeometry(QtCore.QRect(160, 200, 60, 30)) # Desired Pressure Line Edit
+        self.lineEdit_4.setGeometry(QtCore.QRect(160, 200, 60, 30)) # pos and size
         self.lineEdit_4.setObjectName("lineEdit_4")
+
+        #Inits desired pressure unit select
         self.comboBox_6 = QComboBox(self.groupBox_3)
-        self.comboBox_6.setGeometry(QtCore.QRect(230, 200, 60, 30)) # Desired Pressure unit Select
+        self.comboBox_6.setGeometry(QtCore.QRect(230, 200, 60, 30)) # pos and size
         self.comboBox_6.setAutoFillBackground(False)
         self.comboBox_6.setEditable(False)
         self.comboBox_6.setObjectName("comboBox_6")
         self.comboBox_6.addItem("")
         self.comboBox_6.addItem("")
-        # self.label_13 = QLabel(self.groupBox_3)
-        # self.label_13.setGeometry(QtCore.QRect(235, 155, 50, 20)) # Max layers label
-        # self.label_13.setObjectName("label_13")
-        # self.label_14 = QLabel(self.groupBox_3)
-        # self.label_14.setGeometry(QtCore.QRect(265, 155, 21, 20)) # Max layers value placeholder
-        # self.label_14.setObjectName("label_14")
+
+        #Inits STOP button
         self.pushButton = QPushButton(self.widget)
-        self.pushButton.setGeometry(QtCore.QRect(700, 110, 260, 60)) # STOP Button = 700, 50, 80, 40
+        self.pushButton.setGeometry(QtCore.QRect(700, 110, 260, 60)) # pos and size
         self.pushButton.setFont(QFont('Arial', 14))#, QFont.Bold)) #adjust font
         self.pushButton.setObjectName("pushButton")
+
+        #Inits Home button
         self.pushButton_2 = QPushButton(self.widget)
-        self.pushButton_2.setGeometry(QtCore.QRect(700, 280, 140, 30)) # Home Button
+        self.pushButton_2.setGeometry(QtCore.QRect(700, 280, 140, 30)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
+
+        #Inits Down button
         self.pushButton_5 = QPushButton(self.widget)
-        self.pushButton_5.setGeometry(QtCore.QRect(700, 320, 140, 30)) # Down Button
+        self.pushButton_5.setGeometry(QtCore.QRect(700, 320, 140, 30)) # pos and size
         self.pushButton_5.setObjectName("pushButton_5")
+
+        #Inits Up button
         self.pushButton_6 = QPushButton(self.widget)
-        self.pushButton_6.setGeometry(QtCore.QRect(700, 240, 140, 30)) # up Button
+        self.pushButton_6.setGeometry(QtCore.QRect(700, 240, 140, 30)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
+
+        #Inits Jogging box area
         self.groupBox_4 = QGroupBox(self.widget)
-        self.groupBox_4.setGeometry(QtCore.QRect(680, 200, 300, 180)) # Jogging box
+        self.groupBox_4.setGeometry(QtCore.QRect(680, 200, 300, 180)) # pos and size
         self.groupBox_4.setObjectName("groupBox_4")
-        # self.groupBox_5 = QGroupBox(self.groupBox_4)
-        # self.groupBox_5.setGeometry(QtCore.QRect(90, 70, 90, 30)) # extra jog box
-        # self.groupBox_5.setObjectName("groupBox_5")
-        # self.comboBox_4 = QComboBox(self.groupBox_4)
-        # self.comboBox_4.setGeometry(QtCore.QRect(200, 40, 80, 30)) # Jog UP step size select
-        # self.comboBox_4.setAutoFillBackground(False)
-        # self.comboBox_4.setEditable(False)
-        # self.comboBox_4.setObjectName("comboBox_4")
-        # self.comboBox_4.addItem("")
-        # self.comboBox_4.addItem("")
-        # self.comboBox_4.addItem("")
+
+        #Inits jog step size select
         self.comboBox_5 = QComboBox(self.groupBox_4)
-        self.comboBox_5.setGeometry(QtCore.QRect(200, 120, 80, 30)) # Jog DOWN step size select
+        self.comboBox_5.setGeometry(QtCore.QRect(200, 120, 80, 30)) # pos and size
         self.comboBox_5.setAutoFillBackground(False)
         self.comboBox_5.setEditable(False)
         self.comboBox_5.setObjectName("comboBox_5")
         self.comboBox_5.addItem("")
         self.comboBox_5.addItem("")
         self.comboBox_5.addItem("")
+
+        #Inits program group box area
         self.groupBox_6 = QGroupBox(self.widget)
-        self.groupBox_6.setGeometry(QtCore.QRect(680, 20, 300, 180)) # Program group box
+        self.groupBox_6.setGeometry(QtCore.QRect(680, 20, 300, 180)) # pos and size
         self.groupBox_6.setObjectName("groupBox_6")
+
+        #Inits pause button
         self.pushButton_3 = QPushButton(self.widget)
-        self.pushButton_3.setGeometry(QtCore.QRect(790, 60, 80, 40)) # pause button
+        self.pushButton_3.setGeometry(QtCore.QRect(790, 60, 80, 40)) # pos and size
         self.pushButton_3.setObjectName("pushButton_3")
+
+        #Inits run button
         self.pushButton_4 = QPushButton(self.widget)
-        self.pushButton_4.setGeometry(QtCore.QRect(700, 60, 80, 40)) # run button
+        self.pushButton_4.setGeometry(QtCore.QRect(700, 60, 80, 40)) # pos and size
         self.pushButton_4.setObjectName("pushButton_4")
+
+        #Inits resume button
         self.pushButton_7 = QPushButton(self.widget)
-        self.pushButton_7.setGeometry(QtCore.QRect(880, 60, 80, 40)) # resume button
+        self.pushButton_7.setGeometry(QtCore.QRect(880, 60, 80, 40)) # pos and size
         self.pushButton_7.setObjectName("pushButton_7")
+
+        # raise_() brings components to front layer
         self.groupBox_6.raise_()
         self.groupBox_4.raise_()
         self.groupBox_2.raise_()
@@ -229,9 +255,14 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_3.raise_()
         self.pushButton_4.raise_()
         self.pushButton_7.raise_()
+
+        # TAB 2 #
+
+        #Inits tab 2
         self.tabWidget.addTab(self.widget, "")
         self.tab_2 = QWidget()
         self.tab_2.setObjectName("tab_2")
+<<<<<<< HEAD
         self.lcdNumber = QLCDNumber(self.tab_2)                     #VALUE DISPLAY ON TAB 3
         self.lcdNumber.setGeometry(QtCore.QRect(350, 70, 191, 51))
         self.lcdNumber.setObjectName("lcdNumber2")
@@ -257,15 +288,42 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_8.setGeometry(QtCore.QRect(700, 280, 140, 30)) # Calibration Button
         self.pushButton_8.setObjectName("pushButton_8")
         self.pushButton_8.raise_() # -- Calibration Button
+=======
+
+        #Inits font for tab 3
+>>>>>>> 6ac06b5248fbdb73367d24660d091ea71bb20421
         font = QtGui.QFont()
         font.setPointSize(18)
+
+        #Inits lcd display
+        self.lcdNumber = QLCDNumber(self.tab_2)
+        self.lcdNumber.setGeometry(QtCore.QRect(350, 70, 191, 51)) # pos and size
+        self.lcdNumber.setObjectName("lcdNumber")
+
+        #Inits lcd display 2
+        self.lcdNumber2 = QLCDNumber(self.tab_2)
+        self.lcdNumber2.setGeometry(QtCore.QRect(350, 270, 191, 51)) # pos and size
+        self.lcdNumber2.setObjectName("lcdNumber2")
+
+        #Inits load cell reading label
+        self.label_21 = QLabel(self.tab_2)
+        self.label_21.setGeometry(QtCore.QRect(20, 70, 300, 51)) # pos and size
         self.label_21.setFont(font)
         self.label_21.setObjectName("label_21")
+
+        #Inits pressure reading label
+        self.label_tab2_pressure = QLabel(self.tab_2)
+        self.label_tab2_pressure.setGeometry(QtCore.QRect(20, 270, 300, 51)) # pos and size
         self.label_tab2_pressure.setFont(font)
         self.label_tab2_pressure.setObjectName("label_tab2_pressure")
+
+        #Inits pressure reading units label
+        self.label_tab2_pressure_units = QLabel(self.tab_2)
+        self.label_tab2_pressure_units.setGeometry(QtCore.QRect(550, 270, 300, 51)) # pos and size
         self.label_tab2_pressure_units.setFont(font)
         self.label_tab2_pressure_units.setObjectName("label_tab2_pressure_units")
         self.label_tab2_pressure_units.setFont(QFont('Arial', 24))
+<<<<<<< HEAD
         # self.label_tab2_load_units.setFont(font)
         self.label_tab2_force.setObjectName('label_tab2_force')
         self.label_tab2_load_units.setObjectName("label_tab2_load_units")
@@ -273,6 +331,23 @@ class Ui_MainWindow(QMainWindow):
         self.label_tab2_force_units.setObjectName("label_tab2_force_units")
         self.label_tab2_force_units.setFont(QFont('Arial', 24))
         self.label_tab2_force.setFont(font)
+=======
+
+        #Inits load cell reading units label
+        self.label_tab2_load_units = QLabel(self.tab_2)
+        self.label_tab2_load_units.setGeometry(QtCore.QRect(550, 70, 300, 51)) # pos and size
+        self.label_tab2_load_units.setObjectName("label_tab2_load_units")
+        self.label_tab2_load_units.setFont(QFont('Arial', 24))
+
+        #Inits calibration button
+        self.pushButton_8 = QPushButton(self.tab_2)
+        self.pushButton_8.setGeometry(QtCore.QRect(700, 280, 140, 30)) # pos and size
+        self.pushButton_8.setObjectName("pushButton_8")
+        self.pushButton_8.raise_() # brings to front
+
+        # TAB 3 #
+
+>>>>>>> 6ac06b5248fbdb73367d24660d091ea71bb20421
         self.tabWidget.addTab(self.tab_2, "")
         self.tab_3 = QWidget()
         self.tab_3.setObjectName("tab_3")
@@ -393,6 +468,8 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
+    # Annotate Labels and Components
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("Vulcan Labs", "Vulcan Labs"))
@@ -410,18 +487,12 @@ class Ui_MainWindow(QMainWindow):
         self.label_12.setText(_translate("MainWindow", "Target Pressure"))
         self.comboBox_6.setItemText(0, _translate("MainWindow", "kPa"))
         self.comboBox_6.setItemText(1, _translate("MainWindow", "MPa"))
-        # self.label_13.setText(_translate("MainWindow", "max:"))
-        # self.label_14.setText(_translate("MainWindow", "10"))
         self.pushButton.setText(_translate("MainWindow", "STOP"))
         self.pushButton_2.setText(_translate("MainWindow", "Home"))
         self.pushButton_8.setText(_translate("MainWindow", "Calibration"))
         self.pushButton_5.setText(_translate("MainWindow", "Down"))
         self.pushButton_6.setText(_translate("MainWindow", "Up"))
         self.groupBox_4.setTitle(_translate("MainWindow", "Jogging"))
-        # self.groupBox_5.setTitle(_translate("MainWindow", "Jogging"))
-        # self.comboBox_4.setItemText(0, _translate("MainWindow", "1 mm"))
-        # self.comboBox_4.setItemText(1, _translate("MainWindow", "10 mm"))
-        # self.comboBox_4.setItemText(2, _translate("MainWindow", "50 mm"))
         self.comboBox_5.setItemText(0, _translate("MainWindow", "1 mm"))
         self.comboBox_5.setItemText(1, _translate("MainWindow", "10 mm"))
         self.comboBox_5.setItemText(2, _translate("MainWindow", "50 mm"))
@@ -487,7 +558,7 @@ class Ui_MainWindow(QMainWindow):
         self.label_8.setText(_translate("MainWindow", "Current Position: Null"))
 
         # MIDDLEWARE
-        # .valueChanged.connect(self.UpdateForceSliderValue)
+
         self.pushButton_8.clicked.connect(LoadCell.userCalibration)
         self.comboBox.currentIndexChanged.connect(self.updateMode)
 
@@ -503,9 +574,16 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
+<<<<<<< HEAD
         force_reading_raw = cellInstance.cell.get_weight_mean(20)
         force_reading_kg = round(force_reading_raw/1000,3)            #(grams to kg)
         force_reading_N = round(force_reading_kg*9.81,3)
+=======
+        # force_reading_raw = cellInstance.cell.get_weight_mean(20)
+        force_reading_raw = random.random()
+        force_reading_kg = force_reading_raw/1000            #(grams to kg)
+        force_reading_N = force_reading_kg*9.81
+>>>>>>> 6ac06b5248fbdb73367d24660d091ea71bb20421
         pistonDiameter = 20 #mm
         r = pistonDiameter/2 #mm
         r_m = r/1000    # [m]
@@ -585,13 +663,13 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     mainWin = Ui_MainWindow()
-    cellInstance = LoadCell()
+    # cellInstance = LoadCell()
     mainWin.show()
 
     fps = 3
     timer = QtCore.QTimer()
     timer.timeout.connect(mainWin.UpdateGUI)
-    timer.setInterval(int(1000 / fps))
+    timer.setInterval(int(1000/fps))
     timer.start()
 
     sys.exit(app.exec_())
