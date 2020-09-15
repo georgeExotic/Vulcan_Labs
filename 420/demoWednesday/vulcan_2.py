@@ -262,7 +262,6 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.addTab(self.widget, "")
         self.tab_2 = QWidget()
         self.tab_2.setObjectName("tab_2")
-<<<<<<< HEAD
         self.lcdNumber = QLCDNumber(self.tab_2)                     #VALUE DISPLAY ON TAB 3
         self.lcdNumber.setGeometry(QtCore.QRect(350, 70, 191, 51))
         self.lcdNumber.setObjectName("lcdNumber2")
@@ -288,10 +287,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_8.setGeometry(QtCore.QRect(700, 280, 140, 30)) # Calibration Button
         self.pushButton_8.setObjectName("pushButton_8")
         self.pushButton_8.raise_() # -- Calibration Button
-=======
 
-        #Inits font for tab 3
->>>>>>> 6ac06b5248fbdb73367d24660d091ea71bb20421
         font = QtGui.QFont()
         font.setPointSize(18)
 
