@@ -323,15 +323,6 @@ class Ui_MainWindow(QMainWindow):
         self.label_tab2_pressure_units.setFont(font)
         self.label_tab2_pressure_units.setObjectName("label_tab2_pressure_units")
         self.label_tab2_pressure_units.setFont(QFont('Arial', 24))
-<<<<<<< HEAD
-        # self.label_tab2_load_units.setFont(font)
-        self.label_tab2_force.setObjectName('label_tab2_force')
-        self.label_tab2_load_units.setObjectName("label_tab2_load_units")
-        self.label_tab2_load_units.setFont(QFont('Arial', 24))
-        self.label_tab2_force_units.setObjectName("label_tab2_force_units")
-        self.label_tab2_force_units.setFont(QFont('Arial', 24))
-        self.label_tab2_force.setFont(font)
-=======
 
         #Inits load cell reading units label
         self.label_tab2_load_units = QLabel(self.tab_2)
@@ -347,7 +338,6 @@ class Ui_MainWindow(QMainWindow):
 
         # TAB 3 #
 
->>>>>>> 6ac06b5248fbdb73367d24660d091ea71bb20421
         self.tabWidget.addTab(self.tab_2, "")
         self.tab_3 = QWidget()
         self.tab_3.setObjectName("tab_3")
@@ -574,16 +564,9 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-<<<<<<< HEAD
         force_reading_raw = cellInstance.cell.get_weight_mean(20)
         force_reading_kg = round(force_reading_raw/1000,3)            #(grams to kg)
         force_reading_N = round(force_reading_kg*9.81,3)
-=======
-        # force_reading_raw = cellInstance.cell.get_weight_mean(20)
-        force_reading_raw = random.random()
-        force_reading_kg = force_reading_raw/1000            #(grams to kg)
-        force_reading_N = force_reading_kg*9.81
->>>>>>> 6ac06b5248fbdb73367d24660d091ea71bb20421
         pistonDiameter = 20 #mm
         r = pistonDiameter/2 #mm
         r_m = r/1000    # [m]
