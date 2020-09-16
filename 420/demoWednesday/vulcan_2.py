@@ -47,8 +47,8 @@ import random
 import sys
 import os
 import pickle
-# import RPi.GPIO as GPIO #import I/O interface
-# from hx711 import HX711 #import HX711 class
+import RPi.GPIO as GPIO #import I/O interface
+from hx711 import HX711 #import HX711 class
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt
@@ -545,7 +545,7 @@ class Ui_MainWindow(QMainWindow):
 
         # MIDDLEWARE
 
-        self.pushButton_8.clicked.connect(LoadCell.userCalibration)
+        self.pushButton_8.clicked.connect(LoadCell.calibrate)
         self.comboBox.currentIndexChanged.connect(self.updateMode)
 
 
@@ -560,7 +560,7 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-        force_reading_raw = cellInstance.cell.get_weight_mean(20)
+        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
         force_reading_kg = round(force_reading_raw/1000,3)            #(grams to kg)
         force_reading_N = round(force_reading_kg*9.81,3)
         pistonDiameter = 20 #mm
@@ -573,39 +573,41 @@ class Ui_MainWindow(QMainWindow):
         self.lcdNumber2.display(pressure_reading)
         self.lcdNumber3.display(force_reading_N)
         self.update()
-
+        # pass
 
     def UpdateGUI(self):
         self.UpdateForceReadingValue()
 
-class LoadCell():
-    def __init__(self):
+#Load Cell Class
+class LoadCell():   
+
+    #runs everytime am iostance of the load class is created
+    def __init__(self): 
         GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
-        self.pd_sckPin=20
-        self.dout_pin=21
-        cell = HX711(self.dout_pin,self.pd_sckPin)
-        self.recorded_configFile_name = 'swap_file.swp'
+        self.pd_sckPin=20   #Serial clock output pin 
+        self.dout_pin=21    #Serial data input pin 
+        self.cell = HX711(self.dout_pin,self.pd_sckPin) #instance of load cell passing data and clk pin 
+        self.calibrationFile = 'calibration.vlabs'  #file to look for
 
-
-        if os.path.isfile(self.recorded_configFile_name):
-            with open(self.recorded_configFile_name,'rb') as swap_file:
-                self.cell = pickle.load(swap_file)
-        else:
+        if os.path.isfile(self.calibrationFile):    #is find file
+            with open(self.calibrationFile,'rb') as File:   #read binary file instance 
+                self.cell = pickle.load(File)   #reload binary instance into self.class
+        else:   #if not find file
+            print("No Calibration File found, Calibration will begin now") # -- Send message to GUI
+            self.calibrate()
             
-            print("Please calibrate") # -- Send message to GUI
-            
 
-    def userCalibration(self, cell):
-        #send the user calibration message
-        pass
-        '''err = cell.zero()
+    def calibrate(self):
+        calibrationFile = 'calibration.vlabs'
+        dout_pin = 21
+        pd_sckPin = 20
+        cell = HX711(dout_pin,pd_sckPin)
+        err = cell.zero()
         if err:
             raise ValueError('Tare is unsuccessful.')
 
-        # In order to calculate the conversion ratio to some units, in my case I want grams,
-        # you must have known weight.
         input('Put known weight on the scale and then press Enter') # -- Send message to user; accept value from user (known weight)
-        reading = self.cell.get_data_mean()
+        reading = cell.get_data_mean()
         if reading:
             print('Mean value from HX711 subtracted by offset:', reading)
             known_weight_grams = input(
@@ -618,21 +620,21 @@ class LoadCell():
                       known_weight_grams)
 
             ratio = reading / value  # calculate the ratio for channel A and gain 128
-            self.cell.set_scale_ratio(ratio)  # set ratio for current channel
+            cell.set_scale_ratio(ratio)  # set ratio for current channel
             print('Ratio is set.')
         else:
             raise ValueError(
                 'Cannot calculate mean value. Try debug mode. Variable reading:',
-                reading)\
+                reading)
                     
         print('Saving the HX711 state to swap file on persistant memory')
-        with open(swap_file_name, 'wb') as swap_file:
-            pickle.dump(hx, swap_file)
-            swap_file.flush()
-            os.fsync(swap_file.fileno())
+        with open(calibrationFile, 'wb') as File:
+            pickle.dump(cell, File)
+            File.flush()
+            os.fsync(File.fileno())
             # you have to flush, fsynch and close the file all the time.
             # This will write the file to the drive. It is slow but safe.
-        print("tare is succesful")'''
+        print("tare is succesful")
 
 
 
@@ -642,7 +644,7 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     mainWin = Ui_MainWindow()
-    # cellInstance = LoadCell()
+    cellInstance = LoadCell()
     mainWin.show()
 
     fps = 3
