@@ -49,8 +49,8 @@ import sys
 import os
 import pickle
 import socket
-import RPi.GPIO as GPIO #import I/O interface
-from hx711 import HX711 #import HX711 class
+# import RPi.GPIO as GPIO #import I/O interface
+# from hx711 import HX711 #import HX711 class
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt
@@ -295,8 +295,10 @@ class Ui_MainWindow(QMainWindow):
         self.label_tab2_pressure_units.setGeometry(QtCore.QRect(550, 270, 300, 51))
         self.label_tab2_force = QLabel(self.tab_2)
         self.label_tab2_force.setGeometry(QtCore.QRect(20, 170, 300, 51))
+        self.label_tab2_force.setFont(QFont('Arial', 18))
         self.label_tab2_force_units = QLabel(self.tab_2)
         self.label_tab2_force_units.setGeometry(QtCore.QRect(550, 170, 300, 51))
+        self.label_tab2_force_units.setFont(QFont('Arial', 18))
         self.label_tab2_load_units = QLabel(self.tab_2)
         self.label_tab2_load_units.setGeometry(QtCore.QRect(550, 70, 300, 51))
         self.pushButton_8 = QPushButton(self.tab_2)
@@ -320,7 +322,7 @@ class Ui_MainWindow(QMainWindow):
         #Inits load cell reading label
         self.label_21 = QLabel(self.tab_2)
         self.label_21.setGeometry(QtCore.QRect(20, 70, 300, 51)) # pos and size
-        self.label_21.setFont(font)
+        self.label_21.setFont(QFont('Arial', 18))
         self.label_21.setObjectName("label_21")
 
         #Inits pressure reading label
@@ -334,13 +336,12 @@ class Ui_MainWindow(QMainWindow):
         self.label_tab2_pressure_units.setGeometry(QtCore.QRect(550, 270, 300, 51)) # pos and size
         self.label_tab2_pressure_units.setFont(font)
         self.label_tab2_pressure_units.setObjectName("label_tab2_pressure_units")
-        self.label_tab2_pressure_units.setFont(QFont('Arial', 24))
 
         #Inits load cell reading units label
         self.label_tab2_load_units = QLabel(self.tab_2)
         self.label_tab2_load_units.setGeometry(QtCore.QRect(550, 70, 300, 51)) # pos and size
         self.label_tab2_load_units.setObjectName("label_tab2_load_units")
-        self.label_tab2_load_units.setFont(QFont('Arial', 24))
+        self.label_tab2_load_units.setFont(QFont('Arial', 18))
 
         #Inits calibration button
         self.pushButton_8 = QPushButton(self.tab_2)
@@ -639,7 +640,8 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
+        force_reading_raw = random.random()
+        # force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
         force_reading_kg = round(force_reading_raw/1000,3)            #(grams to kg)
         force_reading_N = round(force_reading_kg*9.81,3)
         pistonDiameter = 20 #mm
@@ -667,6 +669,8 @@ class calibrationDialogWindow(QWidget):
         self.resize(300,200)
         self.cancel_button = QPushButton('Cancel')
         self.next_button = QPushButton('Next')
+        self.submit_button = QPushButton('Submit')
+        self.finish_button = QPushButton('Finish')
         self.dialogText = QLabel('\n\n Calibration requires an object of known weight to be placed on the scale')
         self.warningText = QLabel('\n\nWarning: Continuing will pause the program')
         self.setWindowTitle('Calibration')
@@ -689,39 +693,47 @@ class calibrationDialogWindow(QWidget):
     def getInputWindow(self):
         self.close()
         self.setWindowTitle('Calibration 2')
-        for i in reversed(range(self.layout().count())): 
+        self.knownGrams = 0
+        for i in reversed(range(self.layout().count())):        #Clears components from first window
             self.layout().itemAt(i).widget().deleteLater()
         self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
         self.inputWeight = QLineEdit()
         buttons = QWidget()
         buttons.setLayout(QHBoxLayout())
         buttons.layout().addWidget(self.cancel_button)
-        buttons.layout().addWidget(self.next_button)
+        buttons.layout().addWidget(self.submit_button)
         self.layout().addRow('',self.dialogText)
         self.layout().addRow('',self.inputWeight)
         self.layout().addRow('',buttons)
         # self.layout().resize(300,200)
         self.show()
 
-        self.next_button.clicked.connect(self.sendKnownInput((self.inputWeight.text())))
+        self.inputWeight.textChanged.connect(self.setKnownGrams)
+        self.submit_button.clicked.connect(self.sendKnownInput)
         self.cancel_button.clicked.connect(self.close)
 
+    def setKnownGrams(self,lineEdit):
+        self.knownGrams = self.inputWeight.text()
+
     #Sends known weight from user to Load cell calibration
-    def sendKnownInput(self,value):
+    def sendKnownInput(self):
         self.close()
         self.setWindowTitle('Calibration 3')
-        for i in reversed(range(self.layout().count())): 
+        for i in reversed(range(self.layout().count())):
             self.layout().itemAt(i).widget().deleteLater()
-        if Loadcell.calibrated == 1:
-            print("already calibrated")
-        else:
-            Loadcell.userCalibration(value)
+        print(f'user inputted value: {self.knownGrams}')
+        # LoadCell.userCalibration(self.knownGrams)
+        # while LoadCell.calibrated == 0:
+        #     self.dialogText = QLabel('Calibrating...')
         self.dialogText = QLabel('System calibrated')
         buttons = QWidget()
         buttons.setLayout(QHBoxLayout())
-        buttons.layout().addWidget(self.next_button)
+        buttons.layout().addWidget(self.finish_button)
         self.layout().addRow('',self.dialogText)
         self.layout().addRow('',buttons)
+        self.show()
+
+        self.finish_button.clicked.connect(self.close)
 
 
 class LoadCell():
@@ -780,6 +792,7 @@ class LoadCell():
             # you have to flush, fsynch and close the file all the time.
             # This will write the file to the drive. It is slow but safe.
         print("tare is succesful")
+        self.calibrated = 1
 
 
 
@@ -789,7 +802,7 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     mainWin = Ui_MainWindow()
-    cellInstance = LoadCell()
+    # cellInstance = LoadCell()
     mainWin.show()
 
     fps = 3
