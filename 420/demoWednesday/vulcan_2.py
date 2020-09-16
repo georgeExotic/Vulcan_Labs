@@ -72,7 +72,7 @@ class Ui_MainWindow(QMainWindow):
         self.modeSelected = 0                                   # 0:motion 1:pressure
         self.connectionState = 0                                # 0:No Connection 1:Connection Secure
         self.IpAdd = socket.gethostbyname(socket.gethostname())
-        self.systemState = 0                                    # 0:idle 1:Starting 2:Motion 3:Processing
+        self.systemState = 0                                    # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
         self.systemCalibrated = 0                               # 0: no 1: calibrated
         # self.elapsedTime = time.perf_counter()
 
@@ -514,7 +514,6 @@ class Ui_MainWindow(QMainWindow):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
-        ### --- ADDITIONAL COMPONENTS GO HERE --- ###
         # self.pixmap = QPixmap('VulcanLabsLogo.png')
         # self.labelLogo = QLabel(self)
         # self.labelLogo.setPixmap(self.pixmap)
@@ -626,6 +625,13 @@ class Ui_MainWindow(QMainWindow):
         # Update Mode after selection
         self.comboBox.currentIndexChanged.connect(self.updateMode)
 
+        # System state changes
+        self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
+        self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
+        self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
+        self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
+        # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
+
 
     def updateMode(self):
         mode = self.comboBox.currentText()
@@ -661,6 +667,19 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateGUI(self):
         self.UpdateForceReadingValue()
+
+    def updateSystemState(self,index):
+        self.systemState = int(index)
+        indices = {
+            0: "Idle",
+            1: "Starting",
+            2: "Running",
+            3: "Paused",
+            4: "Stopped",
+            5: "Processing"
+        }
+        self.label.setText("State: "+ str(indices[self.systemState]))
+        print(index)
 
 #Class handling calibration pop up boxes
 class calibrationDialogWindow(QWidget):
