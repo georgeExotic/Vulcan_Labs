@@ -12,7 +12,7 @@ try:
     hx = HX711(dout_pin=21, pd_sck_pin=20)
     # Check if we have swap file. If yes that suggest that the program was not
     # terminated proprly (power failure). We load the latest state.
-    swap_file_name = 'swap_file.swp'
+    swap_file_name = 'calibration.vlabs'
     if os.path.isfile(swap_file_name):
         with open(swap_file_name, 'rb') as swap_file:
             hx = pickle.load(swap_file)
@@ -26,6 +26,7 @@ try:
             raise ValueError('Tare is unsuccessful.')
 
         reading = hx.get_raw_data_mean()
+        print("raw data mean = ",reading)
         if reading:  # always check if you get correct value or only False
             # now the value is close to 0
             print('Data subtracted by offset but still not converted to units:',
@@ -37,6 +38,7 @@ try:
         # you must have known weight.
         input('Put known weight on the scale and then press Enter')
         reading = hx.get_data_mean()
+        print("data mean = ", reading)
         if reading:
             print('Mean value from HX711 subtracted by offset:', reading)
             known_weight_grams = input(
@@ -53,6 +55,7 @@ try:
             # scale ratio. Without arguments 'channel' and 'gain_A' it sets
             # the ratio for current channel and gain.
             ratio = reading / value  # calculate the ratio for channel A and gain 128
+            print(ratio)
             hx.set_scale_ratio(ratio)  # set ratio for current channel
             print('Ratio is set.')
         else:
@@ -76,7 +79,7 @@ try:
     print("Now, I will read data in infinite loop. To exit press 'CTRL + C'")
     input('Press Enter to begin reading')
     while True:
-        print(hx.get_weight_mean(20), 'g')
+        print(hx.get_weight_mean(5), 'g')
 
 except (KeyboardInterrupt, SystemExit):
     print('Bye :)')
