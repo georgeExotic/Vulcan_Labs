@@ -2,12 +2,14 @@
 
 import math
 import time
+import timeit
 import random
 import sys
 import os
 import pickle
-import RPi.GPIO as GPIO #import I/O interface
-from hx711 import HX711 #import HX711 class
+import socket
+# import RPi.GPIO as GPIO #import I/O interface
+# from hx711 import HX711 #import HX711 class
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt
@@ -16,14 +18,28 @@ from PyQt5.QtWidgets import (QSizePolicy,
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QDialogButtonBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLayout, 
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
-        QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow)
+        QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
 
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
     def __init__(self):
         super(Ui_MainWindow, self).__init__()
+        self.setupGlobalVars()
         self.setupUi()
-       
+
+    def setupGlobalVars(self):
+        self.modeSelected = 0                                   # 0:motion 1:pressure
+        self.connectionState = 0                                # 0:No Connection 1:Connection Secure
+        self.IpAdd = socket.gethostbyname(socket.gethostname())
+        self.systemState = 0                                    # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
+        self.systemCalibrated = 0                               # 0: no 1: calibrated
+        # self.elapsedTime = time.perf_counter()
+
+        self.desPos = 0
+        self.desPress = 0
+        self.curPos = 0
+        self.curPress = 0
+
     def setupUi(self):
 
         # -- INITIALIZATION -- #
@@ -238,8 +254,10 @@ class Ui_MainWindow(QMainWindow):
         self.label_tab2_pressure_units.setGeometry(QtCore.QRect(550, 270, 300, 51))
         self.label_tab2_force = QLabel(self.tab_2)
         self.label_tab2_force.setGeometry(QtCore.QRect(20, 170, 300, 51))
+        self.label_tab2_force.setFont(QFont('Arial', 18))
         self.label_tab2_force_units = QLabel(self.tab_2)
         self.label_tab2_force_units.setGeometry(QtCore.QRect(550, 170, 300, 51))
+        self.label_tab2_force_units.setFont(QFont('Arial', 18))
         self.label_tab2_load_units = QLabel(self.tab_2)
         self.label_tab2_load_units.setGeometry(QtCore.QRect(550, 70, 300, 51))
         self.pushButton_8 = QPushButton(self.tab_2)
@@ -263,7 +281,7 @@ class Ui_MainWindow(QMainWindow):
         #Inits load cell reading label
         self.label_21 = QLabel(self.tab_2)
         self.label_21.setGeometry(QtCore.QRect(20, 70, 300, 51)) # pos and size
-        self.label_21.setFont(font)
+        self.label_21.setFont(QFont('Arial', 18))
         self.label_21.setObjectName("label_21")
 
         #Inits pressure reading label
@@ -277,13 +295,12 @@ class Ui_MainWindow(QMainWindow):
         self.label_tab2_pressure_units.setGeometry(QtCore.QRect(550, 270, 300, 51)) # pos and size
         self.label_tab2_pressure_units.setFont(font)
         self.label_tab2_pressure_units.setObjectName("label_tab2_pressure_units")
-        self.label_tab2_pressure_units.setFont(QFont('Arial', 24))
 
         #Inits load cell reading units label
         self.label_tab2_load_units = QLabel(self.tab_2)
         self.label_tab2_load_units.setGeometry(QtCore.QRect(550, 70, 300, 51)) # pos and size
         self.label_tab2_load_units.setObjectName("label_tab2_load_units")
-        self.label_tab2_load_units.setFont(QFont('Arial', 24))
+        self.label_tab2_load_units.setFont(QFont('Arial', 18))
 
         #Inits calibration button
         self.pushButton_8 = QPushButton(self.tab_2)
@@ -293,17 +310,24 @@ class Ui_MainWindow(QMainWindow):
 
         # TAB 3 #
 
+        #Init tab 3
         self.tabWidget.addTab(self.tab_2, "")
         self.tab_3 = QWidget()
         self.tab_3.setObjectName("tab_3")
+
+        #Init data table area
         self.widget_2 = QWidget(self.tab_3)
-        self.widget_2.setGeometry(QtCore.QRect(9, 9, 994, 500)) # data table
+        self.widget_2.setGeometry(QtCore.QRect(9, 9, 994, 500)) # pos and size
         self.widget_2.setObjectName("widget_2")
+
+        #Init data table
         self.tableWidget = QTableWidget(self.widget_2)
-        self.tableWidget.setGeometry(QtCore.QRect(20, 20, 944, 340)) # data table
+        self.tableWidget.setGeometry(QtCore.QRect(20, 20, 944, 340)) # pos and size
         self.tableWidget.setObjectName("tableWidget")
-        self.tableWidget.setColumnCount(5)
-        self.tableWidget.setRowCount(9)
+        self.tableWidget.setColumnCount(5)  # col count
+        self.tableWidget.setRowCount(9)     # row count
+
+        #Init sample table items
         item = QTableWidgetItem()
         self.tableWidget.setVerticalHeaderItem(0, item)
         item = QTableWidgetItem()
@@ -332,85 +356,135 @@ class Ui_MainWindow(QMainWindow):
         self.tableWidget.setHorizontalHeaderItem(3, item)
         item = QTableWidgetItem()
         self.tableWidget.setHorizontalHeaderItem(4, item)
+
+        # TAB 4 #
+
+        #Init tab 4
         self.tabWidget.addTab(self.tab_3, "")
         self.tab_4 = QWidget()
         self.tab_4.setObjectName("tab_4")
+
+        #Init communication box area
         self.groupBox_7 = QGroupBox(self.tab_4)
-        self.groupBox_7.setGeometry(QtCore.QRect(10, 30, 400, 300)) # Communication group box
+        self.groupBox_7.setGeometry(QtCore.QRect(10, 30, 400, 300)) # pos and size
         self.groupBox_7.setObjectName("groupBox_7")
+
+        #Init connection label
         self.label_15 = QLabel(self.groupBox_7)
-        self.label_15.setGeometry(QtCore.QRect(10, 30, 200, 20)) # Connection label
+        self.label_15.setGeometry(QtCore.QRect(10, 30, 200, 20)) # pos and size
         self.label_15.setObjectName("label_15")
+
+        #Init IP label
         self.label_16 = QLabel(self.groupBox_7)
-        self.label_16.setGeometry(QtCore.QRect(10, 60, 100, 20)) # System IP label
+        self.label_16.setGeometry(QtCore.QRect(10, 60, 200, 20)) # pos and size
         self.label_16.setObjectName("label_16")
+
+        #Init Connection IP label
         self.label_17 = QLabel(self.groupBox_7)
-        self.label_17.setGeometry(QtCore.QRect(10, 90, 200, 21)) # Connection Device IP label
+        self.label_17.setGeometry(QtCore.QRect(10, 90, 200, 21)) # pos and size
         self.label_17.setObjectName("label_17")
+
+        #Init system group box area
         self.groupBox_9 = QGroupBox(self.tab_4)
-        self.groupBox_9.setGeometry(QtCore.QRect(440, 30, 401, 300)) # System group box
+        self.groupBox_9.setGeometry(QtCore.QRect(440, 30, 401, 300)) # pos and size
         self.groupBox_9.setObjectName("groupBox_9")
+
+        #Init system time label
         self.label_18 = QLabel(self.groupBox_9)
-        self.label_18.setGeometry(QtCore.QRect(10, 30, 200, 20)) # System Time
+        self.label_18.setGeometry(QtCore.QRect(10, 30, 200, 20)) # pos and size
         self.label_18.setObjectName("label_18")
+
+        #Init system date label
         self.label_19 = QLabel(self.groupBox_9)
-        self.label_19.setGeometry(QtCore.QRect(10, 60, 200, 20)) # System Date
+        self.label_19.setGeometry(QtCore.QRect(10, 60, 200, 20)) # pos and size
         self.label_19.setObjectName("label_19")
+
+        #Init system runtime label
         self.label_20 = QLabel(self.groupBox_9)
-        self.label_20.setGeometry(QtCore.QRect(10, 90, 200, 20)) # System Runtime
+        self.label_20.setGeometry(QtCore.QRect(10, 90, 200, 20)) # pos and size
         self.label_20.setObjectName("label_20")
+
+        # BOTTOM TAB #
+
+        #Init Bottom Area frame
         self.tabWidget.addTab(self.tab_4, "")
         self.frame_2 = QFrame(self.frame)
-        self.frame_2.setGeometry(QtCore.QRect(0, 440, 1004, 261)) # Bottom Area
+        self.frame_2.setGeometry(QtCore.QRect(0, 440, 1004, 261)) # pos and size
         self.frame_2.setFrameShape(QFrame.StyledPanel)
         self.frame_2.setFrameShadow(QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
+
+        #Init bottom box area
         self.groupBox = QGroupBox(self.frame_2)
-        self.groupBox.setGeometry(QtCore.QRect(10, 0, 1004, 300)) # Bottom Box
+        self.groupBox.setGeometry(QtCore.QRect(10, 0, 1004, 300)) # pos and size
         self.groupBox.setObjectName("groupBox")
+
+        #Init table layout
         self.tableView = QTableView(self.groupBox)
-        self.tableView.setGeometry(QtCore.QRect(10, 30, 980, 90)) # Bottom Text Area
+        self.tableView.setGeometry(QtCore.QRect(10, 30, 980, 90)) # pos and size
         self.tableView.setObjectName("tableView")
+
+        #Init connected label
         self.label = QLabel(self.groupBox)
-        self.label.setGeometry(QtCore.QRect(30, 40, 150, 20)) # Bottom Area, Connected label
+        self.label.setGeometry(QtCore.QRect(30, 40, 150, 20)) # pos and size
         self.label.setObjectName("label")
+
+        #Init system status label
         self.label_2 = QLabel(self.groupBox)
-        self.label_2.setGeometry(QtCore.QRect(30, 70, 150, 20)) # Bottom Area, System Status label
+        self.label_2.setGeometry(QtCore.QRect(30, 70, 150, 20)) # pos and size
         self.label_2.setObjectName("label_2")
+
+        #Init mode label
         self.label_3 = QLabel(self.groupBox)
-        self.label_3.setGeometry(QtCore.QRect(200, 40, 150, 20)) # Bottom Area, Mode Label
+        self.label_3.setGeometry(QtCore.QRect(200, 40, 150, 20)) # pos and size
         self.label_3.setObjectName("label_3")
         self.label_3_modeFeedback = QLabel(self.groupBox)
         self.label_3_modeFeedback.setGeometry(QtCore.QRect(250, 40, 150, 20))
         self.label_3_modeFeedback.setObjectName("label_3_modeFeedback")
+
+        #Init error label
         self.label_4 = QLabel(self.groupBox)
-        self.label_4.setGeometry(QtCore.QRect(200, 70, 150, 20)) # Bottom Area, Error Label
+        self.label_4.setGeometry(QtCore.QRect(200, 70, 150, 20)) # pos and size
         self.label_4.setObjectName("label_4")
+
+        #Init desired position label
         self.label_5 = QLabel(self.groupBox)
-        self.label_5.setGeometry(QtCore.QRect(480, 40, 150, 20)) # Bottom Area, Desired Position Label
+        self.label_5.setGeometry(QtCore.QRect(480, 40, 200, 20)) # pos and size
         self.label_5.setObjectName("label_5")
+
+        #Init desired pressure label
         self.label_6 = QLabel(self.groupBox)
-        self.label_6.setGeometry(QtCore.QRect(480, 70, 160, 20)) # Bottom Area, Desired Pressure Label
+        self.label_6.setGeometry(QtCore.QRect(480, 70, 200, 20)) # pos and size
         self.label_6.setObjectName("label_6")
+
+        #Init current pressure label
         self.label_7 = QLabel(self.groupBox)
-        self.label_7.setGeometry(QtCore.QRect(680, 70, 150, 20)) # Bottom Area, Current Pressure Label
+        self.label_7.setGeometry(QtCore.QRect(680, 70, 200, 20)) # pos and size
         self.label_7.setObjectName("label_7")
+
+        #Init desired position label
         self.label_8 = QLabel(self.groupBox)
-        self.label_8.setGeometry(QtCore.QRect(680, 40, 150, 20)) # Bottom Area, Desired Position Label
+        self.label_8.setGeometry(QtCore.QRect(680, 40, 200, 20)) # pos and size
         self.label_8.setObjectName("label_8")
+
+        #center main window with status bar
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
-        ### --- ADDITIONAL COMPONENTS GO HERE --- ###
         # self.pixmap = QPixmap('VulcanLabsLogo.png')
         # self.labelLogo = QLabel(self)
         # self.labelLogo.setPixmap(self.pixmap)
         # self.labelLogo.setGeometry(30,30,100,100)
-
+        
+        #run class fnc to annotate labels properly
         self.retranslateUi(MainWindow)
+
+        #set default index of GUI to tab 0
         self.tabWidget.setCurrentIndex(0)
+
+        #routing slots by name
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     # Annotate Labels and Components
@@ -434,7 +508,7 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox_6.setItemText(1, _translate("MainWindow", "MPa"))
         self.pushButton.setText(_translate("MainWindow", "STOP"))
         self.pushButton_2.setText(_translate("MainWindow", "Home"))
-        self.pushButton_8.setText(_translate("MainWindow", "Calibrate Now"))
+        self.pushButton_8.setText(_translate("MainWindow", "Calibrate"))
         self.pushButton_5.setText(_translate("MainWindow", "Down"))
         self.pushButton_6.setText(_translate("MainWindow", "Up"))
         self.groupBox_4.setTitle(_translate("MainWindow", "Jogging"))
@@ -484,7 +558,7 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Data"))
         self.groupBox_7.setTitle(_translate("MainWindow", "Communication"))
         self.label_15.setText(_translate("MainWindow", "Connection:"))
-        self.label_16.setText(_translate("MainWindow", "System IP:"))
+        self.label_16.setText(_translate("MainWindow", "System IP: "+self.IpAdd))
         self.label_17.setText(_translate("MainWindow", "Connected Device IP:"))
         self.groupBox_9.setTitle(_translate("MainWindow", "General"))
         self.label_18.setText(_translate("MainWindow", "System Time:"))
@@ -492,34 +566,47 @@ class Ui_MainWindow(QMainWindow):
         self.label_20.setText(_translate("MainWindow", "System Runtime:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "Configuration"))
         self.groupBox.setTitle(_translate("MainWindow", "System State"))
-        self.label.setText(_translate("MainWindow", "State: "))
-        self.label_2.setText(_translate("MainWindow", "System Status: Null"))
+        self.label.setText(_translate("MainWindow", "State: " + str(self.systemState)))
+        self.label_2.setText(_translate("MainWindow", "System Status: "+ str(self.systemState)))
         self.label_3.setText(_translate("MainWindow", "Mode: "))
         self.label_3_modeFeedback.setText(_translate("MainWindow", "Motion Limiting"))
-        self.label_4.setText(_translate("MainWindow", "Error: Null"))
-        self.label_5.setText(_translate("MainWindow", "Desired Position: Null"))
-        self.label_6.setText(_translate("MainWindow", "Desired Pressure: Null"))
-        self.label_7.setText(_translate("MainWindow", "Current Pressure: something"))
-        self.label_8.setText(_translate("MainWindow", "Current Position: Null"))
+        self.label_4.setText(_translate("MainWindow", "Error: "+str(self.systemState)))
+        self.label_5.setText(_translate("MainWindow", "Desired Position: "+str(self.desPos)))
+        self.label_6.setText(_translate("MainWindow", "Desired Pressure: "+str(self.desPress)))
+        self.label_7.setText(_translate("MainWindow", "Current Pressure: "+str(self.curPress)))
+        self.label_8.setText(_translate("MainWindow", "Current Position: "+str(self.curPos)))
 
-        # MIDDLEWARE
+        # -- ROUTING -- #
 
-        self.pushButton_8.clicked.connect(LoadCell.calibrate)
+        # Calibration Button
+        self.pushButton_8.clicked.connect(self.Calibration)
+
+        # Update Mode after selection
         self.comboBox.currentIndexChanged.connect(self.updateMode)
+
+        # System state changes
+        self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
+        self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
+        self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
+        self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
+        # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
 
     def updateMode(self):
         mode = self.comboBox.currentText()
         print(mode)
         if mode == "Motion Limiting":
+            self.modeSelected = 0
             self.label_3_modeFeedback.setText("Motion Limiting")
         else:
+            self.modeSelected = 1
             self.label_3_modeFeedback.setText("Pressure Limiting")
 
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
+        force_reading_raw = random.random()
+        # force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
         force_reading_kg = round(force_reading_raw/1000,3)            #(grams to kg)
         force_reading_N = round(force_reading_kg*9.81,3)
         pistonDiameter = 20 #mm
@@ -532,35 +619,123 @@ class Ui_MainWindow(QMainWindow):
         self.lcdNumber2.display(pressure_reading)
         self.lcdNumber3.display(force_reading_N)
         self.update()
-        # pass
+
+    def Calibration(self):
+        self.dialog = calibrationDialogWindow()
+        self.dialog.show()
 
     def UpdateGUI(self):
         self.UpdateForceReadingValue()
 
-#Load Cell Class
-class LoadCell():   
+    def updateSystemState(self,index):
+        self.systemState = int(index)
+        indices = {
+            0: "Idle",
+            1: "Starting",
+            2: "Running",
+            3: "Paused",
+            4: "Stopped",
+            5: "Processing"
+        }
+        self.label.setText("State: "+ str(indices[self.systemState]))
+        print(index)
 
-    #runs everytime am iostance of the load class is created
-    def __init__(self): 
+#Class handling calibration pop up boxes
+class calibrationDialogWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.resize(300,200)
+        self.cancel_button = QPushButton('Cancel')
+        self.next_button = QPushButton('Next')
+        self.submit_button = QPushButton('Submit')
+        self.finish_button = QPushButton('Finish')
+        self.dialogText = QLabel('\n\n Calibration requires an object of known weight to be placed on the scale')
+        self.warningText = QLabel('\n\nWarning: Continuing will pause the program')
+        self.setWindowTitle('Calibration')
+
+        #Initializes layout
+        self.setLayout(QFormLayout())
+        self.layout().addRow(self.dialogText)
+        buttons = QWidget()
+        buttons.setLayout(QHBoxLayout())
+        buttons.layout().addWidget(self.cancel_button)
+        buttons.layout().addWidget(self.next_button)
+        self.layout().addRow('', buttons)
+        self.layout().addRow('',self.warningText)
+
+        #Routes front end to back end
+        self.next_button.clicked.connect(self.getInputWindow)
+        self.cancel_button.clicked.connect(self.close)
+
+    #Second window in calibration branch
+    def getInputWindow(self):
+        self.close()
+        self.setWindowTitle('Calibration 2')
+        self.knownGrams = 0
+        for i in reversed(range(self.layout().count())):        #Clears components from first window
+            self.layout().itemAt(i).widget().deleteLater()
+        self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
+        self.inputWeight = QLineEdit()
+        buttons = QWidget()
+        buttons.setLayout(QHBoxLayout())
+        buttons.layout().addWidget(self.cancel_button)
+        buttons.layout().addWidget(self.submit_button)
+        self.layout().addRow('',self.dialogText)
+        self.layout().addRow('',self.inputWeight)
+        self.layout().addRow('',buttons)
+        # self.layout().resize(300,200)
+        self.show()
+
+        self.inputWeight.textChanged.connect(self.setKnownGrams)
+        self.submit_button.clicked.connect(self.sendKnownInput)
+        self.cancel_button.clicked.connect(self.close)
+
+    def setKnownGrams(self,lineEdit):
+        self.knownGrams = self.inputWeight.text()
+
+    #Sends known weight from user to Load cell calibration
+    def sendKnownInput(self):
+        self.close()
+        self.setWindowTitle('Calibration 3')
+        for i in reversed(range(self.layout().count())):
+            self.layout().itemAt(i).widget().deleteLater()
+        print(f'user inputted value: {self.knownGrams}')
+        # LoadCell.userCalibration(self.knownGrams)
+        # while LoadCell.calibrated == 0:
+        #     self.dialogText = QLabel('Calibrating...')
+        self.dialogText = QLabel('System calibrated')
+        buttons = QWidget()
+        buttons.setLayout(QHBoxLayout())
+        buttons.layout().addWidget(self.finish_button)
+        self.layout().addRow('',self.dialogText)
+        self.layout().addRow('',buttons)
+        self.show()
+
+        self.finish_button.clicked.connect(self.close)
+
+
+class LoadCell():
+    def __init__(self):
         GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
-        self.pd_sckPin=20   #Serial clock output pin 
-        self.dout_pin=21    #Serial data input pin 
-        self.cell = HX711(self.dout_pin,self.pd_sckPin) #instance of load cell passing data and clk pin 
-        self.calibrationFile = 'calibration.vlabs'  #file to look for
+        self.pd_sckPin=20
+        self.dout_pin=21
+        cell = HX711(self.dout_pin,self.pd_sckPin)
+        self.recorded_configFile_name = 'swap_file.swp'
+        self.calibrated = 0
 
-        if os.path.isfile(self.calibrationFile):    #is find file
-            with open(self.calibrationFile,'rb') as File:   #read binary file instance 
-                self.cell = pickle.load(File)   #reload binary instance into self.class
-        else:   #if not find file
-            print("No Calibration File found, Calibration will begin now") # -- Send message to GUI
-            self.calibrate()
+
+        if os.path.isfile(self.recorded_configFile_name):
+            with open(self.recorded_configFile_name,'rb') as swap_file:
+                self.cell = pickle.load(swap_file)
+                self.calibrated = 1
+        else:
+            self.calibrated = 0
+            print("Please calibrate") # -- Send message to GUI
             
 
-    def calibrate(self):
-        calibrationFile = 'calibration.vlabs'
-        dout_pin = 21
-        pd_sckPin = 20
-        cell = HX711(dout_pin,pd_sckPin)
+    def userCalibration(self, knownGrams):
+        cell = self.cell
+        #send the user calibration message
         err = cell.zero()
         if err:
             raise ValueError('Tare is unsuccessful.')
@@ -568,9 +743,10 @@ class LoadCell():
         input('Put known weight on the scale and then press Enter') # -- Send message to user; accept value from user (known weight)
         reading = cell.get_data_mean()
         if reading:
-            print('Mean value from HX711 subtracted by offset:', reading)
-            known_weight_grams = input(
-                'Write how many grams it was and press Enter: ')
+            # print('Mean value from HX711 subtracted by offset:', reading)
+            # known_weight_grams = input(
+                # 'Write how many grams it was and press Enter: ')
+            known_weight_grams = knownGrams
             try:
                 value = float(known_weight_grams)
                 print(value, 'grams')
@@ -594,6 +770,7 @@ class LoadCell():
             # you have to flush, fsynch and close the file all the time.
             # This will write the file to the drive. It is slow but safe.
         print("tare is succesful")
+        self.calibrated = 1
 
 
 
