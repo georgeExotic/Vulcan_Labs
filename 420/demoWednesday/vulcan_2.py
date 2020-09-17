@@ -549,7 +549,7 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox_6.setItemText(1, _translate("MainWindow", "MPa"))
         self.pushButton.setText(_translate("MainWindow", "STOP"))
         self.pushButton_2.setText(_translate("MainWindow", "Home"))
-        self.pushButton_8.setText(_translate("MainWindow", "Calibration"))
+        self.pushButton_8.setText(_translate("MainWindow", "Calibrate"))
         self.pushButton_5.setText(_translate("MainWindow", "Down"))
         self.pushButton_6.setText(_translate("MainWindow", "Up"))
         self.groupBox_4.setTitle(_translate("MainWindow", "Jogging"))
