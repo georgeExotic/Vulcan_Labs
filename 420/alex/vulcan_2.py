@@ -1,46 +1,5 @@
 #!/usr/bin/env python
 
-
-#############################################################################
-##
-## Copyright (C) 2013 Riverbank Computing Limited.
-## Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-## All rights reserved.
-##
-## This file is part of the examples of PyQt.
-##
-## $QT_BEGIN_LICENSE:BSD$
-## You may use this file under the terms of the BSD license as follows:
-##
-## "Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-##   * Redistributions of source code must retain the above copyright
-##     notice, this list of conditions and the following disclaimer.
-##   * Redistributions in binary form must reproduce the above copyright
-##     notice, this list of conditions and the following disclaimer in
-##     the documentation and/or other materials provided with the
-##     distribution.
-##   * Neither the name of Nokia Corporation and its Subsidiary(-ies) nor
-##     the names of its contributors may be used to endorse or promote
-##     products derived from this software without specific prior written
-##     permission.
-##
-## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-## "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-## LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-## A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-## OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-## SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-## LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-## DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-## THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-## (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-## OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-## $QT_END_LICENSE$
-##
-#############################################################################
-
 import math
 import time
 import timeit
@@ -49,11 +8,13 @@ import sys
 import os
 import pickle
 import socket
-# import RPi.GPIO as GPIO #import I/O interface
-# from hx711 import HX711 #import HX711 class
+import traceback
+# import RPi.GPIO as GPIO #import I/O interface             #
+# from hx711 import HX711 #import HX711 class               #
+
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
-from PyQt5.QtCore import QPoint, QRect, QSize, Qt
+from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable
 from PyQt5.QtWidgets import (QSizePolicy,
         QWidget, QFrame)
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
@@ -61,18 +22,78 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
 
+
+class WorkerSignals(QObject):
+    '''
+    Defines signals that can be used from running worker thread
+
+    finished
+        No data
+
+    error
+        'tuple' (exectpye, value, traceback.format_exec() )
+
+    result
+        'object' data returned from processing, anything
+
+    progress
+        'int' indicating % progress
+    '''
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal(object)
+    progress = pyqtSignal(int)
+
+class Worker(QRunnable):
+    '''
+    Worker thread
+
+    Inherits from QRunnable to handle worker thread setup and signals
+
+    :param callback: The callback function to run on this worker thread with args and kwargs
+    :type callback: function
+    :param args: Arguments to pass to callback
+    :pram kwargs: Keywords to pass to callback
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+        self.kwargs['progress_callback'] = self.signals.progress
+
+    @pyqtSlot()
+    def run(self):
+        '''Inits the function passed in with passed args and kwargs'''
+        try:
+            result = self.fn(*self.args, **self.kwargs)
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)
+        finally:
+            self.signals.finished.emit()
+
+    
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
-    def __init__(self):
-        super(Ui_MainWindow, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(Ui_MainWindow, self).__init__(*args, **kwargs)
         self.setupGlobalVars()
         self.setupUi()
+        self.threadpool = QThreadPool()
 
     def setupGlobalVars(self):
         self.modeSelected = 0                                   # 0:motion 1:pressure
         self.connectionState = 0                                # 0:No Connection 1:Connection Secure
         self.IpAdd = socket.gethostbyname(socket.gethostname())
-        self.systemState = 0                                    # 0:idle 1:Starting 2:Motion 3:Processing
+        self.systemState = 0                                    # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
         self.systemCalibrated = 0                               # 0: no 1: calibrated
         # self.elapsedTime = time.perf_counter()
 
@@ -514,7 +535,6 @@ class Ui_MainWindow(QMainWindow):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
-        ### --- ADDITIONAL COMPONENTS GO HERE --- ###
         # self.pixmap = QPixmap('VulcanLabsLogo.png')
         # self.labelLogo = QLabel(self)
         # self.labelLogo.setPixmap(self.pixmap)
@@ -550,7 +570,7 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox_6.setItemText(1, _translate("MainWindow", "MPa"))
         self.pushButton.setText(_translate("MainWindow", "STOP"))
         self.pushButton_2.setText(_translate("MainWindow", "Home"))
-        self.pushButton_8.setText(_translate("MainWindow", "Calibration"))
+        self.pushButton_8.setText(_translate("MainWindow", "Calibrate"))
         self.pushButton_5.setText(_translate("MainWindow", "Down"))
         self.pushButton_6.setText(_translate("MainWindow", "Up"))
         self.groupBox_4.setTitle(_translate("MainWindow", "Jogging"))
@@ -621,11 +641,45 @@ class Ui_MainWindow(QMainWindow):
         # -- ROUTING -- #
 
         # Calibration Button
-        self.pushButton_8.clicked.connect(self.Calibration)
+        self.pushButton_8.clicked.connect(self.Calibration) #cellInstance.user
 
         # Update Mode after selection
         self.comboBox.currentIndexChanged.connect(self.updateMode)
 
+        # System state changes
+        self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
+        self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
+        self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
+        self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
+        self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
+        # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
+
+        # self.checkCalibration()
+
+        # self.setWorker(self.execute_this_fn)
+
+    def print_output(self, s):
+        print(s)
+
+    def thread_complete(self):
+        print("thread complete")
+
+    def progress_fn(self, n):
+        print("%d%% done" % n)
+
+    def execute_this_fn(self, progress_callback):
+        for n in range(0, 5):
+            time.sleep(1)
+            progress_callback.emit(n*100/4)
+        return "Done."
+
+    def setWorker(self, fn):
+        worker = Worker(fn)
+        worker.signals.result.connect(self.print_output)
+        worker.signals.finished.connect(self.thread_complete)
+        worker.signals.progress.connect(self.progress_fn)
+
+        self.threadpool.start(worker)
 
     def updateMode(self):
         mode = self.comboBox.currentText()
@@ -637,11 +691,10 @@ class Ui_MainWindow(QMainWindow):
             self.modeSelected = 1
             self.label_3_modeFeedback.setText("Pressure Limiting")
 
-
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
         force_reading_raw = random.random()
-        # force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
+        # force_reading_raw = cellInstance.cell.get_weight_mean(2)    #5 recomended for accuracy 
         force_reading_kg = round(force_reading_raw/1000,3)            #(grams to kg)
         force_reading_N = round(force_reading_kg*9.81,3)
         pistonDiameter = 20 #mm
@@ -653,14 +706,59 @@ class Ui_MainWindow(QMainWindow):
         self.lcdNumber.display(force_reading_kg)
         self.lcdNumber2.display(pressure_reading)
         self.lcdNumber3.display(force_reading_N)
+        self.label_7.setText("Current Pressure: "+str(pressure_reading)+" "+"kPa")
         self.update()
 
     def Calibration(self):
         self.dialog = calibrationDialogWindow()
         self.dialog.show()
 
+    def checkCalibration(self):
+        if cellInstance.calibrated == 1:
+            pass
+        else:
+            self.calibrationWarn()
+
+    def calibrationWarn(self):
+        self.dialog2 = calibrationWarning()
+        self.dialog2.show()
+
     def UpdateGUI(self):
         self.UpdateForceReadingValue()
+
+    def updateSystemState(self,index):
+        self.systemState = int(index)
+        indices = {
+            0: "Idle",
+            1: "Starting",
+            2: "Running",
+            3: "Paused",
+            4: "Stopped",
+            5: "Processing"
+        }
+        self.label.setText("State: "+ str(indices[self.systemState]))
+        print(index)
+
+class calibrationWarning(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.ok_button = QPushButton('Ok')
+        self.cal_button = QPushButton('Calibrate')
+        self.dialog = QLabel("Load cell is not calibrated. Please calibrate.")
+        self.setWindowTitle('Warning')
+
+        self.setLayout(QFormLayout())
+        self.layout().addRow(self.dialog)
+        buttons = QWidget()
+        buttons.setLayout(QHBoxLayout())
+        buttons.layout().addWidget(self.ok_button)
+        # buttons.layout().addWidget(self.cal_button)
+        self.layout().addRow('', buttons)
+
+        #Routes front end to back end
+        self.ok_button.clicked.connect(self.close)
+        self.ok_button.clicked.connect(self.close)
+        # self.cal_button.clicked.connect(Ui_MainWindow.Calibration)
 
 #Class handling calibration pop up boxes
 class calibrationDialogWindow(QWidget):
@@ -686,8 +784,29 @@ class calibrationDialogWindow(QWidget):
         self.layout().addRow('',self.warningText)
 
         #Routes front end to back end
+
         self.next_button.clicked.connect(self.getInputWindow)
+        self.next_button.clicked.connect(self.startCalibration)
+        self.next_button.clicked.connect(self.collectingDataWindow)
         self.cancel_button.clicked.connect(self.close)
+
+    def collectingDataWindow(self):
+        self.close()
+        self.setWindowTitle('Calibration 3')
+        for i in reversed(range(self.layout().count())):        #Clears components from first window
+            self.layout().itemAt(i).widget().deleteLater()
+        self.dialogText = QLabel('Initializing...')
+        self.layout().addRow('',self.dialogText)
+        self.show()
+        # while cellInstance.initializing == 1:
+        #     self.dialogText = QLabel('Initializing.')
+        #     time.sleep(1)
+        #     self.dialogText = QLabel('Initializing..')
+        #     time.sleep(1)
+        #     self.dialogText = QLabel('Initializing...')
+        self.close()
+
+
 
     #Second window in calibration branch
     def getInputWindow(self):
@@ -708,12 +827,17 @@ class calibrationDialogWindow(QWidget):
         # self.layout().resize(300,200)
         self.show()
 
+
         self.inputWeight.textChanged.connect(self.setKnownGrams)
         self.submit_button.clicked.connect(self.sendKnownInput)
         self.cancel_button.clicked.connect(self.close)
 
     def setKnownGrams(self,lineEdit):
         self.knownGrams = self.inputWeight.text()
+
+    def startCalibration(self):
+        print("calibration started")
+        # cellInstance.userCalibrationPart1()
 
     #Sends known weight from user to Load cell calibration
     def sendKnownInput(self):
@@ -722,16 +846,24 @@ class calibrationDialogWindow(QWidget):
         for i in reversed(range(self.layout().count())):
             self.layout().itemAt(i).widget().deleteLater()
         print(f'user inputted value: {self.knownGrams}')
-        # LoadCell.userCalibration(self.knownGrams)
         # while LoadCell.calibrated == 0:
         #     self.dialogText = QLabel('Calibrating...')
-        self.dialogText = QLabel('System calibrated')
+        self.dialogText = QLabel('Calibrating')
         buttons = QWidget()
         buttons.setLayout(QHBoxLayout())
         buttons.layout().addWidget(self.finish_button)
         self.layout().addRow('',self.dialogText)
         self.layout().addRow('',buttons)
         self.show()
+
+        # cellInstance.userCalibrationPart2(self.knownGrams)
+
+        # while cellInstance.initializing == 1:
+        #     self.dialogText = QLabel('Calibrating.')
+        #     time.sleep(1)
+        #     self.dialogText = QLabel('Calibrating..')
+        #     time.sleep(1)
+        #     self.dialogText = QLabel('Calibrating...')
 
         self.finish_button.clicked.connect(self.close)
 
@@ -741,33 +873,35 @@ class LoadCell():
         GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
         self.pd_sckPin=20
         self.dout_pin=21
-        cell = HX711(self.dout_pin,self.pd_sckPin)
-        self.recorded_configFile_name = 'swap_file.swp'
-        self.calibrated = 0
-
-
+        self.recorded_configFile_name = 'calibration.vlabs'
+        self.cell = HX711(self.dout_pin,self.pd_sckPin)
         if os.path.isfile(self.recorded_configFile_name):
-            with open(self.recorded_configFile_name,'rb') as swap_file:
-                self.cell = pickle.load(swap_file)
+            with open(self.recorded_configFile_name,'rb') as File:
+                self.cell = pickle.load(File)   #loading calibrated HX711 object
                 self.calibrated = 1
         else:
             self.calibrated = 0
-            print("Please calibrate") # -- Send message to GUI
-            
-
-    def userCalibration(self, knownGrams):
-        cell = self.cell
+        self.reading = 0
+        self.initializing = 0
+ 
+    def userCalibrationPart1(self):
+        self.cell = HX711(self.dout_pin,self.pd_sckPin)
         #send the user calibration message
-        err = cell.zero()
+        err = self.cell.zero()
         if err:
             raise ValueError('Tare is unsuccessful.')
+        self.initializing = 1
+        self.reading = self.cell.get_raw_data_mean()
+        self.initializing = 0
+        print(f'raw_data_mean: {self.reading}, predicted ratio = {self.reading/198}')
 
-        input('Put known weight on the scale and then press Enter') # -- Send message to user; accept value from user (known weight)
-        reading = cell.get_data_mean()
-        if reading:
-            # print('Mean value from HX711 subtracted by offset:', reading)
-            # known_weight_grams = input(
-                # 'Write how many grams it was and press Enter: ')
+    def userCalibrationPart2(self,knownGrams):
+        self.initializing = 1
+        self.reading = self.cell.get_data_mean()
+        fileName = 'calibration.vlabs'
+        print(f'get_data_mean: {self.reading}, predicted ratio = {self.reading/198}')
+
+        if self.reading:
             known_weight_grams = knownGrams
             try:
                 value = float(known_weight_grams)
@@ -776,33 +910,37 @@ class LoadCell():
                 print('Expected integer or float and I have got:',
                       known_weight_grams)
 
-            ratio = reading / value  # calculate the ratio for channel A and gain 128
-            cell.set_scale_ratio(ratio)  # set ratio for current channel
+            ratio = self.reading / value  # calculate the ratio for channel A and gain 128
+            print(ratio)
+            self.cell.set_scale_ratio(ratio)  # set ratio for current channel
             print('Ratio is set.')
         else:
             raise ValueError(
                 'Cannot calculate mean value. Try debug mode. Variable reading:',
-                reading)
+                self.reading)
                     
         print('Saving the HX711 state to swap file on persistant memory')
-        with open(calibrationFile, 'wb') as File:
-            pickle.dump(cell, File)
+        with open(fileName, 'wb') as File:
+            pickle.dump(self.cell, File)
             File.flush()
             os.fsync(File.fileno())
             # you have to flush, fsynch and close the file all the time.
             # This will write the file to the drive. It is slow but safe.
+
+        if os.path.isfile(self.recorded_configFile_name):
+            with open(self.recorded_configFile_name,'rb') as File:
+                self.cell = pickle.load(File)   #loading calibrated HX711 object
+                self.calibrated = 1
+        
+        self.initializing = 0
+
         print("tare is succesful")
-        self.calibrated = 1
-
-
-
 
                 
 if __name__ == '__main__':
-
+    # cellInstance = LoadCell()
     app = QApplication(sys.argv)
     mainWin = Ui_MainWindow()
-    # cellInstance = LoadCell()
     mainWin.show()
 
     fps = 3
@@ -812,3 +950,4 @@ if __name__ == '__main__':
     timer.start()
 
     sys.exit(app.exec_())
+

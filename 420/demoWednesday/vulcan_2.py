@@ -8,8 +8,8 @@ import sys
 import os
 import pickle
 import socket
-import RPi.GPIO as GPIO #import I/O interface
-from hx711 import HX711 #import HX711 class
+import RPi.GPIO as GPIO #import I/O interface             #
+from hx711 import HX711 #import HX711 class               #
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt
@@ -670,6 +670,7 @@ class calibrationWarning(QWidget):
 
         #Routes front end to back end
         self.ok_button.clicked.connect(self.close)
+        self.ok_button.clicked.connect(self.close)
         # self.cal_button.clicked.connect(Ui_MainWindow.Calibration)
 
 #Class handling calibration pop up boxes
@@ -696,9 +697,29 @@ class calibrationDialogWindow(QWidget):
         self.layout().addRow('',self.warningText)
 
         #Routes front end to back end
+
         self.next_button.clicked.connect(self.getInputWindow)
         self.next_button.clicked.connect(self.startCalibration)
+        self.next_button.clicked.connect(self.collectingDataWindow)
         self.cancel_button.clicked.connect(self.close)
+
+    def collectingDataWindow(self):
+        self.close()
+        self.setWindowTitle('Calibration 3')
+        for i in reversed(range(self.layout().count())):        #Clears components from first window
+            self.layout().itemAt(i).widget().deleteLater()
+        self.dialogText = QLabel('Initializing...')
+        self.layout().addRow('',self.dialogText)
+        self.show()
+        while cellInstance.initializing == 1:
+            self.dialogText = QLabel('Initializing.')
+            time.sleep(1)
+            self.dialogText = QLabel('Initializing..')
+            time.sleep(1)
+            self.dialogText = QLabel('Initializing...')
+        self.close()
+
+
 
     #Second window in calibration branch
     def getInputWindow(self):
@@ -719,6 +740,7 @@ class calibrationDialogWindow(QWidget):
         # self.layout().resize(300,200)
         self.show()
 
+
         self.inputWeight.textChanged.connect(self.setKnownGrams)
         self.submit_button.clicked.connect(self.sendKnownInput)
         self.cancel_button.clicked.connect(self.close)
@@ -736,16 +758,24 @@ class calibrationDialogWindow(QWidget):
         for i in reversed(range(self.layout().count())):
             self.layout().itemAt(i).widget().deleteLater()
         print(f'user inputted value: {self.knownGrams}')
-        cellInstance.userCalibrationPart2(self.knownGrams)
         # while LoadCell.calibrated == 0:
         #     self.dialogText = QLabel('Calibrating...')
-        self.dialogText = QLabel('System calibrated')
+        self.dialogText = QLabel('Calibrating')
         buttons = QWidget()
         buttons.setLayout(QHBoxLayout())
         buttons.layout().addWidget(self.finish_button)
         self.layout().addRow('',self.dialogText)
         self.layout().addRow('',buttons)
         self.show()
+
+        cellInstance.userCalibrationPart2(self.knownGrams)
+
+        while cellInstance.initializing == 1:
+            self.dialogText = QLabel('Calibrating.')
+            time.sleep(1)
+            self.dialogText = QLabel('Calibrating..')
+            time.sleep(1)
+            self.dialogText = QLabel('Calibrating...')
 
         self.finish_button.clicked.connect(self.close)
 
@@ -764,6 +794,7 @@ class LoadCell():
         else:
             self.calibrated = 0
         self.reading = 0
+        self.initializing = 0
  
     def userCalibrationPart1(self):
         self.cell = HX711(self.dout_pin,self.pd_sckPin)
@@ -772,11 +803,13 @@ class LoadCell():
         err = self.cell.zero()
         if err:
             raise ValueError('Tare is unsuccessful.')
-
+        self.initializing = 1
         self.reading = self.cell.get_raw_data_mean()
+        self.initializing = 0
         print(f'raw_data_mean: {self.reading}, predicted ratio = {self.reading/198}')
 
     def userCalibrationPart2(self,knownGrams):
+        self.initializing = 1
         self.reading = self.cell.get_data_mean()
         fileName = 'calibration.vlabs'
         print(f'get_data_mean: {self.reading}, predicted ratio = {self.reading/198}')
@@ -811,6 +844,8 @@ class LoadCell():
             with open(self.recorded_configFile_name,'rb') as File:
                 self.cell = pickle.load(File)   #loading calibrated HX711 object
                 self.calibrated = 1
+        
+        self.initializing = 0
 
         print("tare is succesful")
 
