@@ -646,6 +646,10 @@ class Ui_MainWindow(QMainWindow):
         # Update Mode after selection
         self.comboBox.currentIndexChanged.connect(self.updateMode)
 
+        # Update desired parameters
+        self.lineEdit_4.textChanged.connect(self.updateDesiredParam)
+        self.comboBox_6.currentIndexChanged.connect(self.updateDesiredParam)
+
         # System state changes
         self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
         self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
@@ -739,6 +743,8 @@ class Ui_MainWindow(QMainWindow):
         self.label.setText("State: "+ str(indices[self.systemState]))
         print(index)
 
+    def updateDesiredParam(self):
+        self.label_6.setText(f"Desired Pressure: {self.lineEdit_4.text()} {self.comboBox_6.currentText()}")
 class calibrationWarning(QWidget):
     def __init__(self):
         super().__init__()
