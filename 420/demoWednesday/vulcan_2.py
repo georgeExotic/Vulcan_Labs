@@ -589,7 +589,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_8.clicked.connect(self.Calibration) #cellInstance.user
 
         # Tare Button
-        self.tareButton.clicked.connect(self.Calibration) #### CHANGE TO TARE FUNCTION ###
+        self.tareButton.clicked.connect(self.tare) #### CHANGE TO TARE FUNCTION ###
 
         # Update Mode after selection
         self.comboBox.currentIndexChanged.connect(self.updateMode)
@@ -603,6 +603,8 @@ class Ui_MainWindow(QMainWindow):
 
         self.checkCalibration()
 
+    def tare(self):
+        cellInstance.zeroCell()
 
     def updateMode(self):
         mode = self.comboBox.currentText()
@@ -857,7 +859,11 @@ class LoadCell():
         
         self.initializing = 0
 
-        print("tare is succesful")
+    def zeroCell(self):
+        self.cell.zero()
+        self.tare = 1 
+
+        print("Calibration is succesful")
 
 
 
