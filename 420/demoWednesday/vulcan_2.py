@@ -308,6 +308,12 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_8.setObjectName("pushButton_8")
         self.pushButton_8.raise_() # brings to front
 
+        #Inits tare button
+        self.tareButton = QPushButton(self.tab_2)
+        self.tareButton.setGeometry(QtCore.QRect(700, 220, 140, 30)) # tare Button
+        self.tareButton.setObjectName("tareButton")
+        self.tareButton.raise_() # -- tare Button
+
         # TAB 3 #
 
         #Init tab 3
@@ -509,6 +515,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.setText(_translate("MainWindow", "STOP"))
         self.pushButton_2.setText(_translate("MainWindow", "Home"))
         self.pushButton_8.setText(_translate("MainWindow", "Calibrate"))
+        self.tareButton.setText(_translate("MainWindow", "Tare"))
         self.pushButton_5.setText(_translate("MainWindow", "Down"))
         self.pushButton_6.setText(_translate("MainWindow", "Up"))
         self.groupBox_4.setTitle(_translate("MainWindow", "Jogging"))
@@ -580,6 +587,9 @@ class Ui_MainWindow(QMainWindow):
 
         # Calibration Button
         self.pushButton_8.clicked.connect(self.Calibration) #cellInstance.user
+
+        # Tare Button
+        self.tareButton.clicked.connect(self.Calibration) #### CHANGE TO TARE FUNCTION ###
 
         # Update Mode after selection
         self.comboBox.currentIndexChanged.connect(self.updateMode)

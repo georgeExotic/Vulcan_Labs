@@ -23,62 +23,62 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
 
 
-class WorkerSignals(QObject):
-    '''
-    Defines signals that can be used from running worker thread
+# class WorkerSignals(QObject):
+#     '''
+#     Defines signals that can be used from running worker thread
 
-    finished
-        No data
+#     finished
+#         No data
 
-    error
-        'tuple' (exectpye, value, traceback.format_exec() )
+#     error
+#         'tuple' (exectpye, value, traceback.format_exec() )
 
-    result
-        'object' data returned from processing, anything
+#     result
+#         'object' data returned from processing, anything
 
-    progress
-        'int' indicating % progress
-    '''
-    finished = pyqtSignal()
-    error = pyqtSignal(tuple)
-    result = pyqtSignal(object)
-    progress = pyqtSignal(int)
+#     progress
+#         'int' indicating % progress
+#     '''
+#     finished = pyqtSignal()
+#     error = pyqtSignal(tuple)
+#     result = pyqtSignal(object)
+#     progress = pyqtSignal(int)
 
-class Worker(QRunnable):
-    '''
-    Worker thread
+# class Worker(QRunnable):
+#     '''
+#     Worker thread
 
-    Inherits from QRunnable to handle worker thread setup and signals
+#     Inherits from QRunnable to handle worker thread setup and signals
 
-    :param callback: The callback function to run on this worker thread with args and kwargs
-    :type callback: function
-    :param args: Arguments to pass to callback
-    :pram kwargs: Keywords to pass to callback
-    '''
+#     :param callback: The callback function to run on this worker thread with args and kwargs
+#     :type callback: function
+#     :param args: Arguments to pass to callback
+#     :pram kwargs: Keywords to pass to callback
+#     '''
 
-    def __init__(self, fn, *args, **kwargs):
-        super(Worker, self).__init__()
+#     def __init__(self, fn, *args, **kwargs):
+#         super(Worker, self).__init__()
 
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-        self.signals = WorkerSignals()
+#         self.fn = fn
+#         self.args = args
+#         self.kwargs = kwargs
+#         self.signals = WorkerSignals()
 
-        self.kwargs['progress_callback'] = self.signals.progress
+#         self.kwargs['progress_callback'] = self.signals.progress
 
-    @pyqtSlot()
-    def run(self):
-        '''Inits the function passed in with passed args and kwargs'''
-        try:
-            result = self.fn(*self.args, **self.kwargs)
-        except:
-            traceback.print_exc()
-            exctype, value = sys.exc_info()[:2]
-            self.signals.error.emit((exctype, value, traceback.format_exc()))
-        else:
-            self.signals.result.emit(result)
-        finally:
-            self.signals.finished.emit()
+#     @pyqtSlot()
+#     def run(self):
+#         '''Inits the function passed in with passed args and kwargs'''
+#         try:
+#             result = self.fn(*self.args, **self.kwargs)
+#         except:
+#             traceback.print_exc()
+#             exctype, value = sys.exc_info()[:2]
+#             self.signals.error.emit((exctype, value, traceback.format_exc()))
+#         else:
+#             self.signals.result.emit(result)
+#         finally:
+#             self.signals.finished.emit()
 
     
 # Main window containing all GUI components
@@ -370,6 +370,12 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_8.setObjectName("pushButton_8")
         self.pushButton_8.raise_() # brings to front
 
+        #Inits tare button
+        self.tareButton = QPushButton(self.tab_2)
+        self.tareButton.setGeometry(QtCore.QRect(700, 220, 140, 30)) # tare Button
+        self.tareButton.setObjectName("tareButton")
+        self.tareButton.raise_() # -- tare Button
+
         # TAB 3 #
 
         #Init tab 3
@@ -571,6 +577,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.setText(_translate("MainWindow", "STOP"))
         self.pushButton_2.setText(_translate("MainWindow", "Home"))
         self.pushButton_8.setText(_translate("MainWindow", "Calibrate"))
+        self.tareButton.setText(_translate("MainWindow", "Tare"))
         self.pushButton_5.setText(_translate("MainWindow", "Down"))
         self.pushButton_6.setText(_translate("MainWindow", "Up"))
         self.groupBox_4.setTitle(_translate("MainWindow", "Jogging"))
@@ -643,6 +650,9 @@ class Ui_MainWindow(QMainWindow):
         # Calibration Button
         self.pushButton_8.clicked.connect(self.Calibration) #cellInstance.user
 
+        # Tare Button
+        self.tareButton.clicked.connect(self.Calibration) #### CHANGE TO TARE FUNCTION ###
+
         # Update Mode after selection
         self.comboBox.currentIndexChanged.connect(self.updateMode)
 
@@ -662,28 +672,29 @@ class Ui_MainWindow(QMainWindow):
 
         # self.setWorker(self.execute_this_fn)
 
-    def print_output(self, s):
-        print(s)
+    # def print_output(self, s):
+    #     print(s)
 
-    def thread_complete(self):
-        print("thread complete")
+    # def thread_complete(self):
+    #     print("thread complete")
 
-    def progress_fn(self, n):
-        print("%d%% done" % n)
+    # def progress_fn(self, n):
+    #     print("%d%% done" % n)
 
-    def execute_this_fn(self, progress_callback):
-        for n in range(0, 5):
-            time.sleep(1)
-            progress_callback.emit(n*100/4)
-        return "Done."
+    # def execute_this_fn(self, progress_callback):
+    #     for n in range(0, 5):
+    #         time.sleep(1)
+    #         progress_callback.emit(n*100/4)
+    #     return "Done."
 
-    def setWorker(self, fn):
-        worker = Worker(fn)
-        worker.signals.result.connect(self.print_output)
-        worker.signals.finished.connect(self.thread_complete)
-        worker.signals.progress.connect(self.progress_fn)
+    # def setWorker(self, fn):
+    #     worker = Worker(fn)
 
-        self.threadpool.start(worker)
+    #     worker.signals.result.connect(self.print_output)
+    #     worker.signals.finished.connect(self.thread_complete)
+    #     worker.signals.progress.connect(self.progress_fn)
+
+    #     self.threadpool.start(worker)
 
     def updateMode(self):
         mode = self.comboBox.currentText()
@@ -714,7 +725,8 @@ class Ui_MainWindow(QMainWindow):
         self.update()
 
     def Calibration(self):
-        self.dialog = calibrationDialogWindow()
+        # self.dialog = calibrationDialogWindow()
+        self.dialog = newCalibrationWindow()
         self.dialog.show()
 
     def checkCalibration(self):
@@ -745,6 +757,111 @@ class Ui_MainWindow(QMainWindow):
 
     def updateDesiredParam(self):
         self.label_6.setText(f"Desired Pressure: {self.lineEdit_4.text()} {self.comboBox_6.currentText()}")
+
+class newCalibrationWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Calibration')
+        self.resize(500,300)
+        self.state = 0
+        self.setLayout(QFormLayout())
+        self.cal_buttons = QWidget()
+        self.cal_buttons.setLayout(QHBoxLayout())
+        self._initialized = 0
+
+        self.startWindow()
+        
+    def startWindow(self):
+        self.dialog = QLabel('Calibration requires an object of known weight to be placed on the scale')
+        self.next_button = QPushButton('Next')
+        self.cancel_button = QPushButton('Cancel')
+        self.submit_button = QPushButton('Submit')
+        self.layout().addRow(self.dialog)
+        self.cal_buttons.layout().addWidget(self.cancel_button)
+        self.cal_buttons.layout().addWidget(self.next_button)
+        self.layout().addRow('', self.cal_buttons)
+
+        # self.next_button.clicked.connect(self.getInputWindow)
+        # self.next_button.clicked.connect(self.startCalibration)
+        # self.next_button.clicked.connect(self.collectingDataWindow)
+        self.next_button.clicked.connect(self.startCalibration)
+        self.cancel_button.clicked.connect(self.close)
+
+    def startCalibration(self):
+        # i = self.initialized()
+        # i = 0
+        self.working = 1
+        #start calibration
+        for i in reversed(range(self.layout().count())):        #Clears components from first window
+            self.layout().itemAt(i).widget().deleteLater()
+        
+        self.dialogText = QLabel('Do not touch scale. Initializing')
+        self.layout().addRow('',self.dialogText)
+        self.show()
+        
+        #fn to perform calibration
+        Ui_MainWindow.setWorker(mainWin, self.calibration_fake)
+        worker.signals.result.connect(self.print_output)
+        worker.signals.finished.connect(self.thread_complete)
+        worker.signals.progress.connect(self.progress_fn)
+
+        if self.working == 1:
+            print(1)
+        else:
+            print('alksdjhfalksjdfhakljh')
+                
+        # self.dialog = QLabel('wordssss')
+        # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
+        # self.inputWeight = QLineEdit()
+        # self.layout().addRow('',self.dialogText)
+        # self.layout().addRow('',self.inputWeight)
+
+
+        # if self.initialized == 1:
+        #     self.getInputWindow()
+
+    def getInputWindow(self):
+        self.close()
+        # self.knownGrams = 0
+        # for i in reversed(range(self.layout().count())):        #Clears components from first window
+        #     self.layout().itemAt(i).widget().deleteLater()
+        # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
+        # self.dialog = QLabel('wordssss')
+        # # self.cancel_button = QPushButton('Cancel')
+        # # self.submit_button = QPushButton('Submit')
+        # self.inputWeight = QLineEdit()
+        # # buttons = QWidget()
+        # # buttons.setLayout(QHBoxLayout())
+        # # buttons.layout().addWidget(self.cancel_button)
+        # # buttons.layout().addWidget(self.submit_button)
+        # self.layout().addRow('',self.dialogText)
+        # self.layout().addRow('',self.inputWeight)
+        # self.layout().addRow('',buttons)
+        # self.layout().resize(300,200)
+        self.show()
+
+
+        # self.inputWeight.textChanged.connect(self.setKnownGrams)
+        # self.submit_button.clicked.connect(self.sendKnownInput)
+        # self.cancel_button.clicked.connect(self.close)
+
+    def setKnownGrams(self,lineEdit):
+        self.knownGrams = self.inputWeight.text()
+
+    def getUserInput(self):
+        print('user input started')
+
+    def calibration_fake(self, *args, **kwargs):
+        print('Initializing...')
+        time.sleep(3)
+        self.working = 0
+        print(self.working)
+        time.sleep(1)
+        result = 'complete'
+        return self.working
+        
+
+
 class calibrationWarning(QWidget):
     def __init__(self):
         super().__init__()
@@ -843,7 +960,7 @@ class calibrationDialogWindow(QWidget):
 
     def startCalibration(self):
         print("calibration started")
-        # cellInstance.userCalibrationPart1()
+        cellInstance.userCalibrationPart1()
 
     #Sends known weight from user to Load cell calibration
     def sendKnownInput(self):
@@ -862,17 +979,60 @@ class calibrationDialogWindow(QWidget):
         self.layout().addRow('',buttons)
         self.show()
 
-        # cellInstance.userCalibrationPart2(self.knownGrams)
+        cellInstance.userCalibrationPart2(self.knownGrams)
 
-        # while cellInstance.initializing == 1:
-        #     self.dialogText = QLabel('Calibrating.')
-        #     time.sleep(1)
-        #     self.dialogText = QLabel('Calibrating..')
-        #     time.sleep(1)
-        #     self.dialogText = QLabel('Calibrating...')
+        while cellInstance.initializing == 1:
+            self.dialogText = QLabel('Calibrating.')
+            time.sleep(1)
+            self.dialogText = QLabel('Calibrating..')
+            time.sleep(1)
+            self.dialogText = QLabel('Calibrating...')
 
         self.finish_button.clicked.connect(self.close)
 
+class FakeLoadCell():
+    def __init__(self):
+        self.recorded_configFile_name = 'calibration.vlabs'
+        
+        if os.path.isfile(self.recorded_configFile_name):
+            with open(self.recorded_configFile_name,'rb') as File:
+                self.cell = pickle.load(File)
+                self.calibrated = 1
+        else:
+            self.calibrated = 0
+        self.reading = 0
+        self.initializing = 0
+
+    def userCalibrationPart1(self):
+
+        self.initializing = 1
+
+        print('getting initial data...')
+        # self.reading = self.cell.get_raw_data_mean()
+        time.sleep(3)
+
+        self.initializing = 0
+
+    def userCalibrationPart2(self,knownGrams):
+        self.initializing = 1
+
+        if knownGrams:
+            known_weight_grams = knownGrams
+            try:
+                value = float(known_weight_grams)
+                print(value, 'grams')
+            except ValueError:
+                print('Expected integer or float and I have got:',
+                      known_weight_grams)
+
+        print('calibrating...')
+        time.sleep(3)
+
+        self.calibrated = 1
+        
+        self.initializing = 0
+
+        print("done calibrating")
 
 class LoadCell():
     def __init__(self):
@@ -945,6 +1105,7 @@ class LoadCell():
                 
 if __name__ == '__main__':
     # cellInstance = LoadCell()
+    cellInstance = FakeLoadCell()
     app = QApplication(sys.argv)
     mainWin = Ui_MainWindow()
     mainWin.show()
