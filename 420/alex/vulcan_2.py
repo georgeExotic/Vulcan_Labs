@@ -9,12 +9,23 @@ import os
 import pickle
 import socket
 import traceback
+import sqlite3
+from datetime import datetime, date
+
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from dateutil import parser
+from matplotlib import style
+style.use('fivethirtyeight')
+
+from pyqtgraph import PlotWidget, plot
+import pyqtgraph as pg
 # import RPi.GPIO as GPIO #import I/O interface             #
 # from hx711 import HX711 #import HX711 class               #
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
-from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable
+from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
 from PyQt5.QtWidgets import (QSizePolicy,
         QWidget, QFrame)
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
@@ -123,6 +134,10 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.setGeometry(QtCore.QRect(0, 0, 1004, 420))
         self.tabWidget.setObjectName("tabWidget")
 
+        #CSS
+        self.tabWidget.setStyleSheet('QTabBar { min-height: 50px; min-width: 500px; }')
+        # self.setStyleSheet('QPushButton { }')
+
         # TAB 1 #
 
         #Inits box area on left
@@ -140,6 +155,9 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox.setObjectName("comboBox")
         self.comboBox.addItem("")
         self.comboBox.addItem("")
+        # self.comboBox.setMinimumContentsLength(100)
+        # self.comboBox.contentsRect(1,1)
+        self.comboBox.setContentsMargins(100,100,100,100)
 
         #Inits Logo
         self.pixmap = QPixmap('VulcanLabsLogo.png')
@@ -244,6 +262,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_6 = QPushButton(self.widget)
         self.pushButton_6.setGeometry(QtCore.QRect(700, 240, 140, 30)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
+        self.pushButton_6.clicked.connect(DB.getTable)
 
         #Inits Jogging box area
         self.groupBox_4 = QGroupBox(self.widget)
@@ -390,7 +409,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Init data table
         self.tableWidget = QTableWidget(self.widget_2)
-        self.tableWidget.setGeometry(QtCore.QRect(20, 20, 944, 340)) # pos and size
+        self.tableWidget.setGeometry(QtCore.QRect(520, 20, 500, 340)) # pos and size
         self.tableWidget.setObjectName("tableWidget")
         self.tableWidget.setColumnCount(5)  # col count
         self.tableWidget.setRowCount(9)     # row count
@@ -471,6 +490,21 @@ class Ui_MainWindow(QMainWindow):
         self.label_20 = QLabel(self.groupBox_9)
         self.label_20.setGeometry(QtCore.QRect(10, 90, 200, 20)) # pos and size
         self.label_20.setObjectName("label_20")
+        
+        #                 # TAB 5 #
+
+        # #Inits tab 5
+        # self.tabWidget.addTab(self.tab_4,"")
+        # self.tab_5 = QWidget()
+        # self.tab_5.setObjectName("tab_5")
+        self.graphFrame = QFrame(self.tab_3)
+        self.graphFrame.setGeometry(9,9,500,400)
+        self.graphWidget = pg.PlotWidget(self.graphFrame)
+        # self.tab_5.setCentralWidget(self.graphWidget)
+        # self.graphWidget = QWidget(self.tab_5)
+        self.graphWidget.setGeometry(QtCore.QRect(9, 9, 500, 400)) # pos and size
+        self.graphWidget.setBackground('w')
+        # self.graphWidget.setObjectName("stuff")
 
         # BOTTOM TAB #
 
@@ -644,6 +678,8 @@ class Ui_MainWindow(QMainWindow):
         self.label_6.setText(_translate("MainWindow", "Desired Pressure: "+str(self.desPress)))
         self.label_7.setText(_translate("MainWindow", "Current Pressure: "+str(self.curPress)))
         self.label_8.setText(_translate("MainWindow", "Current Position: "+str(self.curPos)))
+        # self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), _translate("MainWindow", "Plots"))
+
 
         # -- ROUTING -- #
 
@@ -708,7 +744,7 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-        force_reading_raw = random.random()
+        force_reading_raw = random.triangular(0,1000)
         # force_reading_raw = cellInstance.cell.get_weight_mean(2)    #5 recomended for accuracy 
         force_reading_kg = round(force_reading_raw/1000,3)            #(grams to kg)
         force_reading_N = round(force_reading_kg*9.81,3)
@@ -719,8 +755,11 @@ class Ui_MainWindow(QMainWindow):
         pressure_reading = round((force_reading_N/Area)/1000,3)  #Kpa
         
         self.lcdNumber.display(force_reading_kg)
+        DB.insert_value('weight', force_reading_kg)
         self.lcdNumber2.display(pressure_reading)
+        DB.insert_value('pressure', pressure_reading)
         self.lcdNumber3.display(force_reading_N)
+        DB.insert_value('force', force_reading_N)
         self.label_7.setText("Current Pressure: "+str(pressure_reading)+" "+"kPa")
         self.update()
 
@@ -758,6 +797,55 @@ class Ui_MainWindow(QMainWindow):
     def updateDesiredParam(self):
         self.label_6.setText(f"Desired Pressure: {self.lineEdit_4.text()} {self.comboBox_6.currentText()}")
 
+class sqlDatabase:
+    def __init__(self):
+        super().__init__()
+        self.conn = sqlite3.connect(':memory:')
+        self.c = self.conn.cursor()
+        self.c.execute("""CREATE TABLE testtable (
+            [timestamp] timestamp,
+            type TEXT,
+            value INTEGER)
+            """)
+
+    def insert_value(self,valType,val):
+        with self.conn:
+            self.c.execute("INSERT INTO testtable VALUES (:timestamp, :type, :value)",
+                    {'timestamp': datetime.now(), 'type': valType, 'value': float(val)})
+
+    def getTable(self):
+        self.c.execute("SELECT * FROM testtable")
+        print(self.c.fetchall())
+        self.graph_data('force')
+        return self.c.fetchall()
+
+    def run(self,num):
+        for i in range(1,num):
+            self.insert_value()
+
+    def graph_data(self,typeName):
+        self.c.execute('SELECT timestamp, value FROM testtable WHERE type = :type', {'type': str(typeName)})
+        data = self.c.fetchall()
+
+        times = []
+        values = []
+
+        for row in data:
+            times.append(parser.parse(row[0]))
+            values.append(float(row[1]))
+
+        # mainWin.graphWidget.plot(times,values)
+        plt.plot_date(times,values,'-')
+        plt.show()
+
+class WorkerThread(QThread):
+    def __init__(self, parent=None):
+        super(WorkerThread, self).__init__(parent)
+
+    def run(self):
+        time.sleep(3)
+        self.emit(SIGNAL('threadDone()'))
+
 class newCalibrationWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -768,6 +856,8 @@ class newCalibrationWindow(QWidget):
         self.cal_buttons = QWidget()
         self.cal_buttons.setLayout(QHBoxLayout())
         self._initialized = 0
+        self.WorkerThread = WorkerThread()
+        self.connect(self.WorkerThread, SIGNAL("threadDone()"), self.threadDone, Qt.DirectConnection)
 
         self.startWindow()
         
@@ -798,17 +888,20 @@ class newCalibrationWindow(QWidget):
         self.dialogText = QLabel('Do not touch scale. Initializing')
         self.layout().addRow('',self.dialogText)
         self.show()
+
+        self.WorkerThread.start()
+        self.dialogText.setText('starting')
         
         #fn to perform calibration
-        Ui_MainWindow.setWorker(mainWin, self.calibration_fake)
-        worker.signals.result.connect(self.print_output)
-        worker.signals.finished.connect(self.thread_complete)
-        worker.signals.progress.connect(self.progress_fn)
+        # Ui_MainWindow.setWorker(mainWin, self.calibration_fake)
+        # worker.signals.result.connect(self.print_output)
+        # worker.signals.finished.connect(self.thread_complete)
+        # worker.signals.progress.connect(self.progress_fn)
 
-        if self.working == 1:
-            print(1)
-        else:
-            print('alksdjhfalksjdfhakljh')
+        # if self.working == 1:
+        #     print(1)
+        # else:
+        #     print('alksdjhfalksjdfhakljh')
                 
         # self.dialog = QLabel('wordssss')
         # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
@@ -819,6 +912,9 @@ class newCalibrationWindow(QWidget):
 
         # if self.initialized == 1:
         #     self.getInputWindow()
+
+    def threadDone(self):
+        self.dialogText.setText('finished')
 
     def getInputWindow(self):
         self.close()
@@ -1106,6 +1202,7 @@ class LoadCell():
 if __name__ == '__main__':
     # cellInstance = LoadCell()
     cellInstance = FakeLoadCell()
+    DB = sqlDatabase()
     app = QApplication(sys.argv)
     mainWin = Ui_MainWindow()
     mainWin.show()
