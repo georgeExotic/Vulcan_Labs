@@ -90,7 +90,6 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
 #             self.signals.result.emit(result)
 #         finally:
 #             self.signals.finished.emit()
-
     
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
@@ -115,8 +114,6 @@ class Ui_MainWindow(QMainWindow):
 
     def setupUi(self):
 
-        # -- INITIALIZATION -- #
-
         #Initializes window and parameters
         MainWindow = self
         MainWindow.setObjectName("Vulcan Labs")
@@ -135,7 +132,7 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.setObjectName("tabWidget")
 
         #CSS
-        self.tabWidget.setStyleSheet('QTabBar { min-height: 50px; min-width: 500px; }')
+        self.tabWidget.setStyleSheet('QTabBar { min-height: 20px; min-width: 500px; }')
         # self.setStyleSheet('QPushButton { }')
 
         # TAB 1 #
@@ -210,7 +207,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits final layer label
         self.label_10 = QLabel(self.groupBox_3)
-        self.label_10.setGeometry(QtCore.QRect(20, 100, 150, 20)) # pos and size
+        self.label_10.setGeometry(QtCore.QRect(20, 100, 130, 20)) # pos and size
         self.label_10.setObjectName("label_10")
 
         #Inits number of layers label
@@ -262,7 +259,6 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_6 = QPushButton(self.widget)
         self.pushButton_6.setGeometry(QtCore.QRect(700, 240, 140, 30)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
-        self.pushButton_6.clicked.connect(DB.getTable)
 
         #Inits Jogging box area
         self.groupBox_4 = QGroupBox(self.widget)
@@ -561,7 +557,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Init current pressure label
         self.label_7 = QLabel(self.groupBox)
-        self.label_7.setGeometry(QtCore.QRect(680, 70, 200, 20)) # pos and size
+        self.label_7.setGeometry(QtCore.QRect(680, 70, 220, 20)) # pos and size
         self.label_7.setObjectName("label_7")
 
         #Init desired position label
@@ -1205,6 +1201,9 @@ if __name__ == '__main__':
     DB = sqlDatabase()
     app = QApplication(sys.argv)
     mainWin = Ui_MainWindow()
+    styleFile=os.path.join(os.path.split(__file__)[0],"vulcan.stylesheet")
+    styleSheetStr = open(styleFile,"r").read()
+    mainWin.setStyleSheet(styleSheetStr) 
     mainWin.show()
 
     fps = 3

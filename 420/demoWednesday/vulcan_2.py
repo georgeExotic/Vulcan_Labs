@@ -8,11 +8,23 @@ import sys
 import os
 import pickle
 import socket
+import traceback
+import sqlite3
+from datetime import datetime, date
+
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from dateutil import parser
+from matplotlib import style
+style.use('fivethirtyeight')
+
+from pyqtgraph import PlotWidget, plot
+import pyqtgraph as pg
 import RPi.GPIO as GPIO #import I/O interface             #
 from hx711 import HX711 #import HX711 class               #
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
-from PyQt5.QtCore import QPoint, QRect, QSize, Qt
+from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
 from PyQt5.QtWidgets import (QSizePolicy,
         QWidget, QFrame)
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
@@ -61,6 +73,10 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.setGeometry(QtCore.QRect(0, 0, 1004, 420))
         self.tabWidget.setObjectName("tabWidget")
 
+        #CSS
+        self.tabWidget.setStyleSheet('QTabBar { min-height: 20px; min-width: 500px; }')
+        # self.setStyleSheet('QPushButton { }')
+
         # TAB 1 #
 
         #Inits box area on left
@@ -78,6 +94,7 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox.setObjectName("comboBox")
         self.comboBox.addItem("")
         self.comboBox.addItem("")
+        self.comboBox.setContentsMargins(100,100,100,100)
 
         #Inits Logo
         self.pixmap = QPixmap('VulcanLabsLogo.png')
@@ -130,7 +147,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits final layer label
         self.label_10 = QLabel(self.groupBox_3)
-        self.label_10.setGeometry(QtCore.QRect(20, 100, 150, 20)) # pos and size
+        self.label_10.setGeometry(QtCore.QRect(20, 100, 130, 20)) # pos and size
         self.label_10.setObjectName("label_10")
 
         #Inits number of layers label
@@ -328,7 +345,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Init data table
         self.tableWidget = QTableWidget(self.widget_2)
-        self.tableWidget.setGeometry(QtCore.QRect(20, 20, 944, 340)) # pos and size
+        self.tableWidget.setGeometry(QtCore.QRect(520, 20, 500, 340)) # pos and size
         self.tableWidget.setObjectName("tableWidget")
         self.tableWidget.setColumnCount(5)  # col count
         self.tableWidget.setRowCount(9)     # row count
@@ -410,6 +427,21 @@ class Ui_MainWindow(QMainWindow):
         self.label_20.setGeometry(QtCore.QRect(10, 90, 200, 20)) # pos and size
         self.label_20.setObjectName("label_20")
 
+        #                 # TAB 5 #
+
+        # #Inits tab 5
+        # self.tabWidget.addTab(self.tab_4,"")
+        # self.tab_5 = QWidget()
+        # self.tab_5.setObjectName("tab_5")
+        self.graphFrame = QFrame(self.tab_3)
+        self.graphFrame.setGeometry(9,9,500,400)
+        self.graphWidget = pg.PlotWidget(self.graphFrame)
+        # self.tab_5.setCentralWidget(self.graphWidget)
+        # self.graphWidget = QWidget(self.tab_5)
+        self.graphWidget.setGeometry(QtCore.QRect(9, 9, 500, 400)) # pos and size
+        self.graphWidget.setBackground('w')
+        # self.graphWidget.setObjectName("stuff")
+
         # BOTTOM TAB #
 
         #Init Bottom Area frame
@@ -465,7 +497,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Init current pressure label
         self.label_7 = QLabel(self.groupBox)
-        self.label_7.setGeometry(QtCore.QRect(680, 70, 200, 20)) # pos and size
+        self.label_7.setGeometry(QtCore.QRect(680, 70, 220, 20)) # pos and size
         self.label_7.setObjectName("label_7")
 
         #Init desired position label
@@ -594,8 +626,13 @@ class Ui_MainWindow(QMainWindow):
         # Update Mode after selection
         self.comboBox.currentIndexChanged.connect(self.updateMode)
 
+        # Update desired parameters
+        self.lineEdit_4.textChanged.connect(self.updateDesiredParam)
+        self.comboBox_6.currentIndexChanged.connect(self.updateDesiredParam)
+
         # System state changes
         self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
+        self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
         self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
         self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
         self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
@@ -630,8 +667,12 @@ class Ui_MainWindow(QMainWindow):
         pressure_reading = round((force_reading_N/Area)/1000,3)  #Kpa
         
         self.lcdNumber.display(force_reading_kg)
+        DB.insert_value('weight', force_reading_kg)
         self.lcdNumber2.display(pressure_reading)
+        DB.insert_value('pressure', pressure_reading)
         self.lcdNumber3.display(force_reading_N)
+        DB.insert_value('force', force_reading_N)
+        self.label_7.setText("Current Pressure: "+str(pressure_reading)+" "+"kPa")
         self.update()
 
     def Calibration(self):
@@ -663,6 +704,170 @@ class Ui_MainWindow(QMainWindow):
         }
         self.label.setText("State: "+ str(indices[self.systemState]))
         print(index)
+
+    def updateDesiredParam(self):
+        self.label_6.setText(f"Desired Pressure: {self.lineEdit_4.text()} {self.comboBox_6.currentText()}")
+
+class sqlDatabase:
+    def __init__(self):
+        super().__init__()
+        self.conn = sqlite3.connect(':memory:')
+        self.c = self.conn.cursor()
+        self.c.execute("""CREATE TABLE testtable (
+            [timestamp] timestamp,
+            type TEXT,
+            value INTEGER)
+            """)
+
+    def insert_value(self,valType,val):
+        with self.conn:
+            self.c.execute("INSERT INTO testtable VALUES (:timestamp, :type, :value)",
+                    {'timestamp': datetime.now(), 'type': valType, 'value': float(val)})
+
+    def getTable(self):
+        self.c.execute("SELECT * FROM testtable")
+        print(self.c.fetchall())
+        self.graph_data('force')
+        return self.c.fetchall()
+
+    def run(self,num):
+        for i in range(1,num):
+            self.insert_value()
+
+    def graph_data(self,typeName):
+        self.c.execute('SELECT timestamp, value FROM testtable WHERE type = :type', {'type': str(typeName)})
+        data = self.c.fetchall()
+
+        times = []
+        values = []
+
+        for row in data:
+            times.append(parser.parse(row[0]))
+            values.append(float(row[1]))
+
+        # mainWin.graphWidget.plot(times,values)
+        plt.plot_date(times,values,'-')
+        plt.show()
+
+class WorkerThread(QThread):
+    def __init__(self, parent=None):
+        super(WorkerThread, self).__init__(parent)
+
+    def run(self):
+        time.sleep(3)
+        self.emit(SIGNAL('threadDone()'))
+
+class newCalibrationWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Calibration')
+        self.resize(500,300)
+        self.state = 0
+        self.setLayout(QFormLayout())
+        self.cal_buttons = QWidget()
+        self.cal_buttons.setLayout(QHBoxLayout())
+        self._initialized = 0
+        self.WorkerThread = WorkerThread()
+        self.connect(self.WorkerThread, SIGNAL("threadDone()"), self.threadDone, Qt.DirectConnection)
+
+        self.startWindow()
+        
+    def startWindow(self):
+        self.dialog = QLabel('Calibration requires an object of known weight to be placed on the scale')
+        self.next_button = QPushButton('Next')
+        self.cancel_button = QPushButton('Cancel')
+        self.submit_button = QPushButton('Submit')
+        self.layout().addRow(self.dialog)
+        self.cal_buttons.layout().addWidget(self.cancel_button)
+        self.cal_buttons.layout().addWidget(self.next_button)
+        self.layout().addRow('', self.cal_buttons)
+
+        # self.next_button.clicked.connect(self.getInputWindow)
+        # self.next_button.clicked.connect(self.startCalibration)
+        # self.next_button.clicked.connect(self.collectingDataWindow)
+        self.next_button.clicked.connect(self.startCalibration)
+        self.cancel_button.clicked.connect(self.close)
+
+    def startCalibration(self):
+        # i = self.initialized()
+        # i = 0
+        self.working = 1
+        #start calibration
+        for i in reversed(range(self.layout().count())):        #Clears components from first window
+            self.layout().itemAt(i).widget().deleteLater()
+        
+        self.dialogText = QLabel('Do not touch scale. Initializing')
+        self.layout().addRow('',self.dialogText)
+        self.show()
+
+        self.WorkerThread.start()
+        self.dialogText.setText('starting')
+        
+        #fn to perform calibration
+        # Ui_MainWindow.setWorker(mainWin, self.calibration_fake)
+        # worker.signals.result.connect(self.print_output)
+        # worker.signals.finished.connect(self.thread_complete)
+        # worker.signals.progress.connect(self.progress_fn)
+
+        # if self.working == 1:
+        #     print(1)
+        # else:
+        #     print('alksdjhfalksjdfhakljh')
+                
+        # self.dialog = QLabel('wordssss')
+        # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
+        # self.inputWeight = QLineEdit()
+        # self.layout().addRow('',self.dialogText)
+        # self.layout().addRow('',self.inputWeight)
+
+
+        # if self.initialized == 1:
+        #     self.getInputWindow()
+
+    def threadDone(self):
+        self.dialogText.setText('finished')
+
+    def getInputWindow(self):
+        self.close()
+        # self.knownGrams = 0
+        # for i in reversed(range(self.layout().count())):        #Clears components from first window
+        #     self.layout().itemAt(i).widget().deleteLater()
+        # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
+        # self.dialog = QLabel('wordssss')
+        # # self.cancel_button = QPushButton('Cancel')
+        # # self.submit_button = QPushButton('Submit')
+        # self.inputWeight = QLineEdit()
+        # # buttons = QWidget()
+        # # buttons.setLayout(QHBoxLayout())
+        # # buttons.layout().addWidget(self.cancel_button)
+        # # buttons.layout().addWidget(self.submit_button)
+        # self.layout().addRow('',self.dialogText)
+        # self.layout().addRow('',self.inputWeight)
+        # self.layout().addRow('',buttons)
+        # self.layout().resize(300,200)
+        self.show()
+
+
+        # self.inputWeight.textChanged.connect(self.setKnownGrams)
+        # self.submit_button.clicked.connect(self.sendKnownInput)
+        # self.cancel_button.clicked.connect(self.close)
+
+    def setKnownGrams(self,lineEdit):
+        self.knownGrams = self.inputWeight.text()
+
+    def getUserInput(self):
+        print('user input started')
+
+    def calibration_fake(self, *args, **kwargs):
+        print('Initializing...')
+        time.sleep(3)
+        self.working = 0
+        print(self.working)
+        time.sleep(1)
+        result = 'complete'
+        return self.working
+        
+
 
 class calibrationWarning(QWidget):
     def __init__(self):
@@ -791,6 +996,49 @@ class calibrationDialogWindow(QWidget):
 
         self.finish_button.clicked.connect(self.close)
 
+class FakeLoadCell():
+    def __init__(self):
+        self.recorded_configFile_name = 'calibration.vlabs'
+        
+        if os.path.isfile(self.recorded_configFile_name):
+            with open(self.recorded_configFile_name,'rb') as File:
+                self.cell = pickle.load(File)
+                self.calibrated = 1
+        else:
+            self.calibrated = 0
+        self.reading = 0
+        self.initializing = 0
+
+    def userCalibrationPart1(self):
+
+        self.initializing = 1
+
+        print('getting initial data...')
+        # self.reading = self.cell.get_raw_data_mean()
+        time.sleep(3)
+
+        self.initializing = 0
+
+    def userCalibrationPart2(self,knownGrams):
+        self.initializing = 1
+
+        if knownGrams:
+            known_weight_grams = knownGrams
+            try:
+                value = float(known_weight_grams)
+                print(value, 'grams')
+            except ValueError:
+                print('Expected integer or float and I have got:',
+                      known_weight_grams)
+
+        print('calibrating...')
+        time.sleep(3)
+
+        self.calibrated = 1
+        
+        self.initializing = 0
+
+        print("done calibrating")
 
 class LoadCell():
     def __init__(self):
@@ -810,7 +1058,6 @@ class LoadCell():
  
     def userCalibrationPart1(self):
         self.cell = HX711(self.dout_pin,self.pd_sckPin)
-        fileName = 'calibration.vlabs'
         #send the user calibration message
         err = self.cell.zero()
         if err:
@@ -871,8 +1118,12 @@ class LoadCell():
                 
 if __name__ == '__main__':
     cellInstance = LoadCell()
+    DB = sqlDatabase()
     app = QApplication(sys.argv)
     mainWin = Ui_MainWindow()
+    styleFile=os.path.join(os.path.split(__file__)[0],"styleVulcan.stylesheet")
+    styleSheetStr = open(styleFile,"r").read()
+    mainWin.setStyleSheet(styleSheetStr)
     mainWin.show()
 
     fps = 3
