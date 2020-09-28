@@ -199,6 +199,8 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_6 = QPushButton(self.widget)
         self.pushButton_6.setGeometry(QtCore.QRect(700, 240, 140, 30)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
+        self.pushButton_6.clicked.connect(DB.getTable)
+
 
         #Inits Jogging box area
         self.groupBox_4 = QGroupBox(self.widget)
