@@ -90,3 +90,9 @@ QTabBar {
     min-width: 10px;
     background-color: #eb6200;
 }
+
+QRadioButton {
+    color: #F9F6F0;
+    font-weight: bold;
+    font-size: 14px;
+}
