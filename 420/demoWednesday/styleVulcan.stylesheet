@@ -1,0 +1,92 @@
+/* #303030 */
+/* #121212 */
+/* #202020 */
+/* #343330 */
+
+/* #FF7C0A */
+/* #eb6200 */
+
+/* #aaa */
+/* #F1E9DB */
+/* #F9F6F0 */
+
+QWidget {
+    background-color: #303030;
+}
+
+QPushButton {
+    font-weight: bold;
+    font-size: 16px;
+    color: #303030;
+    border: 2px solid #202020;
+    border-radius: 8px;
+    min-width: 10px;
+    background-color: #FF7C0A;
+}
+
+QPushButton#pushButton {
+    font-size: 20px;
+}
+
+QPushButton:hover {
+    background-color: #eb6200;
+}
+
+QLabel {
+    color: #F9F6F0;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+QLineEdit {
+    padding: 1px;
+    color: #F9F6F0;
+    border: 2px solid #F9F6F0;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+QGroupBox {
+    font-weight: bold;
+    font-size: 15px;
+    color: #F9F6F0;
+    border-radius: 8px;
+}
+
+QComboBox {
+    font-weight: bold;
+    font-size: 15px;
+    color: #F9F6F0;
+    border-radius: 50px;
+}
+
+QComboBox::drop-down {
+    font-weight: bold;
+    font-size: 15px;
+    color: #F9F6F0;
+    width: 20px;
+    height: 30px;
+}
+
+QComboBox QAbstractItemView {
+    border: 2px solid #F9F6F0;
+    color: #F9F6F0;
+    selection-background-color: #eb6200;
+    padding: 2px 8px 2px 8px;
+    font-size: 20px;
+}
+
+QLCDNumber {
+    border: 2px solid #F9F6F0;
+    color: #F9F6F0;
+}
+
+QTabBar {
+    font-weight: bold;
+    font-size: 16px;
+    color: #121212;
+    border: 2px solid #202020;
+    border-radius: 8px;
+    min-width: 10px;
+    background-color: #eb6200;
+}
