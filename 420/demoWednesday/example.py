@@ -58,7 +58,7 @@ try:
     input('Press Enter to begin reading')
     print('Current weight on the scale in grams is: ')
     while True:
-        print(hx.get_weight_mean(20), 'g')
+        print(hx.get_weight_mean(3), 'lb')
 
 except (KeyboardInterrupt, SystemExit):
     print('Bye :)')
