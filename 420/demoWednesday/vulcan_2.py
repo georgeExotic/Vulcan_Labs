@@ -5,6 +5,7 @@ import time
 import timeit
 import random
 import sys
+import serial 
 import os
 import pickle
 import socket
@@ -18,6 +19,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from dateutil import parser
 from matplotlib import style
+import paho.mqtt.client as paho
 # style.use('fivethirtyeight')
 
 from pyqtgraph import PlotWidget, plot
@@ -28,11 +30,21 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
 from PyQt5.QtWidgets import (QSizePolicy,
-        QWidget, QFrame)
+        QWidget, QFrame, QRadioButton)
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QDialogButtonBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLayout, 
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
+
+
+#Global Variables
+
+
+
+
+
+
+
 
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
@@ -440,6 +452,21 @@ class Ui_MainWindow(QMainWindow):
         self.plotForceRadio.setText("Plot Force")
         self.plotForceRadio.toggled.connect(lambda x: self.plotState(self.plotForceRadio))
 
+        self.plotPressureRadio = QRadioButton(self.tab_3)
+        self.plotPressureRadio.setGeometry(550, 120, 120, 30)
+        self.plotPressureRadio.setText("Plot Pressure")
+        self.plotPressureRadio.toggled.connect(lambda x: self.plotState(self.plotPressureRadio))
+
+        self.plotWeightRadio = QRadioButton(self.tab_3)
+        self.plotWeightRadio.setGeometry(550, 160, 120, 30)
+        self.plotWeightRadio.setText("Plot Weight")
+        self.plotWeightRadio.toggled.connect(lambda x: self.plotState(self.plotWeightRadio))
+
+        self.clearButton = QPushButton(self.tab_3)
+        self.clearButton.setGeometry(550, 300, 80, 30)
+        self.clearButton.setObjectName("button_clear")
+        self.clearButton.clicked.connect(DB.clearTable)
+
         # #Init data table
         # self.tableWidget = QTableWidget(self.widget_2)
         # self.tableWidget.setGeometry(QtCore.QRect(520, 20, 500, 340)) # pos and size
@@ -788,7 +815,11 @@ class Ui_MainWindow(QMainWindow):
         """Updates the LCD Force Reading Value"""
         # force_reading_raw = random.random()
         force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
+        if force_reading_raw < 0:
+            force_reading_raw = 0
         force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
+        pressure = MQtt()
+        pressure.publish(force_reading_kg,"force")
         force_reading_N = round(force_reading_kg*9.81,3)
         pistonDiameter = 20 #mm
         r = pistonDiameter/2 #mm
@@ -1266,6 +1297,48 @@ class LoadCell():
         self.tare = 1 
 
         print("Calibration is succesful")
+"""
+##import time
+import paho.mqtt.client as paho
+
+# Setup MQTT
+broker="broker.hivemq.com"
+port=1883
+
+topic = "scuttle/infrastructure/data/001/scale/latest"
+
+def on_publish(client,userdata,result):         # create function for callback
+    pass
+
+mqtt = paho.Client()                          # create client object
+mqtt.on_publish = on_publish                  # assign function to callback
+mqtt.connect(broker,port)                     # establish connection
+
+
+if __name__ == "__main__":
+    while 1:
+        weight = ser.readline().decode('utf-8')
+        print("Weight Station Reading: " + weight)
+        # time.sleep(0.01)
+        mqtt.publish(topic, str(weight))
+
+"""
+class MQtt():
+    #settup MQTT
+    def __init__(self):        
+        self.baseTopic = "VulcanLabs/" #base topic
+        self.mqtt = paho.Client()
+        self.broker="broker.hivemq.com"
+        self.port=1883
+    def on_publish(self,client,userdata,result):
+        pass
+    
+    def publish(self,value,topicName): # something.publish(value,"topicName")
+        self.mqtt.on_publish = self.on_publish
+        self.mqtt.connect(self.broker,self.port)
+        self.value = value
+        self.topic = topicName
+        self.mqtt.publish((self.baseTopic + self.topic), str(self.value))
 
 
 
