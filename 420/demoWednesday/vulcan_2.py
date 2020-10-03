@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from dateutil import parser
 from matplotlib import style
-style.use('fivethirtyeight')
+# style.use('fivethirtyeight')
 
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
@@ -85,6 +85,13 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox_2 = QGroupBox(self.widget)
         self.groupBox_2.setGeometry(QtCore.QRect(20, 20, 300, 360)) # positioning and sizing
         self.groupBox_2.setObjectName("groupBox_2")
+        # self.groupBox_2.setStyleSheet("color: #F9F6F0;")
+        self.groupBox_2.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
+
+
+        # self.groupBox_2.setStyleSheet("font-size: 15px;")
+        # self.groupBox_2.setStyleSheet("border-radius: 8px;")
+        # self.groupBox_2.setStyleSheet("font-weight: bold;")
 
         #Inits Mode select dropdown component
         self.comboBox = QComboBox(self.groupBox_2)
@@ -111,11 +118,21 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox_3 = QGroupBox(self.widget)
         self.groupBox_3.setGeometry(QtCore.QRect(350, 20, 300, 360)) # positioning and sizing
         self.groupBox_3.setObjectName("groupBox_3")
+        self.groupBox_3.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
+
 
         #Inits initial layer height input
         self.lineEdit = QLineEdit(self.groupBox_3)
         self.lineEdit.setGeometry(QtCore.QRect(160, 40, 60, 30)) # pos and size
         self.lineEdit.setObjectName("lineEdit")
+#         self.setStyleSheet(""")
+# QLineEdit {
+#     padding: 1px;
+#     color: #F9F6F0;
+#     border: 2px solid #F9F6F0;
+#     border-radius: 8px;
+#     font-weight: bold;
+# }
 
         #Inits initial layer height unit select
         self.comboBox_2 = QComboBox(self.groupBox_3)
@@ -130,6 +147,8 @@ class Ui_MainWindow(QMainWindow):
         self.label_9 = QLabel(self.groupBox_3)
         self.label_9.setGeometry(QtCore.QRect(20, 40, 130, 20)) # pos and size
         self.label_9.setObjectName("label_9")
+        self.label_9.setStyleSheet("""QLabel { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
+        self.setStyleSheet("""QLabel { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
 
         #Inits final layer height unit select
         self.comboBox_3 = QComboBox(self.groupBox_3)
@@ -184,28 +203,63 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.setGeometry(QtCore.QRect(700, 110, 260, 60)) # pos and size
         self.pushButton.setFont(QFont('Arial', 14))#, QFont.Bold)) #adjust font
         self.pushButton.setObjectName("pushButton")
+        # self.pushButton.setStyleSheet("""QPushButton:hover { background-color: green; }""")
+        self.pushButton.setStyleSheet("""QPushButton {
+    font-weight: bold;
+    font-size: 16px;
+    color: #303030;
+    border: 2px solid #202020;
+    border-radius: 8px;
+    min-width: 10px;
+    background-color: #FF7C0A;}""")
 
         #Inits Home button
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(700, 280, 140, 30)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
+        self.pushButton_2.setStyleSheet("""QPushButton {
+    font-weight: bold;
+    font-size: 16px;
+    color: #303030;
+    border: 2px solid #202020;
+    border-radius: 8px;
+    min-width: 10px;
+    background-color: #FF7C0A;}""")
 
         #Inits Down button
         self.pushButton_5 = QPushButton(self.widget)
         self.pushButton_5.setGeometry(QtCore.QRect(700, 320, 140, 30)) # pos and size
         self.pushButton_5.setObjectName("pushButton_5")
+        self.pushButton_5.setStyleSheet("""QPushButton {
+    font-weight: bold;
+    font-size: 16px;
+    color: #303030;
+    border: 2px solid #202020;
+    border-radius: 8px;
+    min-width: 10px;
+    background-color: #FF7C0A;}""")
 
         #Inits Up button
         self.pushButton_6 = QPushButton(self.widget)
         self.pushButton_6.setGeometry(QtCore.QRect(700, 240, 140, 30)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
         self.pushButton_6.clicked.connect(DB.getTable)
+        self.pushButton_6.setStyleSheet("""QPushButton {
+    font-weight: bold;
+    font-size: 16px;
+    color: #303030;
+    border: 2px solid #202020;
+    border-radius: 8px;
+    min-width: 10px;
+    background-color: #FF7C0A;}""")
 
 
         #Inits Jogging box area
         self.groupBox_4 = QGroupBox(self.widget)
         self.groupBox_4.setGeometry(QtCore.QRect(680, 200, 300, 180)) # pos and size
         self.groupBox_4.setObjectName("groupBox_4")
+        self.groupBox_4.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
+
 
         #Inits jog step size select
         self.comboBox_5 = QComboBox(self.groupBox_4)
@@ -221,21 +275,46 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox_6 = QGroupBox(self.widget)
         self.groupBox_6.setGeometry(QtCore.QRect(680, 20, 300, 180)) # pos and size
         self.groupBox_6.setObjectName("groupBox_6")
+        self.groupBox_6.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
 
         #Inits pause button
         self.pushButton_3 = QPushButton(self.widget)
         self.pushButton_3.setGeometry(QtCore.QRect(790, 60, 80, 40)) # pos and size
         self.pushButton_3.setObjectName("pushButton_3")
+        self.pushButton_3.setStyleSheet("""QPushButton {
+    font-weight: bold;
+    font-size: 16px;
+    color: #303030;
+    border: 2px solid #202020;
+    border-radius: 8px;
+    min-width: 10px;
+    background-color: #FF7C0A;}""")
 
         #Inits run button
         self.pushButton_4 = QPushButton(self.widget)
         self.pushButton_4.setGeometry(QtCore.QRect(700, 60, 80, 40)) # pos and size
         self.pushButton_4.setObjectName("pushButton_4")
+        self.pushButton_4.setStyleSheet("""QPushButton {
+    font-weight: bold;
+    font-size: 16px;
+    color: #303030;
+    border: 2px solid #202020;
+    border-radius: 8px;
+    min-width: 10px;
+    background-color: #FF7C0A;}""")
 
         #Inits resume button
         self.pushButton_7 = QPushButton(self.widget)
         self.pushButton_7.setGeometry(QtCore.QRect(880, 60, 80, 40)) # pos and size
         self.pushButton_7.setObjectName("pushButton_7")
+        self.pushButton_7.setStyleSheet("""QPushButton {
+    font-weight: bold;
+    font-size: 16px;
+    color: #303030;
+    border: 2px solid #202020;
+    border-radius: 8px;
+    min-width: 10px;
+    background-color: #FF7C0A;}""")
 
         # raise_() brings components to front layer
         self.groupBox_6.raise_()
@@ -393,6 +472,7 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox_7 = QGroupBox(self.tab_4)
         self.groupBox_7.setGeometry(QtCore.QRect(10, 30, 400, 300)) # pos and size
         self.groupBox_7.setObjectName("groupBox_7")
+        self.groupBox_7.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
 
         #Init connection label
         self.label_15 = QLabel(self.groupBox_7)
@@ -413,6 +493,7 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox_9 = QGroupBox(self.tab_4)
         self.groupBox_9.setGeometry(QtCore.QRect(440, 30, 401, 300)) # pos and size
         self.groupBox_9.setObjectName("groupBox_9")
+        self.groupBox_9.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
 
         #Init system time label
         self.label_18 = QLabel(self.groupBox_9)
@@ -458,6 +539,7 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox = QGroupBox(self.frame_2)
         self.groupBox.setGeometry(QtCore.QRect(10, 0, 1004, 300)) # pos and size
         self.groupBox.setObjectName("groupBox")
+        self.groupBox.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
 
         #Init table layout
         self.tableView = QTableView(self.groupBox)
@@ -689,6 +771,7 @@ class Ui_MainWindow(QMainWindow):
 
     def calibrationWarn(self):
         self.dialog2 = calibrationWarning()
+        self.dialog2.raise_()
         self.dialog2.show()
 
     def UpdateGUI(self):
@@ -784,9 +867,9 @@ class newCalibrationWindow(QWidget):
         self.cal_buttons.layout().addWidget(self.next_button)
         self.layout().addRow('', self.cal_buttons)
 
-        # self.next_button.clicked.connect(self.getInputWindow)
-        # self.next_button.clicked.connect(self.startCalibration)
-        # self.next_button.clicked.connect(self.collectingDataWindow)
+        self.next_button.clicked.connect(self.getInputWindow)
+        self.next_button.clicked.connect(self.startCalibration)
+        self.next_button.clicked.connect(self.collectingDataWindow)
         self.next_button.clicked.connect(self.startCalibration)
         self.cancel_button.clicked.connect(self.close)
 
@@ -889,8 +972,8 @@ class calibrationWarning(QWidget):
 
         #Routes front end to back end
         self.ok_button.clicked.connect(self.close)
-        self.ok_button.clicked.connect(self.close)
-        # self.cal_button.clicked.connect(Ui_MainWindow.Calibration)
+        # self.ok_button.clicked.connect(self.close)
+        self.cal_button.clicked.connect(Ui_MainWindow.Calibration)
 
 #Class handling calibration pop up boxes
 class calibrationDialogWindow(QWidget):
@@ -919,7 +1002,7 @@ class calibrationDialogWindow(QWidget):
 
         self.next_button.clicked.connect(self.getInputWindow)
         self.next_button.clicked.connect(self.startCalibration)
-        self.next_button.clicked.connect(self.collectingDataWindow)
+        # self.next_button.clicked.connect(self.collectingDataWindow)
         self.cancel_button.clicked.connect(self.close)
 
     def collectingDataWindow(self):
@@ -1122,6 +1205,7 @@ if __name__ == '__main__':
     cellInstance = LoadCell()
     DB = sqlDatabase()
     app = QApplication(sys.argv)
+    app.setStyle('Fusion')
     mainWin = Ui_MainWindow()
     styleFile=os.path.join(os.path.split(__file__)[0],"styleVulcan.stylesheet")
     styleSheetStr = open(styleFile,"r").read()
