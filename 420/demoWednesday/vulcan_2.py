@@ -12,6 +12,8 @@ import traceback
 import sqlite3
 from datetime import datetime, date
 
+import L2_log as log
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from dateutil import parser
@@ -741,8 +743,8 @@ class Ui_MainWindow(QMainWindow):
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
         # force_reading_raw = random.random()
-        force_reading_raw = cellInstance.cell.get_weight_mean(2)    #5 recomended for accuracy 
-        force_reading_kg = round(force_reading_raw/1000,3)            #(grams to kg)
+        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
+        force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
         force_reading_N = round(force_reading_kg*9.81,3)
         pistonDiameter = 20 #mm
         r = pistonDiameter/2 #mm
