@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from dateutil import parser
 from matplotlib import style
-import paho.mqtt.client as paho
+# import paho.mqtt.client as paho
 # style.use('fivethirtyeight')
 
 from pyqtgraph import PlotWidget, plot
@@ -818,7 +818,7 @@ class Ui_MainWindow(QMainWindow):
         if force_reading_raw < 0:
             force_reading_raw = 0
         force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
-        pressure = MQtt()
+        # pressure = MQtt()
         pressure.publish(force_reading_kg,"force")
         force_reading_N = round(force_reading_kg*9.81,3)
         pistonDiameter = 20 #mm
