@@ -5,7 +5,6 @@ import time
 import timeit
 import random
 import sys
-import serial 
 import os
 import pickle
 import socket
@@ -13,13 +12,10 @@ import traceback
 import sqlite3
 from datetime import datetime, date
 
-import L2_log as log
-
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from dateutil import parser
 from matplotlib import style
-# import paho.mqtt.client as paho
 # style.use('fivethirtyeight')
 
 from pyqtgraph import PlotWidget, plot
@@ -30,21 +26,11 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
 from PyQt5.QtWidgets import (QSizePolicy,
-        QWidget, QFrame, QRadioButton)
+        QWidget, QFrame)
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QDialogButtonBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLayout, 
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
-
-
-#Global Variables
-
-
-
-
-
-
-
 
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
@@ -65,8 +51,6 @@ class Ui_MainWindow(QMainWindow):
         self.desPress = 0
         self.curPos = 0
         self.curPress = 0
-
-        self.runStartTime = 0
 
     def setupUi(self):
 
@@ -259,7 +243,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_6 = QPushButton(self.widget)
         self.pushButton_6.setGeometry(QtCore.QRect(700, 240, 140, 30)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
-        self.pushButton_6.clicked.connect(lambda x: DB.getTable(list([0])))
+        self.pushButton_6.clicked.connect(DB.getTable)
         self.pushButton_6.setStyleSheet("""QPushButton {
     font-weight: bold;
     font-size: 16px;
@@ -310,7 +294,6 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_4 = QPushButton(self.widget)
         self.pushButton_4.setGeometry(QtCore.QRect(700, 60, 80, 40)) # pos and size
         self.pushButton_4.setObjectName("pushButton_4")
-        self.pushButton_4.clicked.connect(self.runStartTimer)
         self.pushButton_4.setStyleSheet("""QPushButton {
     font-weight: bold;
     font-size: 16px;
@@ -438,71 +421,45 @@ class Ui_MainWindow(QMainWindow):
 
         #Init data table area
         self.widget_2 = QWidget(self.tab_3)
-        self.widget_2.setGeometry(QtCore.QRect(9, 9, 994, 350)) # pos and size
+        self.widget_2.setGeometry(QtCore.QRect(9, 9, 994, 500)) # pos and size
         self.widget_2.setObjectName("widget_2")
 
-        #Inits refresh plot button
-        self.refreshButton = QPushButton(self.tab_3)
-        self.refreshButton.setGeometry(550, 20, 80, 30)
-        self.refreshButton.setObjectName("button_refresh")
-        self.refreshButton.clicked.connect(DB.getTable)
+        #Init data table
+        self.tableWidget = QTableWidget(self.widget_2)
+        self.tableWidget.setGeometry(QtCore.QRect(520, 20, 500, 340)) # pos and size
+        self.tableWidget.setObjectName("tableWidget")
+        self.tableWidget.setColumnCount(5)  # col count
+        self.tableWidget.setRowCount(9)     # row count
 
-        self.plotForceRadio = QRadioButton(self.tab_3)
-        self.plotForceRadio.setGeometry(550, 80, 120, 30)
-        self.plotForceRadio.setText("Plot Force")
-        self.plotForceRadio.toggled.connect(lambda x: self.plotState(self.plotForceRadio))
-
-        self.plotPressureRadio = QRadioButton(self.tab_3)
-        self.plotPressureRadio.setGeometry(550, 120, 120, 30)
-        self.plotPressureRadio.setText("Plot Pressure")
-        self.plotPressureRadio.toggled.connect(lambda x: self.plotState(self.plotPressureRadio))
-
-        self.plotWeightRadio = QRadioButton(self.tab_3)
-        self.plotWeightRadio.setGeometry(550, 160, 120, 30)
-        self.plotWeightRadio.setText("Plot Weight")
-        self.plotWeightRadio.toggled.connect(lambda x: self.plotState(self.plotWeightRadio))
-
-        self.clearButton = QPushButton(self.tab_3)
-        self.clearButton.setGeometry(550, 300, 80, 30)
-        self.clearButton.setObjectName("button_clear")
-        self.clearButton.clicked.connect(DB.clearTable)
-
-        # #Init data table
-        # self.tableWidget = QTableWidget(self.widget_2)
-        # self.tableWidget.setGeometry(QtCore.QRect(520, 20, 500, 340)) # pos and size
-        # self.tableWidget.setObjectName("tableWidget")
-        # self.tableWidget.setColumnCount(5)  # col count
-        # self.tableWidget.setRowCount(9)     # row count
-
-        # #Init sample table items
-        # item = QTableWidgetItem()
-        # self.tableWidget.setVerticalHeaderItem(0, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setVerticalHeaderItem(1, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setVerticalHeaderItem(2, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setVerticalHeaderItem(3, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setVerticalHeaderItem(4, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setVerticalHeaderItem(5, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setVerticalHeaderItem(6, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setVerticalHeaderItem(7, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setVerticalHeaderItem(8, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setHorizontalHeaderItem(0, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setHorizontalHeaderItem(1, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setHorizontalHeaderItem(2, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setHorizontalHeaderItem(3, item)
-        # item = QTableWidgetItem()
-        # self.tableWidget.setHorizontalHeaderItem(4, item)
+        #Init sample table items
+        item = QTableWidgetItem()
+        self.tableWidget.setVerticalHeaderItem(0, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setVerticalHeaderItem(1, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setVerticalHeaderItem(2, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setVerticalHeaderItem(3, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setVerticalHeaderItem(4, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setVerticalHeaderItem(5, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setVerticalHeaderItem(6, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setVerticalHeaderItem(7, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setVerticalHeaderItem(8, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setHorizontalHeaderItem(0, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setHorizontalHeaderItem(1, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setHorizontalHeaderItem(2, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setHorizontalHeaderItem(3, item)
+        item = QTableWidgetItem()
+        self.tableWidget.setHorizontalHeaderItem(4, item)
 
         # TAB 4 #
 
@@ -560,7 +517,7 @@ class Ui_MainWindow(QMainWindow):
         # self.tab_5 = QWidget()
         # self.tab_5.setObjectName("tab_5")
         self.graphFrame = QFrame(self.tab_3)
-        self.graphFrame.setGeometry(9,9,500,350)
+        self.graphFrame.setGeometry(9,9,500,400)
         self.graphWidget = pg.PlotWidget(self.graphFrame)
         # self.tab_5.setCentralWidget(self.graphWidget)
         # self.graphWidget = QWidget(self.tab_5)
@@ -693,34 +650,34 @@ class Ui_MainWindow(QMainWindow):
         self.label_tab2_force_units.setText(_translate("MainWindow", " N"))
         self.label_tab2_load_units.setText(_translate("MainWindow", " kg"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "System"))
-        # item = self.tableWidget.verticalHeaderItem(0)
-        # item.setText(_translate("MainWindow", "Log 3"))
-        # item = self.tableWidget.verticalHeaderItem(1)
-        # item.setText(_translate("MainWindow", "Log 2"))
-        # item = self.tableWidget.verticalHeaderItem(2)
-        # item.setText(_translate("MainWindow", "New Row"))
-        # item = self.tableWidget.verticalHeaderItem(3)
-        # item.setText(_translate("MainWindow", "Log 4"))
-        # item = self.tableWidget.verticalHeaderItem(4)
-        # item.setText(_translate("MainWindow", "New Row"))
-        # item = self.tableWidget.verticalHeaderItem(5)
-        # item.setText(_translate("MainWindow", "New Row"))
-        # item = self.tableWidget.verticalHeaderItem(6)
-        # item.setText(_translate("MainWindow", "New Row"))
-        # item = self.tableWidget.verticalHeaderItem(7)
-        # item.setText(_translate("MainWindow", "Log 8"))
-        # item = self.tableWidget.verticalHeaderItem(8)
-        # item.setText(_translate("MainWindow", "Log 6"))
-        # item = self.tableWidget.horizontalHeaderItem(0)
-        # item.setText(_translate("MainWindow", "Col 1"))
-        # item = self.tableWidget.horizontalHeaderItem(1)
-        # item.setText(_translate("MainWindow", "Col 2"))
-        # item = self.tableWidget.horizontalHeaderItem(2)
-        # item.setText(_translate("MainWindow", "Col 3"))
-        # item = self.tableWidget.horizontalHeaderItem(3)
-        # item.setText(_translate("MainWindow", "Col 4"))
-        # item = self.tableWidget.horizontalHeaderItem(4)
-        # item.setText(_translate("MainWindow", "Col 5"))
+        item = self.tableWidget.verticalHeaderItem(0)
+        item.setText(_translate("MainWindow", "Log 3"))
+        item = self.tableWidget.verticalHeaderItem(1)
+        item.setText(_translate("MainWindow", "Log 2"))
+        item = self.tableWidget.verticalHeaderItem(2)
+        item.setText(_translate("MainWindow", "New Row"))
+        item = self.tableWidget.verticalHeaderItem(3)
+        item.setText(_translate("MainWindow", "Log 4"))
+        item = self.tableWidget.verticalHeaderItem(4)
+        item.setText(_translate("MainWindow", "New Row"))
+        item = self.tableWidget.verticalHeaderItem(5)
+        item.setText(_translate("MainWindow", "New Row"))
+        item = self.tableWidget.verticalHeaderItem(6)
+        item.setText(_translate("MainWindow", "New Row"))
+        item = self.tableWidget.verticalHeaderItem(7)
+        item.setText(_translate("MainWindow", "Log 8"))
+        item = self.tableWidget.verticalHeaderItem(8)
+        item.setText(_translate("MainWindow", "Log 6"))
+        item = self.tableWidget.horizontalHeaderItem(0)
+        item.setText(_translate("MainWindow", "Col 1"))
+        item = self.tableWidget.horizontalHeaderItem(1)
+        item.setText(_translate("MainWindow", "Col 2"))
+        item = self.tableWidget.horizontalHeaderItem(2)
+        item.setText(_translate("MainWindow", "Col 3"))
+        item = self.tableWidget.horizontalHeaderItem(3)
+        item.setText(_translate("MainWindow", "Col 4"))
+        item = self.tableWidget.horizontalHeaderItem(4)
+        item.setText(_translate("MainWindow", "Col 5"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Data"))
         self.groupBox_7.setTitle(_translate("MainWindow", "Communication"))
         self.label_15.setText(_translate("MainWindow", "Connection:"))
@@ -741,10 +698,6 @@ class Ui_MainWindow(QMainWindow):
         self.label_6.setText(_translate("MainWindow", "Desired Pressure: "+str(self.desPress)))
         self.label_7.setText(_translate("MainWindow", "Current Pressure: "+str(self.curPress)))
         self.label_8.setText(_translate("MainWindow", "Current Position: "+str(self.curPos)))
-        # self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), _translate("MainWindow", "Plots"))
-        self.refreshButton.setText(_translate("MainWindow", "Refresh"))
-        self.clearButton.setText(_translate("MainWindow", "Clear"))
-
 
         # -- ROUTING -- #
 
@@ -763,7 +716,7 @@ class Ui_MainWindow(QMainWindow):
 
         # System state changes
         self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
-        # self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
+        self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
         self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
         self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
         self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
@@ -773,32 +726,6 @@ class Ui_MainWindow(QMainWindow):
 
     def tare(self):
         cellInstance.zeroCell()
-
-    def runStartTimer(self):
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
-        self.runStartTime = current_time
-        print(f'run started at time: {self.runStartTime}')
-
-    def plotState(self,b):
-        if b.text() == 'Plot Force':
-            if b.isChecked() == True:
-                DB.getTable('force',1)
-        if b.text() == 'Plot Force':
-            if b.isChecked() == False:
-                DB.getTable('force',0)
-        if b.text() == 'Plot Pressure':
-            if b.isChecked() == True:
-                DB.getTable('pressure',1)
-        if b.text() == 'Plot Pressure':
-            if b.isChecked() == False:
-                DB.getTable('pressure',0)
-        if b.text() == 'Plot Weight':
-            if b.isChecked() == True:
-                DB.getTable('weight',1)
-        if b.text() == 'Plot Weight':
-            if b.isChecked() == False:
-                DB.getTable('weight',0)
 
     def updateMode(self):
         mode = self.comboBox.currentText()
@@ -814,12 +741,8 @@ class Ui_MainWindow(QMainWindow):
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
         # force_reading_raw = random.random()
-        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
-        if force_reading_raw < 0:
-            force_reading_raw = 0
-        force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
-        # pressure = MQtt()
-        # pressure.publish(force_reading_kg,"force")
+        force_reading_raw = cellInstance.cell.get_weight_mean(2)    #5 recomended for accuracy 
+        force_reading_kg = round(force_reading_raw/1000,3)            #(grams to kg)
         force_reading_N = round(force_reading_kg*9.81,3)
         pistonDiameter = 20 #mm
         r = pistonDiameter/2 #mm
@@ -875,65 +798,41 @@ class sqlDatabase:
         super().__init__()
         self.conn = sqlite3.connect(':memory:')
         self.c = self.conn.cursor()
-        self.data = []
-        self.plotter = None
         self.c.execute("""CREATE TABLE testtable (
             [timestamp] timestamp,
             type TEXT,
             value INTEGER)
             """)
-        self.plots = {
-            'force': 0,
-            'pressure': 0,
-            'weight': 0,
-            'default': 0
-        }
 
     def insert_value(self,valType,val):
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
         with self.conn:
             self.c.execute("INSERT INTO testtable VALUES (:timestamp, :type, :value)",
-                    {'timestamp': current_time, 'type': valType, 'value': float(val)})
+                    {'timestamp': datetime.now(), 'type': valType, 'value': float(val)})
 
-    def clearTable(self):
-        print('deleting')
-        self.c.execute('DELETE FROM testtable')
-        self.data = []
-        self.plotter.clear()
-
-    def getTable(self,name='default',order='0'):
+    def getTable(self):
         self.c.execute("SELECT * FROM testtable")
-        # print(self.c.fetchall())
-        self.graph_data(name,order)
+        print(self.c.fetchall())
+        self.graph_data('force')
         return self.c.fetchall()
 
-    def graph_data(self,name='default',order='0'):
-        self.plots[name] = order
-        for key, value in self.plots.items():
-            if value == 1:
-                self.c.execute('SELECT timestamp, value FROM testtable WHERE type = :type', {'type': key})
-                self.data.extend(self.c.fetchall())
-        self.data.sort()
-        print(self.plots)
-        if self.data:
-            times = []
-            vals = []
-            if 1 == 1:
-                for row in self.data:
-                    print(row)
-                    d = float(row[0].replace(":",""))
-                    times.append(d)
-                    vals.append(float(row[1]))
-        else:
-            times = []
-            vals = []
+    def run(self,num):
+        for i in range(1,num):
+            self.insert_value()
 
-        mainWin.graphWidget.setBackground('#fff')
-        pen = pg.mkPen(color=(255,100,100), width=8)
-        self.plotter = mainWin.graphWidget.plot(times,vals,pen=pen)
-        # plt.plot_date(times,vals,'-')
-        # plt.show()
+    def graph_data(self,typeName):
+        self.c.execute('SELECT timestamp, value FROM testtable WHERE type = :type', {'type': str(typeName)})
+        data = self.c.fetchall()
+
+        times = []
+        values = []
+
+        for row in data:
+            times.append(parser.parse(row[0]))
+            values.append(float(row[1]))
+
+        # mainWin.graphWidget.plot(times,values)
+        plt.plot_date(times,values,'-')
+        plt.show()
 
 class WorkerThread(QThread):
     def __init__(self, parent=None):
@@ -1297,48 +1196,6 @@ class LoadCell():
         self.tare = 1 
 
         print("Calibration is succesful")
-"""
-##import time
-import paho.mqtt.client as paho
-
-# Setup MQTT
-broker="broker.hivemq.com"
-port=1883
-
-topic = "scuttle/infrastructure/data/001/scale/latest"
-
-def on_publish(client,userdata,result):         # create function for callback
-    pass
-
-mqtt = paho.Client()                          # create client object
-mqtt.on_publish = on_publish                  # assign function to callback
-mqtt.connect(broker,port)                     # establish connection
-
-
-if __name__ == "__main__":
-    while 1:
-        weight = ser.readline().decode('utf-8')
-        print("Weight Station Reading: " + weight)
-        # time.sleep(0.01)
-        mqtt.publish(topic, str(weight))
-
-"""
-class MQtt():
-    #settup MQTT
-    def __init__(self):        
-        self.baseTopic = "VulcanLabs/" #base topic
-        self.mqtt = paho.Client()
-        self.broker="broker.hivemq.com"
-        self.port=1883
-    def on_publish(self,client,userdata,result):
-        pass
-    
-    def publish(self,value,topicName): # something.publish(value,"topicName")
-        self.mqtt.on_publish = self.on_publish
-        self.mqtt.connect(self.broker,self.port)
-        self.value = value
-        self.topic = topicName
-        self.mqtt.publish((self.baseTopic + self.topic), str(self.value))
 
 
 
