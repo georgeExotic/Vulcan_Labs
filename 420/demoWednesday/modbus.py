@@ -2,10 +2,10 @@ from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
 
 class Motor:
-    def __init__(self, localhost, port=502, **kwargs)
-        self.ip_address = localhost 
+    def __init__(self, localhost='192.168.33.100', port='502', **kwargs):
+        self.ip_address = localhost
         self.port = port
-        self._Motor = ModbusClient(self.localhost,self.port, unit_id=1, auto_open=True)
+        self._Motor = ModbusClient(self.ip_address,self.port, unit_id=1, auto_open=True)
         self.checkConnection()
 
     def _getversions(self):
@@ -13,11 +13,17 @@ class Motor:
         self.os_version = ".".join(map(str, data.registers[0:3]))
         self.boot_version = ".".join(map(str, data.registers[3:6]))
 
+    # def checkConnection(self):
+    #     if not self._Motor.is_open():
+    #         if not self._Motor.open():
+    #             return "unable to connect" #print("unable to connect to motor")
+    #     return "connected!"
+
     def checkConnection(self):
-        if not _Motor.is_open():
-            if not _Motor.open():
-                print("unable to connect to motor")
-        return None
+        if self._Motor.is_open():
+            print("connected!")
+        else:
+            print("unable to connect")
 
     def readInputRegs(self, start_reg, byte_count):
         data = self._Motor.read_input_registers(start_reg, byte_count)
@@ -51,6 +57,7 @@ class Motor:
                     absolute position = 0
                     
         """
+        pass
         
     def jogUp(self,displacement):
         """
@@ -70,6 +77,7 @@ class Motor:
                 cant jogUP
 
         """
+        pass
 
     def jogDown(self,displacement):
         """
@@ -86,12 +94,14 @@ class Motor:
             completeJog = 1
         
         """
+        pass
 
     def run(self):
         """
         run = 1
         3D print parts like Dr Hur said
         """
+        pass
 
     def stopRun(self):
         """
@@ -101,6 +111,7 @@ class Motor:
             
             
         """
+        pass
     
     def eStop(self):
         """
@@ -112,3 +123,6 @@ class Motor:
             nothing 
         
         """
+        pass
+
+m = Motor()
