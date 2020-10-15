@@ -24,8 +24,8 @@ from matplotlib import style
 
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
-# import RPi.GPIO as GPIO #import I/O interface             #
-# from hx711 import HX711 #import HX711 class               #
+import RPi.GPIO as GPIO #import I/O interface             #
+from hx711 import HX711 #import HX711 class               #
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
@@ -1380,7 +1380,7 @@ class MQtt():
                 
 if __name__ == '__main__':
     motor = Motor()
-    cellInstance = FakeLoadCell()#LoadCell()
+    cellInstance = LoadCell()
     DB = sqlDatabase()
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
