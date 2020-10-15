@@ -24,8 +24,8 @@ from matplotlib import style
 
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
-import RPi.GPIO as GPIO #import I/O interface             #
-from hx711 import HX711 #import HX711 class               #
+# import RPi.GPIO as GPIO #import I/O interface             #
+# from hx711 import HX711 #import HX711 class               #
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
@@ -35,6 +35,8 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QDialogButtonBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLayout, 
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
+
+from modbus import Motor
 
 
 #Global Variables
@@ -57,7 +59,7 @@ class Ui_MainWindow(QMainWindow):
         self.modeSelected = 0                                   # 0:motion 1:pressure
         self.connectionState = 0                                # 0:No Connection 1:Connection Secure
         self.IpAdd = socket.gethostbyname(socket.gethostname())
-        self.systemState = 0                                    # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
+        self.systemState = 0                                    # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing 6:Homed
         self.systemCalibrated = 0                               # 0: no 1: calibrated
         # self.elapsedTime = time.perf_counter()
 
@@ -219,6 +221,8 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.setGeometry(QtCore.QRect(700, 110, 260, 60)) # pos and size
         self.pushButton.setFont(QFont('Arial', 14))#, QFont.Bold)) #adjust font
         self.pushButton.setObjectName("pushButton")
+        self.pushButton.clicked.connect(motor.eStop)
+        self.pushButton.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         # self.pushButton.setStyleSheet("""QPushButton:hover { background-color: green; }""")
         self.pushButton.setStyleSheet("""QPushButton {
     font-weight: bold;
@@ -233,6 +237,8 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(700, 280, 140, 30)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
+        self.pushButton_2.clicked.connect(motor.Home)
+        self.pushButton_2.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_2.setStyleSheet("""QPushButton {
     font-weight: bold;
     font-size: 16px;
@@ -246,6 +252,8 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_5 = QPushButton(self.widget)
         self.pushButton_5.setGeometry(QtCore.QRect(700, 320, 140, 30)) # pos and size
         self.pushButton_5.setObjectName("pushButton_5")
+        self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentText()))
+        self.pushButton_5.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_5.setStyleSheet("""QPushButton {
     font-weight: bold;
     font-size: 16px;
@@ -259,7 +267,9 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_6 = QPushButton(self.widget)
         self.pushButton_6.setGeometry(QtCore.QRect(700, 240, 140, 30)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
-        self.pushButton_6.clicked.connect(lambda x: DB.getTable(list([0])))
+        # self.pushButton_6.clicked.connect(lambda x: DB.getTable(list([0])))
+        self.pushButton_6.clicked.connect(lambda x: motor.jogUp(self.comboBox_5.currentText()))
+        self.pushButton_6.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_6.setStyleSheet("""QPushButton {
     font-weight: bold;
     font-size: 16px;
@@ -297,6 +307,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_3 = QPushButton(self.widget)
         self.pushButton_3.setGeometry(QtCore.QRect(790, 60, 80, 40)) # pos and size
         self.pushButton_3.setObjectName("pushButton_3")
+        self.pushButton_3.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_3.setStyleSheet("""QPushButton {
     font-weight: bold;
     font-size: 16px;
@@ -319,11 +330,13 @@ class Ui_MainWindow(QMainWindow):
     border-radius: 8px;
     min-width: 10px;
     background-color: #FF7C0A;}""")
+        # self.pushButton_4.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
 
         #Inits resume button
         self.pushButton_7 = QPushButton(self.widget)
         self.pushButton_7.setGeometry(QtCore.QRect(880, 60, 80, 40)) # pos and size
         self.pushButton_7.setObjectName("pushButton_7")
+        self.pushButton_7.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_7.setStyleSheet("""QPushButton {
     font-weight: bold;
     font-size: 16px;
@@ -770,6 +783,26 @@ class Ui_MainWindow(QMainWindow):
         # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
         self.checkCalibration()
+        # self.checkHomed()
+
+    def checkHomed(self):
+        if self.systemState == 6:
+            self.pushButton.setEnabled(True)
+            self.pushButton_2.setEnabled(True)
+            self.pushButton_3.setEnabled(True)
+            self.pushButton_4.setEnabled(True)
+            self.pushButton_5.setEnabled(True)
+            self.pushButton_6.setEnabled(True)
+            self.pushButton_7.setEnabled(True)
+        elif self.systemState != 6:
+            print("not homed")
+            self.pushButton.setEnabled(False)
+            self.pushButton_2.setEnabled(False)
+            self.pushButton_3.setEnabled(False)
+            self.pushButton_4.setEnabled(False)
+            self.pushButton_5.setEnabled(False)
+            self.pushButton_6.setEnabled(False)
+            self.pushButton_7.setEnabled(False)
 
     def tare(self):
         cellInstance.zeroCell()
@@ -813,8 +846,8 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-        # force_reading_raw = random.random()
-        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
+        force_reading_raw = random.random()
+        # force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
         if force_reading_raw < 0:
             force_reading_raw = 0
         force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
@@ -862,10 +895,11 @@ class Ui_MainWindow(QMainWindow):
             2: "Running",
             3: "Paused",
             4: "Stopped",
-            5: "Processing"
+            5: "Processing",
+            6: "Homed"
         }
         self.label.setText("State: "+ str(indices[self.systemState]))
-        print(index)
+        # print(index)
 
     def updateDesiredParam(self):
         self.label_6.setText(f"Desired Pressure: {self.lineEdit_4.text()} {self.comboBox_6.currentText()}")
@@ -1188,7 +1222,7 @@ class FakeLoadCell():
         
         if os.path.isfile(self.recorded_configFile_name):
             with open(self.recorded_configFile_name,'rb') as File:
-                self.cell = pickle.load(File)
+                # self.cell = pickle.load(File)
                 self.calibrated = 1
         else:
             self.calibrated = 0
@@ -1345,7 +1379,8 @@ class MQtt():
 
                 
 if __name__ == '__main__':
-    cellInstance = LoadCell()
+    motor = Motor()
+    cellInstance = FakeLoadCell()#LoadCell()
     DB = sqlDatabase()
     app = QApplication(sys.argv)
     app.setStyle('Fusion')

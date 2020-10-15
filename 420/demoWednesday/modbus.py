@@ -57,6 +57,7 @@ class Motor:
                     absolute position = 0
                     
         """
+        print("MODBUS COMMAND: homing")
         pass
         
     def jogUp(self,displacement):
@@ -77,6 +78,7 @@ class Motor:
                 cant jogUP
 
         """
+        print(f'MODBUS COMMAND: jogging up {displacement}')
         pass
 
     def jogDown(self,displacement):
@@ -94,6 +96,7 @@ class Motor:
             completeJog = 1
         
         """
+        print(f'MODBUS COMMAND: jogging down {displacement}')
         pass
 
     def run(self):
@@ -101,6 +104,7 @@ class Motor:
         run = 1
         3D print parts like Dr Hur said
         """
+        print("running")
         pass
 
     def stopRun(self):
@@ -111,6 +115,7 @@ class Motor:
             
             
         """
+        print("stopped")
         pass
     
     def eStop(self):
@@ -123,6 +128,7 @@ class Motor:
             nothing 
         
         """
+        print('MODBUS COMMAND: emergency stop')
         pass
 
-m = Motor()
+# m = Motor()
