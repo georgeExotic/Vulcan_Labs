@@ -1,6 +1,12 @@
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
 
+
+import time
+
+
+
+
 class Motor:
     def __init__(self, localhost='192.168.33.100', port='502', **kwargs):
         self.ip_address = localhost
@@ -13,11 +19,11 @@ class Motor:
         self.os_version = ".".join(map(str, data.registers[0:3]))
         self.boot_version = ".".join(map(str, data.registers[3:6]))
 
-    # def checkConnection(self):
-    #     if not self._Motor.is_open():
-    #         if not self._Motor.open():
-    #             return "unable to connect" #print("unable to connect to motor")
-    #     return "connected!"
+    def checkConnection(self):
+        if not self._Motor.is_open():
+            if not self._Motor.open():
+                return "unable to connect" #print("unable to connect to motor")
+        return "connected!"
 
     def checkConnection(self):
         if self._Motor.is_open():
@@ -131,4 +137,7 @@ class Motor:
         print('MODBUS COMMAND: emergency stop')
         pass
 
-# m = Motor()
+m = Motor()
+time.sleep(100000)
+while 1:
+    print("ok")
