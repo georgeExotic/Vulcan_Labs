@@ -43,6 +43,11 @@ class Motor:
     def writeSingleReg(self):
         pass
 
+    def displacement2steps(self, displacment_mm):
+        """ 1mm = 12800steps """
+        displacement_steps = displacment_mm*12857
+        return displacement_steps
+
     def Home(self):
         """
         Homming routine:
@@ -78,6 +83,8 @@ class Motor:
                 cant jogUP
 
         """
+        d = self.displacement2steps(displacement)
+        self._Motor.write_multiple_registers(70, regs_value)
         print(f'MODBUS COMMAND: jogging up {displacement}')
         pass
 
