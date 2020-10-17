@@ -36,27 +36,27 @@ class Motor:
                 return "unable to connect" #print("unable to connect to motor")
         return "connected!"
 
-    def readHoldingRegs(self,startingAddressHex,byteCount = 1): #starting address as in register map in HEX
-        startingAddressDEC = self.hex2dec(startingAddressHex)
-        # print(decAddress)
+    #function to read from register of LMD57 modbus register map
+    def readHoldingRegs(self,startingAddressHex,regSize = 1):                             #startingAddressHex [address of register in HEX] regSize [size of regiter]
+        startingAddressDEC = self.hex2dec(startingAddressHex)                             #hex --> dec
         reg = 0
-        if byteCount > 2:   #4 byte number = 2 registers
-            reg2read = 2
-            reg = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)
-            ans = utils.word_list_to_long(reg,False) #big endian
-        else: # 2 bytes or 1 byte / can read normally
-            reg2read = 1
-            reg = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)
-            ans = utils.word_list_to_long(reg,False) #big endian
-        return ans
-###
+        if regSize > 2:                                                                   #for registers with 4 byte (32bit) data
+            reg2read = 2                                                                  #2 registers to read because is a 4 byte, each register is 2 byte
+            reg = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)    #read 2 modbus registers //// reg is a list [lsb,msb]
+            ans = utils.word_list_to_long(reg,False)                                      #from list[lsb,msb] to a value /// done with big endian        
+        else:                                                                             # for 2 bytes or 1 byte register 
+            reg2read = 1                                                                  #1 register to read
+            reg = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)    #read 1 register from the address (remenber 1 address = 2 bytes(16bits))
+            ans = utils.word_list_to_long(reg,False)                                      #from list[lsb] to a value /// done with big endian 
+        return ans[0]
 
-    def writeHoldingRegs(self,startingAddressHEX,byteCount,valueDEC):
-        startingAddressDEC = self.hex2dec(startingAddressHEX)
+    #function to write to any register of LMD57 modbus register map
+    def writeHoldingRegs(self,startingAddressHEX,regSize,valueDEC):                         #startingAddressHex [address of register in HEX] regSize [size of regiter] ValueDEC [value in decimal to write]
+        startingAddressDEC = self.hex2dec(startingAddressHEX)                               #hex --> dec
         reg = 0 
-        if byteCount > 2 :
-            reg = utils.long_list_to_word([valueDEC],False)
-            self._motor.write_multiple_registers(startingAddressDEC,reg)
+        if regSize > 2:                                                                     #for registers with 4 byte (32bit) data
+            reg = utils.long_list_to_word([valueDEC],False)                                 #val2write is the decimal value to be written to the register
+            self._motor.write_multiple_registers(startingAddressDEC,reg)                    #
             
         else: 
              self._motor.write_multiple_registers(startingAddressDEC,[valueDEC])
