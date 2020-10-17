@@ -1,8 +1,9 @@
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
-
+from ast import literal_eval #from hex to dec
 
 import time
+import math
 
 class Motor:
     def __init__(self):
@@ -35,34 +36,61 @@ class Motor:
                 return "unable to connect" #print("unable to connect to motor")
         return "connected!"
 
-    def readInputRegs(self, start_reg, byte_count):
-        data = self._motor.read_input_registers(start_reg, byte_count)
-        return data
-
-    def readCoils(self, start_reg, byte_count):
-        pass
-
-    def readHoldingRegs(self,byteCount = 2):
+    def readHoldingRegs(self,startingAddressHex,byteCount = 1): #starting address as in register map in HEX
+        startingAddressDEC = self.hex2dec(startingAddressHex)
+        # print(decAddress)
+        reg = 0
         if byteCount > 2:   #4 byte number = 2 registers
-            
-
-        pass
-
+            reg2read = 2
+            reg = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)
+            ans = utils.word_list_to_long(reg,False) #big endian
+        else: # 2 bytes or 1 byte / can read normally
+            reg2read = 1
+            reg = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)
+            ans = utils.word_list_to_long(reg,False) #big endian
+        return ans
 ###
+
+    def writeHoldingRegs(self,startingAddressHEX,byteCount,valueDEC):
+        startingAddressDEC = self.hex2dec(startingAddressHEX)
+        reg = 0 
+        if byteCount > 2 :
+            reg = utils.long_list_to_word([valueDEC],False)
+            self._motor.write_multiple_registers(startingAddressDEC,reg)
+            
+        else: 
+             self._motor.write_multiple_registers(startingAddressDEC,[valueDEC])
+        
+        print(f"write done")
+        return
+
+    
+    def hex2dec(self,hex):
+        hex = str(hex)
+        dec = literal_eval(hex)
+        return dec
+
 
     def writeSingleReg(self):
         pass
 
-    def displacement2steps(self, displacment_mm):
-        """ 1mm = 12800steps """
+    def displacement2steps(self, displacment_mm, direction):
+        """ 1 mm travel  =  12857 steps """
+        if direction == 'up':
+            sign = 1
+        else:
+            sign = -1
         displacement_steps = displacment_mm*12857
         d_msb = 0
+
         if displacement_steps > 65536:
-            d_lsb = 65536
-            d_msb = displacement_steps - d_lsb
+            d_msb = math.floor(displacement_steps/65536)
+            d_lsb = displacement_steps%65536
         else:
             d_lsb = displacement_steps
-        return d_lsb,
+
+        # return [sign*d_lsb, sign*d_msb]
+        return displacement_steps
 
     def Home(self):
         """
@@ -104,15 +132,11 @@ class Motor:
             displacement = 5
         else:
             displacement = 10
-
-        print(f'displacement: {displacement}')
-
-        d = self.displacement2steps(displacement)
+        d = self.displacement2steps(displacement,'up')
         print(f'displacement in steps: {d}')
-
-        self._motor.write_multiple_registers(70, [d,0])
+        self._motor.write_multiple_registers(70, d)
         print(f'MODBUS COMMAND: jogging up {displacement}')
-        pass
+        return
 
     def jogDown(self,displacement):
         """
@@ -129,6 +153,16 @@ class Motor:
             completeJog = 1
         
         """
+        if displacement == 0:
+            displacement = 1
+        elif displacement == 1:
+            displacement = 5
+        else:
+            displacement = 10
+        d = self.displacement2steps(displacement,'down')
+        self.writeHoldingRegs(0x46,4,-1*d)
+        print(f'displacement in steps: {d}')
+        # print(self._motor.write_multiple_registers(70, d))
         print(f'MODBUS COMMAND: jogging down {displacement}')
         pass
 
@@ -148,6 +182,7 @@ class Motor:
             
             
         """
+        self._motor.write_multiple_registers(70,[0,0])
         print("stopped")
         pass
     
@@ -166,5 +201,7 @@ class Motor:
 
 # time.sleep(100000)
 if __name__ == "__main__":
-    while 1:
-        print("ok")
+    c = Motor()
+    c.writeHoldingRegs(0x46,4,512000)
+    x = c.readHoldingRegs(0x00,4)
+    print(x)
