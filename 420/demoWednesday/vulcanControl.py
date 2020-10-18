@@ -7,15 +7,48 @@ import math
 
 class Motor:
     def __init__(self):
+        #Initialization of LMD57 
+        #device information
         self.SERVER_HOST = "192.168.33.1"
         self.SERVER_PORT = 502
         self.deviceID = "LMDCE571C"
         self.softwareVersion = "2.4.0.6"
         self.manufactureName = "SCHNEIDER ELECTRIC MOTOR USA"
+        #connection to modbus TCP steps
         self._connectModbusClient()
         self._checkConnection()
-        
+        #Init variables
+        self.moving = False
+        self.initialVelocity = 1000 #steps/second
+        self.finalVelocity = 750000 #steps/second
+        self.hmt = 2 #default 2 = variable current mode --> current will vary as needed to postion the load with the maximun current set by the run current command 
+        self.sethmt(2)
 
+        ##setUp Registers/update variables
+        #acce
+        self.writeHoldingRegs(0x00,4,500000)
+        self.acceleration = self.readHoldingRegs(0x00,4)
+        #deaccel
+        self.writeHoldingRegs(0x18,4,500000)
+        self.deacceleration = self.readHoldingRegs(0x18,4)
+        #enable
+        self.writeHoldingRegs(0x1C,1,1)
+        self.enable = self.readHoldingRegs(0x1C,1)
+        #MicroStep Resolution
+        self.writeHoldingRegs(0x48,1,256)
+        #update self.moving
+        self._moving()
+        #holding current 
+        self.writeHoldingRegs(0x29,1,25)
+        #Initial velocity
+        self.writeHoldingRegs(0x89,4,self.initialVelocity)
+        #MAX velcity
+        self.writeHoldingRegs(0x8B,4,self.finalVelocity)
+
+        
+        print("Congratulations Initialization Complete!")
+
+    #function to connect to LMD57 using modbus TCP 
     def _connectModbusClient(self):
         #define mosbus server and host
         self._motor = ModbusClient()
@@ -29,50 +62,124 @@ class Motor:
             print("unable to connect to "+self.SERVER_HOST+ ":" +str(self.SERVER_PORT))
         return
 
-
+    #function to check is modbus tcp connection is successful 
     def _checkConnection(self):
         if not self._motor.is_open():
             if not self._motor.open():
                 return "unable to connect" #print("unable to connect to motor")
         return "connected!"
 
-    #function to read from register of LMD57 modbus register map
-    def readHoldingRegs(self,startingAddressHex,regSize = 1):                             #startingAddressHex [address of register in HEX] regSize [size of regiter]
-        startingAddressDEC = self.hex2dec(startingAddressHex)                             #hex --> dec
-        reg = 0
-        if regSize > 2:                                                                   #for registers with 4 byte (32bit) data
-            reg2read = 2                                                                  #2 registers to read because is a 4 byte, each register is 2 byte
-            reg = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)    #read 2 modbus registers //// reg is a list [lsb,msb]
-            ans = utils.word_list_to_long(reg,False)                                      #from list[lsb,msb] to a value /// done with big endian        
-        else:                                                                             # for 2 bytes or 1 byte register 
-            reg2read = 1                                                                  #1 register to read
-            reg = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)    #read 1 register from the address (remenber 1 address = 2 bytes(16bits))
-            ans = utils.word_list_to_long(reg,False)                                      #from list[lsb] to a value /// done with big endian 
-        return ans[0]
 
-    #function to write to any register of LMD57 modbus register map
-    def writeHoldingRegs(self,startingAddressHEX,regSize,valueDEC):                         #startingAddressHex [address of register in HEX] regSize [size of regiter] ValueDEC [value in decimal to write]
-        startingAddressDEC = self.hex2dec(startingAddressHEX)                               #hex --> dec
-        reg = 0 
-        if regSize > 2:                                                                     #for registers with 4 byte (32bit) data
-            reg = utils.long_list_to_word([valueDEC],False)                                 #val2write is the decimal value to be written to the register
-            self._motor.write_multiple_registers(startingAddressDEC,reg)                    #
-            
-        else: 
-             self._motor.write_multiple_registers(startingAddressDEC,[valueDEC])
-        
-        print(f"write done")
+    #function to read if the shaft is moving /// update self.moving
+    def _moving(self):
+        x = self.readHoldingRegs(0x4A,1)
+        if x[0] == 0 :
+            self.moving = False
+        elif x[0] == 1:
+            self.moving = True
         return
 
-    
-    def hex2dec(self,hex):
+    #function to convert any hex number into decimal 
+    def _hex2dec(self,hex):
         hex = str(hex)
         dec = literal_eval(hex)
         return dec
 
 
-    def writeSingleReg(self):
-        pass
+    #function to read from register of LMD57 modbus register map
+    def readHoldingRegs(self,startingAddressHex,regSize = 1):                             #startingAddressHex [address of register in HEX] regSize [size of regiter]
+        startingAddressDEC = self._hex2dec(startingAddressHex)                             #hex --> dec
+        if regSize > 2:                                                                   #for registers with 4 byte (32bit) data
+            reg2read = 2                                                                  #2 registers to read because is a 4 byte, each register is 2 byte
+            reg = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)    #read 2 modbus registers //// reg is a list [lsb,msb]
+            ans = utils.word_list_to_long(reg,False)                                    #from list[lsb,msb] to a value /// done with big endian        
+        else:                                                                             # for 2 bytes or 1 byte register 
+            reg2read = 1                                                                  #1 register to read
+            ans = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)    #read 1 register from the address (remenber 1 address = 2 bytes(16bits))
+        return ans
+
+    #function to write to any register of LMD57 modbus register map
+    def writeHoldingRegs(self,startingAddressHEX,regSize,valueDEC):                         #startingAddressHex [address of register in HEX] regSize [size of regiter] ValueDEC [value in decimal to write]
+        startingAddressDEC = self._hex2dec(startingAddressHEX)                               #hex --> dec
+        if regSize > 2:                                                                     #for registers with 4 byte (32bit) data
+            valueDEC = utils.long_list_to_word([valueDEC],False)                            #val2write is the decimal value to be written to the register
+            self._motor.write_multiple_registers(startingAddressDEC,valueDEC)               #write to starting register the value as a list of word [valueDEC]
+                                                                                            #into to write function takes list of vals
+        else:                                                                               #if 2 or 1 bytes then just send that value as a list  
+             self._motor.write_multiple_registers(startingAddressDEC,[valueDEC])            #writting [value DEC] to the starting address
+        return
+
+
+    #function to slew axis in steps/seconds in speficied direction +/- (yes +/-!) 0 to +/- 5000000
+    def slewMotor(self,slewDir = "cw", slew = 50000):
+        #in the future translata that to mm/sec or something
+        #inclomplete waiting for ccw motion 
+        if slewDir == "cw":
+            print("turning cw by = ", slew, "step/sec")
+            self.writeHoldingRegs(0x78,4,slew)  
+        elif slewDir == "ccw":
+            print("ccw")
+
+        return
+    
+    
+    #function to set the hMT technology from schneider motor
+    """
+    0 --> hMTechnology circuity disabled.
+    1 --> Fixed current mode. Current is
+            set by the run and hold current
+            commands, Speed is set by the
+            system speed command.
+    2 --> Variable current mode. Current will
+            vary as needed to position the load
+            with the maximum current set by
+            the run current command. 
+            self.runCurrent
+    3 --> Torque mode, torque and speed
+            will vary as needed to move/
+            position the load with the maximum
+            torque % and speed as specified
+            by the torque and torque-speed
+            commands.
+            self.torquePercentage
+            self.torqueSpeed
+            self.torqueDirection
+
+
+    """
+    def sethmt(self, hmt = 2, runCurrentpercentage = 50, torquePercentage = 50, torqueSpeed = 10, direction = "cw"):
+        #will not use 0 or 1 
+        self.runCurrent = runCurrentpercentage 
+        self.torquePercentage = torquePercentage #1 byte / percentage 0 - 100% 
+        self.torquespeed = torqueSpeed #0 - 255
+        print(self.torquespeed)
+        if direction == "cw":
+            self.torqueDirection = 1
+        else:
+            self.torqueDirection = 0
+
+        torqueDirectionAddress = 0xA5 # 1byte / 0(ccw) - 1(cw) 
+        torqueSpeedAddress = 0xA3 
+        torquePercentageAddress = 0xA6 
+        
+        
+        if hmt == 2:
+            self.writeHoldingRegs(0x8E,1,hmt)
+            self.writeHoldingRegs(0x67,1,self.runCurrent)
+            print("Variable current mode is activated ... hmt mode = ",self.readHoldingRegs(0x8E,1))
+        elif hmt == 3:
+            self.writeHoldingRegs(0x8E,1,hmt)
+            self.writeHoldingRegs(torquePercentageAddress,1,self.torquePercentage)
+            self.writeHoldingRegs(0xA3,4,100)
+            self.writeHoldingRegs(torqueDirectionAddress,1,self.torqueDirection)
+            print("Torque mode is activated ... hmt mode = ",self.readHoldingRegs(0x8E,1))
+            print("torque percentage is = ",self.readHoldingRegs(0xA6,1))
+            print("torque speed is = ",self.readHoldingRegs(0xA3,2))
+            print("torque direction is = ",self.readHoldingRegs(0xA5,1))
+
+        return
+
+
 
     def displacement2steps(self, displacment_mm, direction):
         """ 1 mm travel  =  12857 steps """
@@ -199,9 +306,7 @@ class Motor:
         print('MODBUS COMMAND: emergency stop')
         pass
 
-# time.sleep(100000)
+
 if __name__ == "__main__":
     c = Motor()
-    c.writeHoldingRegs(0x46,4,512000)
-    x = c.readHoldingRegs(0x00,4)
-    print(x)
+    c.slewMotor("cw",0)
