@@ -74,21 +74,9 @@ class Motor:
     def writeSingleReg(self):
         pass
 
-    def displacement2steps(self, displacment_mm, direction):
+    def displacement2steps(self, displacment_mm):
         """ 1 mm travel  =  12857 steps """
-        if direction == 'up':
-            sign = 1
-        else:
-            sign = -1
         displacement_steps = displacment_mm*12857
-        d_msb = 0
-
-        if displacement_steps > 65536:
-            d_msb = math.floor(displacement_steps/65536)
-            d_lsb = displacement_steps%65536
-        else:
-            d_lsb = displacement_steps
-
         # return [sign*d_lsb, sign*d_msb]
         return displacement_steps
 
@@ -132,10 +120,12 @@ class Motor:
             displacement = 5
         else:
             displacement = 10
-        d = self.displacement2steps(displacement,'up')
-        print(f'displacement in steps: {d}')
-        self._motor.write_multiple_registers(70, d)
-        print(f'MODBUS COMMAND: jogging up {displacement}')
+
+        d = self.displacement2steps(displacement)
+        self.writeHoldingRegs(0x46,4,d)
+        # self._motor.write_multiple_registers(70, d)
+
+        print(f'MODBUS COMMAND: jogging up {displacement} mm')
         return
 
     def jogDown(self,displacement):
@@ -159,8 +149,11 @@ class Motor:
             displacement = 5
         else:
             displacement = 10
-        d = self.displacement2steps(displacement,'down')
-        self.writeHoldingRegs(0x46,4,-1*d)
+
+        d = self.displacement2steps(displacement)
+        curr_pos = self.readHoldingRegs(0x57,4)
+        d = curr_pos - d
+        self.writeHoldingRegs(0x46,4,d)
         print(f'displacement in steps: {d}')
         # print(self._motor.write_multiple_registers(70, d))
         print(f'MODBUS COMMAND: jogging down {displacement}')
