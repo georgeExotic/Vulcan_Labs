@@ -259,12 +259,23 @@ class Motor:
 
         d = self.displacement2steps(displacement)
         curr_pos = self.readHoldingRegs(0x57,4)
-        d = curr_pos - d
-        self.writeHoldingRegs(0x46,4,d)
+        print(curr_pos)
+        d = curr_pos[0] - d
+        self.writeHoldingRegs(0x43,4,d)
         print(f'displacement in steps: {d}')
         # print(self._motor.write_multiple_registers(70, d))
         print(f'MODBUS COMMAND: jogging down {displacement}')
         pass
+
+    def Move(self, direction, displacement):
+        d = self.displacement2steps(displacement)
+        if direction == 'cw':
+            self.writeHoldingRegs(0x46,4,d)
+        else:
+            p = self.readHoldingRegs(0x57,4)
+            d = p[0] - d
+            self.writeHoldingRegs(0x43,4,d)
+        return
 
     def run(self):
         """
@@ -302,4 +313,5 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
-    c.slewMotor("cw",0)
+    # c.slewMotor("cw",0)
+    c.Move('ccw',10)
