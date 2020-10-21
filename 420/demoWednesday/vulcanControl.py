@@ -314,4 +314,4 @@ class Motor:
 if __name__ == "__main__":
     c = Motor()
     # c.slewMotor("cw",0)
-    c.Move('ccw',10)
+    # c.Move('ccw',10)
