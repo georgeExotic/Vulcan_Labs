@@ -38,20 +38,22 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
 
 from GUI import Ui_MainWindow
 from GUI import App
+from LoadCell import FakeLoadCell, LoadCell
 # from vulcanControl import Motor
 
 #Global Variables
 
 # Main window containing all GUI components
 
+
                 
 if __name__ == '__main__':
     # motor = Motor()
-    # cellInstance = FakeLoadCell()
+    cellInstance = FakeLoadCell()
     # DB = sqlDatabase()
     app = QApplication(sys.argv)
-    # app.setStyle('Fusion')
-    # mainWin = Ui_MainWindow()
+    app.setStyle('Fusion')
+    mainWin = Ui_MainWindow(cellInstance)
     mainWin = App()
     styleFile=os.path.join(os.path.split(__file__)[0],"styleVulcan.stylesheet")
     styleSheetStr = open(styleFile,"r").read()

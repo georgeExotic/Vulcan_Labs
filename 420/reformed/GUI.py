@@ -217,7 +217,7 @@ class App(QMainWindow):
         event.accept()
 
 class Ui_MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, cellInstance):
         super(Ui_MainWindow, self).__init__()
         self.setupGlobalVars()
         self.setupUi()
@@ -757,6 +757,7 @@ class Ui_MainWindow(QMainWindow):
 
         self.startTime = time.monotonic()
         self.timer = QtCore.QTimer()
+        self.timer.setInterval(50)
         self.timer.timeout.connect(self.update_plot_data)
         self.timer.start()
 
@@ -956,18 +957,18 @@ class Ui_MainWindow(QMainWindow):
         # self.comboBox_6.currentIndexChanged.connect(self.updateDesiredParam)
 
         # # System state changes
-        # self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
-        # # self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
-        # self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
-        # self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
-        # self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
+        self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
+        # self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
+        self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
+        self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
+        self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
         # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
         # self.checkCalibration()
         # self.checkHomed()
 
     def UpdateGUI(self):
-        # self.UpdateForceReadingValue()
+        self.UpdateForceReadingValue()
         pass
 
     def update_plot_data(self):

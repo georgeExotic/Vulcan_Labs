@@ -30,7 +30,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
 from PyQt5.QtWidgets import (QSizePolicy,
-        QWidget, QFrame, QRadioButton)
+        QWidget, QFrame, QRadioButton, QCheckBox)
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QDialogButtonBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLayout, 
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
@@ -38,22 +38,13 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
 
 from vulcanControl import Motor
 
-
-#Global Variables
-
-
-
-
-
-
-
-
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
     def __init__(self):
         super(Ui_MainWindow, self).__init__()
         self.setupGlobalVars()
         self.setupUi()
+        pg.setConfigOptions(antialias=True)
 
     def setupGlobalVars(self):
         self.modeSelected = 0                                   # 0:motion 1:pressure
@@ -62,6 +53,8 @@ class Ui_MainWindow(QMainWindow):
         self.systemState = 0                                    # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing 6:Homed
         self.systemCalibrated = 0                               # 0: no 1: calibrated
         # self.elapsedTime = time.perf_counter()
+        self.force_reading_raw = 0
+        self.testValue_y = []
 
         self.desPos = 0
         self.desPress = 0
@@ -105,8 +98,6 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox_2.setObjectName("groupBox_2")
         # self.groupBox_2.setStyleSheet("color: #F9F6F0;")
         self.groupBox_2.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
-
-
         # self.groupBox_2.setStyleSheet("font-size: 15px;")
         # self.groupBox_2.setStyleSheet("border-radius: 8px;")
         # self.groupBox_2.setStyleSheet("font-weight: bold;")
@@ -460,10 +451,10 @@ class Ui_MainWindow(QMainWindow):
         self.refreshButton.setObjectName("button_refresh")
         self.refreshButton.clicked.connect(DB.getTable)
 
-        self.plotForceRadio = QRadioButton(self.tab_3)
+        self.plotForceRadio = QCheckBox(self.tab_3)
         self.plotForceRadio.setGeometry(550, 80, 120, 30)
         self.plotForceRadio.setText("Plot Force")
-        self.plotForceRadio.toggled.connect(lambda x: self.plotState(self.plotForceRadio))
+        # self.plotForceRadio.toggled.connect(lambda x: self.plotState(self.plotForceRadio))
 
         self.plotPressureRadio = QRadioButton(self.tab_3)
         self.plotPressureRadio.setGeometry(550, 120, 120, 30)
@@ -487,8 +478,39 @@ class Ui_MainWindow(QMainWindow):
         self.tab_4 = QWidget()
         self.tab_4.setObjectName("tab_4")
 
+        self.dataTable = QTableWidget(self.tab_4)
+        self.dataTable.setGeometry(QtCore.QRect(10,10,881,791))
+        self.dataTable.setRowCount(50)
+        self.dataTable.setColumnCount(8)
+        self.dataTable.setObjectName("dataTable")
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(0, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(1, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(2, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(3, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(4, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(5, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(6, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(7, item)
+        self.dataTable.horizontalHeader().setDefaultSectionSize(150)
+        self.dataTable.horizontalHeader().setMinimumSectionSize(41)
+        self.exportButton = QPushButton(self.tab_4)
+        self.exportButton.setGeometry(QtCore.QRect(10, 810, 151, 20))
+        self.exportButton.setObjectName("exportButton")
+
+        self.tabWidget.addTab(self.tab_4, "")
+        self.tab_5 = QWidget()
+        self.tab_5.setObjectName("tab_5")
+
         #Init communication box area
-        self.groupBox_7 = QGroupBox(self.tab_4)
+        self.groupBox_7 = QGroupBox(self.tab_5)
         self.groupBox_7.setGeometry(QtCore.QRect(10, 30, 400, 300)) # pos and size
         self.groupBox_7.setObjectName("groupBox_7")
         self.groupBox_7.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
@@ -509,7 +531,7 @@ class Ui_MainWindow(QMainWindow):
         self.label_17.setObjectName("label_17")
 
         #Init system group box area
-        self.groupBox_9 = QGroupBox(self.tab_4)
+        self.groupBox_9 = QGroupBox(self.tab_5)
         self.groupBox_9.setGeometry(QtCore.QRect(440, 30, 401, 300)) # pos and size
         self.groupBox_9.setObjectName("groupBox_9")
         self.groupBox_9.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
@@ -542,12 +564,35 @@ class Ui_MainWindow(QMainWindow):
         # self.graphWidget = QWidget(self.tab_5)
         self.graphWidget.setGeometry(QtCore.QRect(9, 9, 500, 400)) # pos and size
         self.graphWidget.setBackground('w')
+
+        
+        self.testVal_x = [0]  # 100 time points
+        self.testVal_y = [0]
+        # self.targetSpeed_y = [random.uniform(-10, 10) for _ in range(100)]
+        # self.targetSpeed_y = list(range(0))
+        # self.actualSpeed_x = list(range(100))  # 100 time points
+        # self.actualSpeed_y = [random.uniform(-10, 10) for _ in range(1)]
+
+        self.graphLegend = self.graphWidget.addLegend()
+        self.graphWidget.setTitle("Plotss", size="15pt")
+        self.graphWidget.showGrid(x=True, y=True)
+        grayPen = pg.mkPen(color=(120, 120, 120))
+        redPen = pg.mkPen(color=(255,   0,   0))
+        self.graphWidget.addItem(pg.InfiniteLine(pos=0, angle=0, pen=grayPen))
+        self.testPoints = self.graphWidget.plot(self.testVal_x, self.testVal_y, name = 'Test Data', pen=redPen)
+
+        self.startTime = time.monotonic()
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(50)
+        self.timer.timeout.connect(self.update_plot_data)
+        self.timer.start()
+
         # self.graphWidget.setObjectName("stuff")
 
         # BOTTOM TAB #
 
         #Init Bottom Area frame
-        self.tabWidget.addTab(self.tab_4, "")
+        self.tabWidget.addTab(self.tab_5, "")
         self.frame_2 = QFrame(self.frame)
         self.frame_2.setGeometry(QtCore.QRect(0, 440, 1004, 261)) # pos and size
         self.frame_2.setFrameShape(QFrame.StyledPanel)
@@ -810,7 +855,8 @@ class Ui_MainWindow(QMainWindow):
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
         # force_reading_raw = random.random()
-        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
+        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
+        self.force_reading_raw = force_reading_raw
         if force_reading_raw < 0:
             force_reading_raw = 0
         force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
@@ -849,6 +895,29 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateGUI(self):
         self.UpdateForceReadingValue()
+
+    def update_plot_data(self):
+        self.testVal_x.append(self.testVal_x[-1] + 1)   # Add a new value 1 higher than the last.
+        # self.testVal_y.append(random.uniform(-10, 10))
+        # print(self.testValue_y,self.force_reading_raw)
+        self.testVal_y.append(self.force_reading_raw)
+
+        if self.plotForceRadio.isChecked():
+            print(self.testVal_y)
+            self.testPoints.setData(self.testVal_x, self.testVal_y)
+        else:
+            self.testPoints.clear()    
+
+        row = self.dataTable.rowCount()
+        self.dataTable.insertRow(row)
+        self.dataTable.setItem(row, 0, QtGui.QTableWidgetItem(str(round(time.monotonic()-self.startTime,4))))    # Needs to be replaced with time from SCUTTLE
+        self.dataTable.setItem(row, 1, QtGui.QTableWidgetItem(str(round(self.testVal_x[-1:][0],4))))
+        # self.testDataTable.setItem(row, 2, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 3, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 4, QtGui.QTableWidgetItem(str(round(self.error_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 5, QtGui.QTableWidgetItem(str(round(self.targetSpeed_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 6, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 7, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
 
     def updateSystemState(self,index):
         self.systemState = int(index)
@@ -1185,7 +1254,7 @@ class FakeLoadCell():
         
         if os.path.isfile(self.recorded_configFile_name):
             with open(self.recorded_configFile_name,'rb') as File:
-                # self.cell = pickle.load(File)
+                self.cell = pickle.load(File)
                 self.calibrated = 1
         else:
             self.calibrated = 0
