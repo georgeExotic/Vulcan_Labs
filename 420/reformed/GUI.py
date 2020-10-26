@@ -5,7 +5,6 @@ import time
 import timeit
 import random
 import sys
-import serial 
 import os
 import pickle
 import socket
@@ -13,47 +12,217 @@ import traceback
 import sqlite3
 from datetime import datetime, date
 
-import L2_log as log
-
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from dateutil import parser
-from matplotlib import style
-# import paho.mqtt.client as paho
-# style.use('fivethirtyeight')
-
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
-import RPi.GPIO as GPIO #import I/O interface             #
-from hx711 import HX711 #import HX711 class               #
-from PyQt5 import QtCore, QtGui
+
+from PyQt5 import QtCore, QtGui, uic
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
 from PyQt5.QtWidgets import (QSizePolicy,
-        QWidget, QFrame, QRadioButton)
+        QWidget, QFrame, QRadioButton, QCheckBox)
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QDialogButtonBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLayout, 
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
 
-from vulcanControl import Motor
+class App(QMainWindow):
+    def __init__(self, parent=None):
+
+        super(App, self).__init__(parent)
+        uic.loadUi('PID_Tuner.ui', self)
+
+###################################################################################
+        # For plotting example
+
+        pg.setConfigOptions(antialias=True)
+
+        self.targetSpeed_x = list(range(100))  # 100 time points
+        self.targetSpeed_y = [random.uniform(-10, 10) for _ in range(100)]  # 100 data points
+
+        self.actualSpeed_x = list(range(100))  # 100 time points
+        self.actualSpeed_y = [random.uniform(-10, 10) for _ in range(100)]  # 100 data points
+
+        self.error_x = list(range(100))  # 100 time points
+        self.error_y = [random.uniform(-10, 10) for _ in range(100)]  # 100 data points
+
+        self.duty_x = list(range(100))  # 100 time points
+        self.duty_y = [random.uniform(-10, 10) for _ in range(100)]  # 100 data points
+
+        redPen =    pg.mkPen(color=(255,   0,   0))
+        greenPen =  pg.mkPen(color=(  0, 255,   0))
+        bluePen =   pg.mkPen(color=(  0,   0, 255))
+        yellowPen = pg.mkPen(color=(255, 255,   0))
+        grayPen = pg.mkPen(color=(120, 120, 120))
+
+        # Show plot legends
+        self.leftWheelLegend = self.leftWheelPlot.addLegend()
+        self.rightWheelLegend = self.rightWheelPlot.addLegend()
+
+        # Show plot titles
+        self.rightWheelPlot.setTitle("Right Wheel",  size="15pt")
+        self.leftWheelPlot.setTitle("Left Wheel",  size="15pt")
+
+        # Show x-axis time label
+        self.rightWheelPlot.setLabel('bottom', "Time", units='s', unitPrefix=None)
+        self.leftWheelPlot.setLabel('bottom', "Time", units='s', unitPrefix=None)
+
+        # Show Grid
+        self.leftWheelPlot.showGrid(x=True, y=True)
+        self.rightWheelPlot.showGrid(x=True, y=True)
+
+        # Show y=0 line
+        self.rightWheelPlot.addItem(pg.InfiniteLine(pos=0, angle=0, pen=grayPen))
+        self.leftWheelPlot.addItem(pg.InfiniteLine(pos=0, angle=0, pen=grayPen))
+
+        self.leftTargetSpeed =  self.leftWheelPlot.plot(self.targetSpeed_x, self.targetSpeed_y, name = 'Target Speed', pen=redPen)
+        self.leftactualSpeed =  self.leftWheelPlot.plot(self.actualSpeed_x, self.actualSpeed_y, name = 'Actual Speen', pen=greenPen)
+        self.leftError =        self.leftWheelPlot.plot(self.error_x,       self.error_y, name = 'Error',       pen=bluePen)
+        self.leftDuty =         self.leftWheelPlot.plot(self.duty_x,        self.duty_y, name = 'Duty Cycle',        pen=yellowPen)
+
+        self.rightTargetSpeed =  self.rightWheelPlot.plot(self.targetSpeed_x, self.targetSpeed_y, name = 'Target Speed', pen=redPen)
+        self.rightactualSpeed =  self.rightWheelPlot.plot(self.actualSpeed_x, self.actualSpeed_y, name = 'Actual Speen', pen=greenPen)
+        self.rightError =        self.rightWheelPlot.plot(self.error_x,       self.error_y, name = 'Error',       pen=bluePen)
+        self.rightDuty =         self.rightWheelPlot.plot(self.duty_x,        self.duty_y, name = 'Duty Cycle',        pen=yellowPen)
+
+        self.startTime = time.monotonic()
+
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(50)
+        self.timer.timeout.connect(self.update_plot_data)
+        self.timer.start()
+
+    def update_plot_data(self):
+
+        self.targetSpeed_x.append(self.targetSpeed_x[-1] + 1)   # Add a new value 1 higher than the last.
+        self.targetSpeed_y.append(random.uniform(-10, 10))               # Add a new value 1 higher than the last.
+        self.actualSpeed_x.append(self.actualSpeed_x[-1] + 1)   # Add a new value 1 higher than the last.
+        self.actualSpeed_y.append(random.uniform(-10, 10))               # Add a new value 1 higher than the last.
+
+        self.error_x.append(self.error_x[-1] + 1)               # Add a new value 1 higher than the last.
+        self.error_y.append(random.uniform(-10, 10))                     # Add a new value 1 higher than the last.
+        self.duty_x.append(self.duty_x[-1] + 1)                 # Add a new value 1 higher than the last.
+        self.duty_y.append(random.uniform(-10, 10))                      # Add a new value 1 higher than the last.
+
+        if self.targetSpeedToggle.isChecked():
+            self.rightTargetSpeed.setData(self.targetSpeed_x, self.targetSpeed_y)   # Update the data.
+            self.leftTargetSpeed.setData(self.targetSpeed_x, self.targetSpeed_y)    # Update the data.
+        else:
+            self.rightTargetSpeed.clear()
+            self.leftTargetSpeed.clear()
+
+        if self.actualSpeedToggle.isChecked():
+            self.rightactualSpeed.setData(self.actualSpeed_x, self.actualSpeed_y)   # Update the data.
+            self.leftactualSpeed.setData(self.actualSpeed_x, self.actualSpeed_y)    # Update the data.
+        else:
+            self.rightactualSpeed.clear()
+            self.leftactualSpeed.clear()
+
+        if self.errorToggle.isChecked():
+            self.rightError.setData(self.error_x, self.error_y) # Update the data.
+            self.leftError.setData(self.error_x, self.error_y)  # Update the data.
+        else:
+            self.rightError.clear()
+            self.leftError.clear()
+
+        if self.dutyCycleToggle.isChecked():
+            self.rightDuty.setData(self.duty_x, self.duty_y)    # Update the data.
+            self.leftDuty.setData(self.duty_x, self.duty_y)     # Update the data.
+        else:
+            self.rightDuty.clear()
+            self.leftDuty.clear()
+
+        row = self.testDataTable.rowCount()
+        self.testDataTable.insertRow(row)
+        self.testDataTable.setItem(row, 0, QtGui.QTableWidgetItem(str(round(time.monotonic()-self.startTime,4))))    # Needs to be replaced with time from SCUTTLE
+        self.testDataTable.setItem(row, 1, QtGui.QTableWidgetItem(str(round(self.targetSpeed_y[-1:][0],4))))
+        self.testDataTable.setItem(row, 2, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
+        self.testDataTable.setItem(row, 3, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
+        self.testDataTable.setItem(row, 4, QtGui.QTableWidgetItem(str(round(self.error_y[-1:][0],4))))
+        self.testDataTable.setItem(row, 5, QtGui.QTableWidgetItem(str(round(self.targetSpeed_y[-1:][0],4))))
+        self.testDataTable.setItem(row, 6, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
+        self.testDataTable.setItem(row, 7, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
 
 
-#Global Variables
+    def updateGrid(self):
+        if self.gridToggle.isChecked():
+            self.leftWheelPlot.showGrid(x=True, y=True)
+            self.rightWheelPlot.showGrid(x=True, y=True)
+        else:
+            self.leftWheelPlot.showGrid(x=False, y=False)
+            self.rightWheelPlot.showGrid(x=False, y=False)
 
+    def updateAxes(self):
+        # if self.axesToggle.isChecked():
+        #     self.rightWheelPlot.addItem(self.x_axis)
+        #     self.leftWheelPlot.addItem(self.x_axis)
+        # else:
+        #     clearPen = pg.mkPen(color=(0, 0, 0, 0))
+        #     self.x_axis = pg.InfiniteLine(pos=0, angle=0, pen=clearPen)
+        pass
 
+    def updateLegend(self):
+        if self.legendToggle.isChecked():
+            self.leftWheelLegend = self.leftWheelPlot.addLegend()
+            self.rightWheelLegend = self.rightWheelPlot.addLegend()
+        else:
+            self.leftWheelPlot.removeItem(self.leftWheelLegend)
+            self.rightWheelPlot.removeItem(self.rightWheelLegend)
 
+###################################################################################
 
+    def connect(self):
+        print('Connecting to SCUTTLE')
 
+    def start(self):
+        print('Starting Test')
 
+    def stop(self):
+        print('Stopping Test')
 
+    def exportDataCSV(self):
+        print('Exporting Data as CSV.')
 
-# Main window containing all GUI components
+        fileObj = QFileDialog.getSaveFileName(  self,
+                                                "Export Test Data CSV",
+                                                expanduser("~")+"/pidData.csv",
+                                                "CSV file (*.csv)",
+                                                )
+        print(fileObj)
+
+    def importPlanCSV(self):
+        print('Importing Plan from CSV.')
+
+        fileObj = QFileDialog.getOpenFileName(  self,
+                                                "Export Test Plan CSV",
+                                                expanduser("~")+"/pidData.csv",
+                                                "CSV file (*.csv)",
+                                                )
+        print(fileObj)
+
+    def exportPlanCSV(self):
+        print('Exporting Plan as CSV.')
+
+        fileObj = QFileDialog.getSaveFileName(  self,
+                                                "Export Test Plan CSV",
+                                                expanduser("~")+"/pidData.csv",
+                                                "CSV file (*.csv)",
+                                                )
+        print(fileObj)
+
+    def writeSettings(self):
+        print('Sending Settings to SCUTTLE.')
+
+    def closeEvent(self, event):
+        print('Exiting.')
+        event.accept()
+
 class Ui_MainWindow(QMainWindow):
     def __init__(self):
         super(Ui_MainWindow, self).__init__()
         self.setupGlobalVars()
         self.setupUi()
+        pg.setConfigOptions(antialias=True)
+
 
     def setupGlobalVars(self):
         self.modeSelected = 0                                   # 0:motion 1:pressure
@@ -105,8 +274,6 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox_2.setObjectName("groupBox_2")
         # self.groupBox_2.setStyleSheet("color: #F9F6F0;")
         self.groupBox_2.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
-
-
         # self.groupBox_2.setStyleSheet("font-size: 15px;")
         # self.groupBox_2.setStyleSheet("border-radius: 8px;")
         # self.groupBox_2.setStyleSheet("font-weight: bold;")
@@ -221,7 +388,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.setGeometry(QtCore.QRect(700, 110, 260, 60)) # pos and size
         self.pushButton.setFont(QFont('Arial', 14))#, QFont.Bold)) #adjust font
         self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(motor.stopRun)
+        # self.pushButton.clicked.connect(motor.stopRun)
         self.pushButton.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         # self.pushButton.setStyleSheet("""QPushButton:hover { background-color: green; }""")
         self.pushButton.setStyleSheet("""QPushButton {
@@ -237,7 +404,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(700, 280, 140, 30)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
-        self.pushButton_2.clicked.connect(motor.Home)
+        # self.pushButton_2.clicked.connect(motor.Home)
         self.pushButton_2.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_2.setStyleSheet("""QPushButton {
     font-weight: bold;
@@ -321,7 +488,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_4 = QPushButton(self.widget)
         self.pushButton_4.setGeometry(QtCore.QRect(700, 60, 80, 40)) # pos and size
         self.pushButton_4.setObjectName("pushButton_4")
-        self.pushButton_4.clicked.connect(self.runStartTimer)
+        # self.pushButton_4.clicked.connect(self.runStartTimer)
         self.pushButton_4.setStyleSheet("""QPushButton {
     font-weight: bold;
     font-size: 16px;
@@ -458,12 +625,12 @@ class Ui_MainWindow(QMainWindow):
         self.refreshButton = QPushButton(self.tab_3)
         self.refreshButton.setGeometry(550, 20, 80, 30)
         self.refreshButton.setObjectName("button_refresh")
-        self.refreshButton.clicked.connect(DB.getTable)
+        # self.refreshButton.clicked.connect(DB.getTable)
 
-        self.plotForceRadio = QRadioButton(self.tab_3)
+        self.plotForceRadio = QCheckBox(self.tab_3)
         self.plotForceRadio.setGeometry(550, 80, 120, 30)
         self.plotForceRadio.setText("Plot Force")
-        self.plotForceRadio.toggled.connect(lambda x: self.plotState(self.plotForceRadio))
+        # self.plotForceRadio.toggled.connect(lambda x: self.plotState(self.plotForceRadio))
 
         self.plotPressureRadio = QRadioButton(self.tab_3)
         self.plotPressureRadio.setGeometry(550, 120, 120, 30)
@@ -478,7 +645,7 @@ class Ui_MainWindow(QMainWindow):
         self.clearButton = QPushButton(self.tab_3)
         self.clearButton.setGeometry(550, 300, 80, 30)
         self.clearButton.setObjectName("button_clear")
-        self.clearButton.clicked.connect(DB.clearTable)
+        # self.clearButton.clicked.connect(DB.clearTable)
 
         # TAB 4 #
 
@@ -487,8 +654,39 @@ class Ui_MainWindow(QMainWindow):
         self.tab_4 = QWidget()
         self.tab_4.setObjectName("tab_4")
 
+        self.dataTable = QTableWidget(self.tab_4)
+        self.dataTable.setGeometry(QtCore.QRect(10,10,881,791))
+        self.dataTable.setRowCount(50)
+        self.dataTable.setColumnCount(8)
+        self.dataTable.setObjectName("dataTable")
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(0, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(1, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(2, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(3, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(4, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(5, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(6, item)
+        item = QTableWidgetItem()
+        self.dataTable.setHorizontalHeaderItem(7, item)
+        self.dataTable.horizontalHeader().setDefaultSectionSize(150)
+        self.dataTable.horizontalHeader().setMinimumSectionSize(41)
+        self.exportButton = QPushButton(self.tab_4)
+        self.exportButton.setGeometry(QtCore.QRect(10, 810, 151, 20))
+        self.exportButton.setObjectName("exportButton")
+
+        self.tabWidget.addTab(self.tab_4, "")
+        self.tab_5 = QWidget()
+        self.tab_5.setObjectName("tab_5")
+
         #Init communication box area
-        self.groupBox_7 = QGroupBox(self.tab_4)
+        self.groupBox_7 = QGroupBox(self.tab_5)
         self.groupBox_7.setGeometry(QtCore.QRect(10, 30, 400, 300)) # pos and size
         self.groupBox_7.setObjectName("groupBox_7")
         self.groupBox_7.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
@@ -509,7 +707,7 @@ class Ui_MainWindow(QMainWindow):
         self.label_17.setObjectName("label_17")
 
         #Init system group box area
-        self.groupBox_9 = QGroupBox(self.tab_4)
+        self.groupBox_9 = QGroupBox(self.tab_5)
         self.groupBox_9.setGeometry(QtCore.QRect(440, 30, 401, 300)) # pos and size
         self.groupBox_9.setObjectName("groupBox_9")
         self.groupBox_9.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
@@ -542,12 +740,32 @@ class Ui_MainWindow(QMainWindow):
         # self.graphWidget = QWidget(self.tab_5)
         self.graphWidget.setGeometry(QtCore.QRect(9, 9, 500, 400)) # pos and size
         self.graphWidget.setBackground('w')
+
+        self.targetSpeed_x = list(range(100))  # 100 time points
+        self.targetSpeed_y = [random.uniform(-10, 10) for _ in range(100)]
+        self.actualSpeed_x = list(range(100))  # 100 time points
+        self.actualSpeed_y = [random.uniform(-10, 10) for _ in range(100)]
+        print(self.targetSpeed_x)
+
+        self.graphLegend = self.graphWidget.addLegend()
+        self.graphWidget.setTitle("Plotss", size="15pt")
+        self.graphWidget.showGrid(x=True, y=True)
+        grayPen = pg.mkPen(color=(120, 120, 120))
+        redPen = pg.mkPen(color=(255,   0,   0))
+        self.graphWidget.addItem(pg.InfiniteLine(pos=0, angle=0, pen=grayPen))
+        self.leftTargetSpeed = self.graphWidget.plot(self.targetSpeed_x, self.targetSpeed_y, name = 'Target Speed', pen=redPen)
+
+        self.startTime = time.monotonic()
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.update_plot_data)
+        self.timer.start()
+
         # self.graphWidget.setObjectName("stuff")
 
         # BOTTOM TAB #
 
         #Init Bottom Area frame
-        self.tabWidget.addTab(self.tab_4, "")
+        self.tabWidget.addTab(self.tab_5, "")
         self.frame_2 = QFrame(self.frame)
         self.frame_2.setGeometry(QtCore.QRect(0, 440, 1004, 261)) # pos and size
         self.frame_2.setFrameShape(QFrame.StyledPanel)
@@ -725,639 +943,49 @@ class Ui_MainWindow(QMainWindow):
         # -- ROUTING -- #
 
         # Calibration Button
-        self.pushButton_8.clicked.connect(self.Calibration) #cellInstance.user
+        # self.pushButton_8.clicked.connect(self.Calibration) #cellInstance.user
 
         # Tare Button
-        self.tareButton.clicked.connect(self.tare) #### CHANGE TO TARE FUNCTION ###
+        # self.tareButton.clicked.connect(self.tare) #### CHANGE TO TARE FUNCTION ###
 
         # Update Mode after selection
-        self.comboBox.currentIndexChanged.connect(self.updateMode)
+        # self.comboBox.currentIndexChanged.connect(self.updateMode)
 
         # Update desired parameters
-        self.lineEdit_4.textChanged.connect(self.updateDesiredParam)
-        self.comboBox_6.currentIndexChanged.connect(self.updateDesiredParam)
+        # self.lineEdit_4.textChanged.connect(self.updateDesiredParam)
+        # self.comboBox_6.currentIndexChanged.connect(self.updateDesiredParam)
 
-        # System state changes
-        self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
-        # self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
-        self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
-        self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
-        self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
+        # # System state changes
+        # self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
+        # # self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
+        # self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
+        # self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
+        # self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
         # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
-        self.checkCalibration()
+        # self.checkCalibration()
         # self.checkHomed()
 
-    def checkHomed(self):
-        if self.systemState == 6:
-            self.pushButton.setEnabled(True)
-            self.pushButton_2.setEnabled(True)
-            self.pushButton_3.setEnabled(True)
-            self.pushButton_4.setEnabled(True)
-            self.pushButton_5.setEnabled(True)
-            self.pushButton_6.setEnabled(True)
-            self.pushButton_7.setEnabled(True)
-        elif self.systemState != 6:
-            print("not homed")
-            self.pushButton.setEnabled(False)
-            self.pushButton_2.setEnabled(False)
-            self.pushButton_3.setEnabled(False)
-            self.pushButton_4.setEnabled(False)
-            self.pushButton_5.setEnabled(False)
-            self.pushButton_6.setEnabled(False)
-            self.pushButton_7.setEnabled(False)
-
-    def tare(self):
-        cellInstance.zeroCell()
-
-    def runStartTimer(self):
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
-        self.runStartTime = current_time
-        print(f'run started at time: {self.runStartTime}')
-
-    def plotState(self,b):
-        if b.text() == 'Plot Force':
-            if b.isChecked() == True:
-                DB.getTable('force',1)
-        if b.text() == 'Plot Force':
-            if b.isChecked() == False:
-                DB.getTable('force',0)
-        if b.text() == 'Plot Pressure':
-            if b.isChecked() == True:
-                DB.getTable('pressure',1)
-        if b.text() == 'Plot Pressure':
-            if b.isChecked() == False:
-                DB.getTable('pressure',0)
-        if b.text() == 'Plot Weight':
-            if b.isChecked() == True:
-                DB.getTable('weight',1)
-        if b.text() == 'Plot Weight':
-            if b.isChecked() == False:
-                DB.getTable('weight',0)
-
-    def updateMode(self):
-        mode = self.comboBox.currentText()
-        print(mode)
-        if mode == "Motion Limiting":
-            self.modeSelected = 0
-            self.label_3_modeFeedback.setText("Motion Limiting")
-        else:
-            self.modeSelected = 1
-            self.label_3_modeFeedback.setText("Pressure Limiting")
-
-
-    def UpdateForceReadingValue(self):
-        """Updates the LCD Force Reading Value"""
-        # force_reading_raw = random.random()
-        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
-        if force_reading_raw < 0:
-            force_reading_raw = 0
-        force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
-        # pressure = MQtt()
-        # pressure.publish(force_reading_kg,"force")
-        force_reading_N = round(force_reading_kg*9.81,3)
-        pistonDiameter = 20 #mm
-        r = pistonDiameter/2 #mm
-        r_m = r/1000    # [m]
-        Area = math.pi*math.pow(r_m,2)
-        pressure_reading = round((force_reading_N/Area)/1000,3)  #Kpa
-        
-        self.lcdNumber.display(force_reading_kg)
-        DB.insert_value('weight', force_reading_kg)
-        self.lcdNumber2.display(pressure_reading)
-        DB.insert_value('pressure', pressure_reading)
-        self.lcdNumber3.display(force_reading_N)
-        DB.insert_value('force', force_reading_N)
-        self.label_7.setText("Current Pressure: "+str(pressure_reading)+" "+"kPa")
-        self.update()
-
-    def Calibration(self):
-        self.dialog = calibrationDialogWindow()
-        self.dialog.show()
-
-    def checkCalibration(self):
-        if cellInstance.calibrated == 1:
-            pass
-        else:
-            self.calibrationWarn()
-
-    def calibrationWarn(self):
-        self.dialog2 = calibrationWarning()
-        self.dialog2.raise_()
-        self.dialog2.show()
-
     def UpdateGUI(self):
-        self.UpdateForceReadingValue()
-
-    def updateSystemState(self,index):
-        self.systemState = int(index)
-        indices = {
-            0: "Idle",
-            1: "Starting",
-            2: "Running",
-            3: "Paused",
-            4: "Stopped",
-            5: "Processing",
-            6: "Homed"
-        }
-        self.label.setText("State: "+ str(indices[self.systemState]))
-        # print(index)
-
-    def updateDesiredParam(self):
-        self.label_6.setText(f"Desired Pressure: {self.lineEdit_4.text()} {self.comboBox_6.currentText()}")
-
-class sqlDatabase:
-    def __init__(self):
-        super().__init__()
-        self.conn = sqlite3.connect(':memory:')
-        self.c = self.conn.cursor()
-        self.data = []
-        self.plotter = None
-        self.c.execute("""CREATE TABLE testtable (
-            [timestamp] timestamp,
-            type TEXT,
-            value INTEGER)
-            """)
-        self.plots = {
-            'force': 0,
-            'pressure': 0,
-            'weight': 0,
-            'default': 0
-        }
-
-    def insert_value(self,valType,val):
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
-        with self.conn:
-            self.c.execute("INSERT INTO testtable VALUES (:timestamp, :type, :value)",
-                    {'timestamp': current_time, 'type': valType, 'value': float(val)})
-
-    def clearTable(self):
-        print('deleting')
-        self.c.execute('DELETE FROM testtable')
-        self.data = []
-        self.plotter.clear()
-
-    def getTable(self,name='default',order='0'):
-        self.c.execute("SELECT * FROM testtable")
-        # print(self.c.fetchall())
-        self.graph_data(name,order)
-        return self.c.fetchall()
-
-    def graph_data(self,name='default',order='0'):
-        self.plots[name] = order
-        for key, value in self.plots.items():
-            if value == 1:
-                self.c.execute('SELECT timestamp, value FROM testtable WHERE type = :type', {'type': key})
-                self.data.extend(self.c.fetchall())
-        self.data.sort()
-        print(self.plots)
-        if self.data:
-            times = []
-            vals = []
-            if 1 == 1:
-                for row in self.data:
-                    print(row)
-                    d = float(row[0].replace(":",""))
-                    times.append(d)
-                    vals.append(float(row[1]))
-        else:
-            times = []
-            vals = []
-
-        mainWin.graphWidget.setBackground('#fff')
-        pen = pg.mkPen(color=(255,100,100), width=8)
-        self.plotter = mainWin.graphWidget.plot(times,vals,pen=pen)
-        # plt.plot_date(times,vals,'-')
-        # plt.show()
-
-class WorkerThread(QThread):
-    def __init__(self, parent=None):
-        super(WorkerThread, self).__init__(parent)
-
-    def run(self):
-        time.sleep(3)
-        self.emit(SIGNAL('threadDone()'))
-
-class newCalibrationWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle('Calibration')
-        self.resize(500,300)
-        self.state = 0
-        self.setLayout(QFormLayout())
-        self.cal_buttons = QWidget()
-        self.cal_buttons.setLayout(QHBoxLayout())
-        self._initialized = 0
-        self.WorkerThread = WorkerThread()
-        self.connect(self.WorkerThread, SIGNAL("threadDone()"), self.threadDone, Qt.DirectConnection)
-
-        self.startWindow()
-        
-    def startWindow(self):
-        self.dialog = QLabel('Calibration requires an object of known weight to be placed on the scale')
-        self.next_button = QPushButton('Next')
-        self.cancel_button = QPushButton('Cancel')
-        self.submit_button = QPushButton('Submit')
-        self.layout().addRow(self.dialog)
-        self.cal_buttons.layout().addWidget(self.cancel_button)
-        self.cal_buttons.layout().addWidget(self.next_button)
-        self.layout().addRow('', self.cal_buttons)
-
-        self.next_button.clicked.connect(self.getInputWindow)
-        self.next_button.clicked.connect(self.startCalibration)
-        self.next_button.clicked.connect(self.collectingDataWindow)
-        self.next_button.clicked.connect(self.startCalibration)
-        self.cancel_button.clicked.connect(self.close)
-
-    def startCalibration(self):
-        # i = self.initialized()
-        # i = 0
-        self.working = 1
-        #start calibration
-        for i in reversed(range(self.layout().count())):        #Clears components from first window
-            self.layout().itemAt(i).widget().deleteLater()
-        
-        self.dialogText = QLabel('Do not touch scale. Initializing')
-        self.layout().addRow('',self.dialogText)
-        self.show()
-
-        self.WorkerThread.start()
-        self.dialogText.setText('starting')
-        
-        #fn to perform calibration
-        # Ui_MainWindow.setWorker(mainWin, self.calibration_fake)
-        # worker.signals.result.connect(self.print_output)
-        # worker.signals.finished.connect(self.thread_complete)
-        # worker.signals.progress.connect(self.progress_fn)
-
-        # if self.working == 1:
-        #     print(1)
-        # else:
-        #     print('alksdjhfalksjdfhakljh')
-                
-        # self.dialog = QLabel('wordssss')
-        # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
-        # self.inputWeight = QLineEdit()
-        # self.layout().addRow('',self.dialogText)
-        # self.layout().addRow('',self.inputWeight)
-
-
-        # if self.initialized == 1:
-        #     self.getInputWindow()
-
-    def threadDone(self):
-        self.dialogText.setText('finished')
-
-    def getInputWindow(self):
-        self.close()
-        # self.knownGrams = 0
-        # for i in reversed(range(self.layout().count())):        #Clears components from first window
-        #     self.layout().itemAt(i).widget().deleteLater()
-        # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
-        # self.dialog = QLabel('wordssss')
-        # # self.cancel_button = QPushButton('Cancel')
-        # # self.submit_button = QPushButton('Submit')
-        # self.inputWeight = QLineEdit()
-        # # buttons = QWidget()
-        # # buttons.setLayout(QHBoxLayout())
-        # # buttons.layout().addWidget(self.cancel_button)
-        # # buttons.layout().addWidget(self.submit_button)
-        # self.layout().addRow('',self.dialogText)
-        # self.layout().addRow('',self.inputWeight)
-        # self.layout().addRow('',buttons)
-        # self.layout().resize(300,200)
-        self.show()
-
-
-        # self.inputWeight.textChanged.connect(self.setKnownGrams)
-        # self.submit_button.clicked.connect(self.sendKnownInput)
-        # self.cancel_button.clicked.connect(self.close)
-
-    def setKnownGrams(self,lineEdit):
-        self.knownGrams = self.inputWeight.text()
-
-    def getUserInput(self):
-        print('user input started')
-
-    def calibration_fake(self, *args, **kwargs):
-        print('Initializing...')
-        time.sleep(3)
-        self.working = 0
-        print(self.working)
-        time.sleep(1)
-        result = 'complete'
-        return self.working
-        
-
-
-class calibrationWarning(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.ok_button = QPushButton('Ok')
-        self.cal_button = QPushButton('Calibrate')
-        self.dialog = QLabel("Load cell is not calibrated. Please calibrate.")
-        self.setWindowTitle('Warning')
-
-        self.setLayout(QFormLayout())
-        self.layout().addRow(self.dialog)
-        buttons = QWidget()
-        buttons.setLayout(QHBoxLayout())
-        buttons.layout().addWidget(self.ok_button)
-        # buttons.layout().addWidget(self.cal_button)
-        self.layout().addRow('', buttons)
-
-        #Routes front end to back end
-        self.ok_button.clicked.connect(self.close)
-        # self.ok_button.clicked.connect(self.close)
-        self.cal_button.clicked.connect(Ui_MainWindow.Calibration)
-
-#Class handling calibration pop up boxes
-class calibrationDialogWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.resize(300,200)
-        self.cancel_button = QPushButton('Cancel')
-        self.next_button = QPushButton('Next')
-        self.submit_button = QPushButton('Submit')
-        self.finish_button = QPushButton('Finish')
-        self.dialogText = QLabel('\n\n Calibration requires an object of known weight to be placed on the scale')
-        self.warningText = QLabel('\n\nWarning: Continuing will pause the program')
-        self.setWindowTitle('Calibration')
-
-        #Initializes layout
-        self.setLayout(QFormLayout())
-        self.layout().addRow(self.dialogText)
-        buttons = QWidget()
-        buttons.setLayout(QHBoxLayout())
-        buttons.layout().addWidget(self.cancel_button)
-        buttons.layout().addWidget(self.next_button)
-        self.layout().addRow('', buttons)
-        self.layout().addRow('',self.warningText)
-
-        #Routes front end to back end
-
-        self.next_button.clicked.connect(self.getInputWindow)
-        self.next_button.clicked.connect(self.startCalibration)
-        # self.next_button.clicked.connect(self.collectingDataWindow)
-        self.cancel_button.clicked.connect(self.close)
-
-    def collectingDataWindow(self):
-        self.close()
-        self.setWindowTitle('Calibration 3')
-        for i in reversed(range(self.layout().count())):        #Clears components from first window
-            self.layout().itemAt(i).widget().deleteLater()
-        self.dialogText = QLabel('Initializing...')
-        self.layout().addRow('',self.dialogText)
-        self.show()
-        while cellInstance.initializing == 1:
-            self.dialogText = QLabel('Initializing.')
-            time.sleep(1)
-            self.dialogText = QLabel('Initializing..')
-            time.sleep(1)
-            self.dialogText = QLabel('Initializing...')
-        self.close()
-
-
-
-    #Second window in calibration branch
-    def getInputWindow(self):
-        self.close()
-        self.setWindowTitle('Calibration 2')
-        self.knownGrams = 0
-        for i in reversed(range(self.layout().count())):        #Clears components from first window
-            self.layout().itemAt(i).widget().deleteLater()
-        self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
-        self.inputWeight = QLineEdit()
-        buttons = QWidget()
-        buttons.setLayout(QHBoxLayout())
-        buttons.layout().addWidget(self.cancel_button)
-        buttons.layout().addWidget(self.submit_button)
-        self.layout().addRow('',self.dialogText)
-        self.layout().addRow('',self.inputWeight)
-        self.layout().addRow('',buttons)
-        # self.layout().resize(300,200)
-        self.show()
-
-
-        self.inputWeight.textChanged.connect(self.setKnownGrams)
-        self.submit_button.clicked.connect(self.sendKnownInput)
-        self.cancel_button.clicked.connect(self.close)
-
-    def setKnownGrams(self,lineEdit):
-        self.knownGrams = self.inputWeight.text()
-
-    def startCalibration(self):
-        cellInstance.userCalibrationPart1()
-
-    #Sends known weight from user to Load cell calibration
-    def sendKnownInput(self):
-        self.close()
-        self.setWindowTitle('Calibration 3')
-        for i in reversed(range(self.layout().count())):
-            self.layout().itemAt(i).widget().deleteLater()
-        print(f'user inputted value: {self.knownGrams}')
-        # while LoadCell.calibrated == 0:
-        #     self.dialogText = QLabel('Calibrating...')
-        self.dialogText = QLabel('Calibrating')
-        buttons = QWidget()
-        buttons.setLayout(QHBoxLayout())
-        buttons.layout().addWidget(self.finish_button)
-        self.layout().addRow('',self.dialogText)
-        self.layout().addRow('',buttons)
-        self.show()
-
-        cellInstance.userCalibrationPart2(self.knownGrams)
-
-        while cellInstance.initializing == 1:
-            self.dialogText = QLabel('Calibrating.')
-            time.sleep(1)
-            self.dialogText = QLabel('Calibrating..')
-            time.sleep(1)
-            self.dialogText = QLabel('Calibrating...')
-
-        self.finish_button.clicked.connect(self.close)
-
-class FakeLoadCell():
-    def __init__(self):
-        self.recorded_configFile_name = 'calibration.vlabs'
-        
-        if os.path.isfile(self.recorded_configFile_name):
-            with open(self.recorded_configFile_name,'rb') as File:
-                # self.cell = pickle.load(File)
-                self.calibrated = 1
-        else:
-            self.calibrated = 0
-        self.reading = 0
-        self.initializing = 0
-
-    def userCalibrationPart1(self):
-
-        self.initializing = 1
-
-        print('getting initial data...')
-        # self.reading = self.cell.get_raw_data_mean()
-        time.sleep(3)
-
-        self.initializing = 0
-
-    def userCalibrationPart2(self,knownGrams):
-        self.initializing = 1
-
-        if knownGrams:
-            known_weight_grams = knownGrams
-            try:
-                value = float(known_weight_grams)
-                print(value, 'grams')
-            except ValueError:
-                print('Expected integer or float and I have got:',
-                      known_weight_grams)
-
-        print('calibrating...')
-        time.sleep(3)
-
-        self.calibrated = 1
-        
-        self.initializing = 0
-
-        print("done calibrating")
-
-class LoadCell():
-    def __init__(self):
-        GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
-        self.pd_sckPin=20
-        self.dout_pin=21
-        self.recorded_configFile_name = 'calibration.vlabs'
-        self.cell = HX711(self.dout_pin,self.pd_sckPin)
-        if os.path.isfile(self.recorded_configFile_name):
-            with open(self.recorded_configFile_name,'rb') as File:
-                self.cell = pickle.load(File)   #loading calibrated HX711 object
-                self.calibrated = 1
-        else:
-            self.calibrated = 0
-        self.reading = 0
-        self.initializing = 0
- 
-    def userCalibrationPart1(self):
-        self.cell = HX711(self.dout_pin,self.pd_sckPin)
-        #send the user calibration message
-        err = self.cell.zero()
-        if err:
-            raise ValueError('Tare is unsuccessful.')
-        self.initializing = 1
-        self.reading = self.cell.get_raw_data_mean()
-        self.initializing = 0
-        print(f'raw_data_mean: {self.reading}, predicted ratio = {self.reading/198}')
-
-    def userCalibrationPart2(self,knownGrams):
-        self.initializing = 1
-        self.reading = self.cell.get_data_mean()
-        fileName = 'calibration.vlabs'
-        print(f'get_data_mean: {self.reading}, predicted ratio = {self.reading/198}')
-
-        if self.reading:
-            known_weight_grams = knownGrams
-            try:
-                value = float(known_weight_grams)
-                print(value, 'grams')
-            except ValueError:
-                print('Expected integer or float and I have got:',
-                      known_weight_grams)
-
-            ratio = self.reading / value  # calculate the ratio for channel A and gain 128
-            print(ratio)
-            self.cell.set_scale_ratio(ratio)  # set ratio for current channel
-            print('Ratio is set.')
-        else:
-            raise ValueError(
-                'Cannot calculate mean value. Try debug mode. Variable reading:',
-                self.reading)
-                    
-        print('Saving the HX711 state to swap file on persistant memory')
-        with open(fileName, 'wb') as File:
-            pickle.dump(self.cell, File)
-            File.flush()
-            os.fsync(File.fileno())
-            # you have to flush, fsynch and close the file all the time.
-            # This will write the file to the drive. It is slow but safe.
-
-        if os.path.isfile(self.recorded_configFile_name):
-            with open(self.recorded_configFile_name,'rb') as File:
-                self.cell = pickle.load(File)   #loading calibrated HX711 object
-                self.calibrated = 1
-        
-        self.initializing = 0
-
-    def zeroCell(self):
-        self.cell.zero()
-        self.tare = 1 
-
-        print("Calibration is succesful")
-"""
-##import time
-import paho.mqtt.client as paho
-
-# Setup MQTT
-broker="broker.hivemq.com"
-port=1883
-
-topic = "scuttle/infrastructure/data/001/scale/latest"
-
-def on_publish(client,userdata,result):         # create function for callback
-    pass
-
-mqtt = paho.Client()                          # create client object
-mqtt.on_publish = on_publish                  # assign function to callback
-mqtt.connect(broker,port)                     # establish connection
-
-
-if __name__ == "__main__":
-    while 1:
-        weight = ser.readline().decode('utf-8')
-        print("Weight Station Reading: " + weight)
-        # time.sleep(0.01)
-        mqtt.publish(topic, str(weight))
-
-"""
-class MQtt():
-    #settup MQTT
-    def __init__(self):        
-        self.baseTopic = "VulcanLabs/" #base topic
-        self.mqtt = paho.Client()
-        self.broker="broker.hivemq.com"
-        self.port=1883
-    def on_publish(self,client,userdata,result):
+        # self.UpdateForceReadingValue()
         pass
-    
-    def publish(self,value,topicName): # something.publish(value,"topicName")
-        self.mqtt.on_publish = self.on_publish
-        self.mqtt.connect(self.broker,self.port)
-        self.value = value
-        self.topic = topicName
-        self.mqtt.publish((self.baseTopic + self.topic), str(self.value))
 
+    def update_plot_data(self):
+        self.targetSpeed_x.append(self.targetSpeed_x[-1] + 1)   # Add a new value 1 higher than the last.
+        self.targetSpeed_y.append(random.uniform(-10, 10))
 
+        if self.plotForceRadio.isChecked():
+            self.leftTargetSpeed.setData(self.targetSpeed_x, self.targetSpeed_y)
+        else:
+            self.leftTargetSpeed.clear()    
 
-
-                
-if __name__ == '__main__':
-    motor = Motor()
-    cellInstance = LoadCell()
-    DB = sqlDatabase()
-    app = QApplication(sys.argv)
-    app.setStyle('Fusion')
-    mainWin = Ui_MainWindow()
-    styleFile=os.path.join(os.path.split(__file__)[0],"styleVulcan.stylesheet")
-    styleSheetStr = open(styleFile,"r").read()
-    mainWin.setStyleSheet(styleSheetStr)
-    mainWin.show()
-
-    fps = 3
-    timer = QtCore.QTimer()
-    timer.timeout.connect(mainWin.UpdateGUI)
-    timer.setInterval(int(1000/fps))
-    timer.start()
-
-    sys.exit(app.exec_())
-
+        row = self.dataTable.rowCount()
+        self.dataTable.insertRow(row)
+        self.dataTable.setItem(row, 0, QtGui.QTableWidgetItem(str(round(time.monotonic()-self.startTime,4))))    # Needs to be replaced with time from SCUTTLE
+        self.dataTable.setItem(row, 1, QtGui.QTableWidgetItem(str(round(self.targetSpeed_x[-1:][0],4))))
+        # self.testDataTable.setItem(row, 2, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 3, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 4, QtGui.QTableWidgetItem(str(round(self.error_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 5, QtGui.QTableWidgetItem(str(round(self.targetSpeed_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 6, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 7, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
