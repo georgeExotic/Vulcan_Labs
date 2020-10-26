@@ -24,8 +24,8 @@ from matplotlib import style
 
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
-import RPi.GPIO as GPIO #import I/O interface             #
-from hx711 import HX711 #import HX711 class               #
+# import RPi.GPIO as GPIO #import I/O interface             #
+# from hx711 import HX711 #import HX711 class               #
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
@@ -38,6 +38,16 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
 
 from vulcanControl import Motor
 
+
+#Global Variables
+
+
+
+
+
+
+
+
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
     def __init__(self):
@@ -46,6 +56,7 @@ class Ui_MainWindow(QMainWindow):
         self.setupUi()
         pg.setConfigOptions(antialias=True)
 
+
     def setupGlobalVars(self):
         self.modeSelected = 0                                   # 0:motion 1:pressure
         self.connectionState = 0                                # 0:No Connection 1:Connection Secure
@@ -53,8 +64,6 @@ class Ui_MainWindow(QMainWindow):
         self.systemState = 0                                    # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing 6:Homed
         self.systemCalibrated = 0                               # 0: no 1: calibrated
         # self.elapsedTime = time.perf_counter()
-        self.force_reading_raw = 0
-        self.testValue_y = []
 
         self.desPos = 0
         self.desPress = 0
@@ -78,6 +87,7 @@ class Ui_MainWindow(QMainWindow):
         self.frame.setFrameShape(QFrame.StyledPanel)
         self.frame.setFrameShadow(QFrame.Raised)
         self.frame.setObjectName("frame")
+        
 
         #Initializes tab layout
         self.tabWidget = QTabWidget(self.frame)
@@ -98,6 +108,8 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox_2.setObjectName("groupBox_2")
         # self.groupBox_2.setStyleSheet("color: #F9F6F0;")
         self.groupBox_2.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
+
+
         # self.groupBox_2.setStyleSheet("font-size: 15px;")
         # self.groupBox_2.setStyleSheet("border-radius: 8px;")
         # self.groupBox_2.setStyleSheet("font-weight: bold;")
@@ -212,7 +224,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.setGeometry(QtCore.QRect(700, 110, 260, 60)) # pos and size
         self.pushButton.setFont(QFont('Arial', 14))#, QFont.Bold)) #adjust font
         self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(motor.stopRun)
+        # self.pushButton.clicked.connect(motor.stopRun)
         self.pushButton.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         # self.pushButton.setStyleSheet("""QPushButton:hover { background-color: green; }""")
         self.pushButton.setStyleSheet("""QPushButton {
@@ -228,7 +240,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(700, 280, 140, 30)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
-        self.pushButton_2.clicked.connect(motor.Home)
+        # self.pushButton_2.clicked.connect(motor.Home)
         self.pushButton_2.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_2.setStyleSheet("""QPushButton {
     font-weight: bold;
@@ -565,13 +577,11 @@ class Ui_MainWindow(QMainWindow):
         self.graphWidget.setGeometry(QtCore.QRect(9, 9, 500, 400)) # pos and size
         self.graphWidget.setBackground('w')
 
-        
-        self.testVal_x = [0]  # 100 time points
-        self.testVal_y = [0]
-        # self.targetSpeed_y = [random.uniform(-10, 10) for _ in range(100)]
-        # self.targetSpeed_y = list(range(0))
-        # self.actualSpeed_x = list(range(100))  # 100 time points
-        # self.actualSpeed_y = [random.uniform(-10, 10) for _ in range(1)]
+        self.targetSpeed_x = list(range(100))  # 100 time points
+        self.targetSpeed_y = [random.uniform(-10, 10) for _ in range(100)]
+        self.actualSpeed_x = list(range(100))  # 100 time points
+        self.actualSpeed_y = [random.uniform(-10, 10) for _ in range(100)]
+        print(self.targetSpeed_x)
 
         self.graphLegend = self.graphWidget.addLegend()
         self.graphWidget.setTitle("Plotss", size="15pt")
@@ -579,11 +589,10 @@ class Ui_MainWindow(QMainWindow):
         grayPen = pg.mkPen(color=(120, 120, 120))
         redPen = pg.mkPen(color=(255,   0,   0))
         self.graphWidget.addItem(pg.InfiniteLine(pos=0, angle=0, pen=grayPen))
-        self.testPoints = self.graphWidget.plot(self.testVal_x, self.testVal_y, name = 'Test Data', pen=redPen)
+        self.leftTargetSpeed = self.graphWidget.plot(self.targetSpeed_x, self.targetSpeed_y, name = 'Target Speed', pen=redPen)
 
         self.startTime = time.monotonic()
         self.timer = QtCore.QTimer()
-        self.timer.setInterval(50)
         self.timer.timeout.connect(self.update_plot_data)
         self.timer.start()
 
@@ -790,7 +799,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
         # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
-        self.checkCalibration()
+        # self.checkCalibration()
         # self.checkHomed()
 
     def checkHomed(self):
@@ -854,9 +863,8 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-        # force_reading_raw = random.random()
-        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
-        self.force_reading_raw = force_reading_raw
+        force_reading_raw = random.random()
+        # force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy 
         if force_reading_raw < 0:
             force_reading_raw = 0
         force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
@@ -896,29 +904,6 @@ class Ui_MainWindow(QMainWindow):
     def UpdateGUI(self):
         self.UpdateForceReadingValue()
 
-    def update_plot_data(self):
-        self.testVal_x.append(self.testVal_x[-1] + 1)   # Add a new value 1 higher than the last.
-        # self.testVal_y.append(random.uniform(-10, 10))
-        # print(self.testValue_y,self.force_reading_raw)
-        self.testVal_y.append(self.force_reading_raw)
-
-        if self.plotForceRadio.isChecked():
-            print(self.testVal_y)
-            self.testPoints.setData(self.testVal_x, self.testVal_y)
-        else:
-            self.testPoints.clear()    
-
-        row = self.dataTable.rowCount()
-        self.dataTable.insertRow(row)
-        self.dataTable.setItem(row, 0, QtGui.QTableWidgetItem(str(round(time.monotonic()-self.startTime,4))))    # Needs to be replaced with time from SCUTTLE
-        self.dataTable.setItem(row, 1, QtGui.QTableWidgetItem(str(round(self.testVal_x[-1:][0],4))))
-        # self.testDataTable.setItem(row, 2, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
-        # self.testDataTable.setItem(row, 3, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
-        # self.testDataTable.setItem(row, 4, QtGui.QTableWidgetItem(str(round(self.error_y[-1:][0],4))))
-        # self.testDataTable.setItem(row, 5, QtGui.QTableWidgetItem(str(round(self.targetSpeed_y[-1:][0],4))))
-        # self.testDataTable.setItem(row, 6, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
-        # self.testDataTable.setItem(row, 7, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
-
     def updateSystemState(self,index):
         self.systemState = int(index)
         indices = {
@@ -935,6 +920,26 @@ class Ui_MainWindow(QMainWindow):
 
     def updateDesiredParam(self):
         self.label_6.setText(f"Desired Pressure: {self.lineEdit_4.text()} {self.comboBox_6.currentText()}")
+
+    def update_plot_data(self):
+        self.targetSpeed_x.append(self.targetSpeed_x[-1] + 1)   # Add a new value 1 higher than the last.
+        self.targetSpeed_y.append(random.uniform(-10, 10))
+
+        if self.plotForceRadio.isChecked():
+            self.leftTargetSpeed.setData(self.targetSpeed_x, self.targetSpeed_y)
+        else:
+            self.leftTargetSpeed.clear()    
+
+        row = self.dataTable.rowCount()
+        self.dataTable.insertRow(row)
+        self.dataTable.setItem(row, 0, QtGui.QTableWidgetItem(str(round(time.monotonic()-self.startTime,4))))    # Needs to be replaced with time from SCUTTLE
+        self.dataTable.setItem(row, 1, QtGui.QTableWidgetItem(str(round(self.targetSpeed_x[-1:][0],4))))
+        # self.testDataTable.setItem(row, 2, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 3, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 4, QtGui.QTableWidgetItem(str(round(self.error_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 5, QtGui.QTableWidgetItem(str(round(self.targetSpeed_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 6, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
+        # self.testDataTable.setItem(row, 7, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
 
 class sqlDatabase:
     def __init__(self):
@@ -995,9 +1000,9 @@ class sqlDatabase:
             times = []
             vals = []
 
-        mainWin.graphWidget.setBackground('#fff')
+        # mainWin.graphWidget.setBackground('#fff')
         pen = pg.mkPen(color=(255,100,100), width=8)
-        self.plotter = mainWin.graphWidget.plot(times,vals,pen=pen)
+        # self.plotter = mainWin.graphWidget.plot(times,vals,pen=pen)
         # plt.plot_date(times,vals,'-')
         # plt.show()
 
@@ -1254,7 +1259,7 @@ class FakeLoadCell():
         
         if os.path.isfile(self.recorded_configFile_name):
             with open(self.recorded_configFile_name,'rb') as File:
-                self.cell = pickle.load(File)
+                # self.cell = pickle.load(File)
                 self.calibrated = 1
         else:
             self.calibrated = 0
@@ -1411,8 +1416,8 @@ class MQtt():
 
                 
 if __name__ == '__main__':
-    motor = Motor()
-    cellInstance = LoadCell()
+    # motor = Motor()
+    # cellInstance = FakeLoadCell()
     DB = sqlDatabase()
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
@@ -1423,10 +1428,10 @@ if __name__ == '__main__':
     mainWin.show()
 
     fps = 3
-    timer = QtCore.QTimer()
-    timer.timeout.connect(mainWin.UpdateGUI)
-    timer.setInterval(int(1000/fps))
-    timer.start()
+    # timer = QtCore.QTimer()
+    # timer.timeout.connect(mainWin.UpdateGUI)
+    # timer.setInterval(int(1000/fps))
+    # timer.start()
 
     sys.exit(app.exec_())
 
