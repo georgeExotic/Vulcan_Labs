@@ -19,31 +19,61 @@ class Motor:
         self._checkConnection()
         #Init variables
         self.moving = False
-        self.initialVelocity = 1000 #steps/second
-        self.finalVelocity = 750000 #steps/second
+        # self.initialVelocity = 1000 #steps/second
+        # self.finalVelocity = 750000 #steps/second
         self.hmt = 2 #default 2 = variable current mode --> current will vary as needed to postion the load with the maximun current set by the run current command 
-        self.sethmt(2)
+        # self.sethmt(2)
+        
+        # #testing torque
+        # self.writeHoldingRegs(0x8E,1,self.hmt) 
+        # #control Bound 
+        # # self.writeHoldingRegs(0x91,1,1)
+        # #torque direction
+        # self.writeHoldingRegs(0xA5,1,1)
+        # #torque percentage
+        # self.writeHoldingRegs(0xA6,1,100)
+        # #torque speed
+        # self.writeHoldingRegs(0xA3,2,255)
+
+        # print(f'hmt: {self.readHoldingRegs(0x8E,1)}')
+        # print(f'control bounds: {self.readHoldingRegs(0x91,1)}')
+        # print(f'torque dir: {self.readHoldingRegs(0xA5,1)}')
+        # print(f'set torque: {self.readHoldingRegs(0xA6,1)}')
+        # print(f'torque speed: {self.readHoldingRegs(0xA3,2)}')
+
+        ## Testing Variable Current Mode ##
+        #set Running Current
+        self.writeHoldingRegs(0x67,1,100)
+        #Enable variable current 
+        self.writeHoldingRegs(0x8E,1,self.hmt)
+        #control Bound 
+        self.writeHoldingRegs(0x91,1,1)
+        #make up
+        self.writeHoldingRegs(0xA0,1,2)
+        #rotate CW
+        print(f'hmt: {self.readHoldingRegs(0x8E,1)}')
+        print(f'running current: {self.readHoldingRegs(0x67,1)}')
 
         ##setUp Registers/update variables
-        #acce
-        self.writeHoldingRegs(0x00,4,500000)
+        # acce
+        # self.writeHoldingRegs(0x00,4,500000)
         self.acceleration = self.readHoldingRegs(0x00,4)
         #deaccel
-        self.writeHoldingRegs(0x18,4,500000)
+        # self.writeHoldingRegs(0x18,4,500000)
         self.deacceleration = self.readHoldingRegs(0x18,4)
         #enable
-        self.writeHoldingRegs(0x1C,1,1)
+        # self.writeHoldingRegs(0x1C,1,1)
         self.enable = self.readHoldingRegs(0x1C,1)
         #MicroStep Resolution
         self.writeHoldingRegs(0x48,1,256)
         #update self.moving
         self._moving()
         #holding current 
-        self.writeHoldingRegs(0x29,1,25)
+        # self.writeHoldingRegs(0x29,1,25)
         #Initial velocity
-        self.writeHoldingRegs(0x89,4,self.initialVelocity)
+        # self.writeHoldingRegs(0x89,4,self.initialVelocity)
         #MAX velcity
-        self.writeHoldingRegs(0x8B,4,self.finalVelocity)
+        # self.writeHoldingRegs(0x8B,4,self.finalVelocity)
 
         
         print("Congratulations Initialization Complete!")
@@ -185,6 +215,7 @@ class Motor:
         """ 1 mm travel  =  12857 steps """
         displacement_steps = displacment_mm*12857
         # return [sign*d_lsb, sign*d_msb]
+        print(f'before d in mm: {displacment_mm}, d in steps: {displacement_steps}')
         return displacement_steps
 
     def Home(self):
@@ -260,9 +291,12 @@ class Motor:
         d = self.displacement2steps(displacement)
         curr_pos = self.readHoldingRegs(0x57,4)
         print(curr_pos)
+        # print(f'd before subtracting pos: {d}')
+        # print(f'current pos: {curr_pos}')
         d = curr_pos[0] - d
+        # print(f'd after subtracting pos: {d}')
         self.writeHoldingRegs(0x43,4,d)
-        print(f'displacement in steps: {d}')
+        # print(f'displacement in steps: {d}')
         # print(self._motor.write_multiple_registers(70, d))
         print(f'MODBUS COMMAND: jogging down {displacement}')
         pass
@@ -280,7 +314,6 @@ class Motor:
     def run(self):
         """
         run = 1
-        3D print parts like Dr Hur said
         """
         print("running")
         pass
@@ -313,5 +346,5 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
-    # c.slewMotor("cw",0)
-    # c.Move('ccw',10)
+    c.writeHoldingRegs(0x46,4,51200)
+
