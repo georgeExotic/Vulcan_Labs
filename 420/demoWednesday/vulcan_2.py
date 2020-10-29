@@ -54,6 +54,9 @@ class Ui_MainWindow(QMainWindow):
         self.systemCalibrated = 0                               # 0: no 1: calibrated
         # self.elapsedTime = time.perf_counter()
         self.force_reading_raw = 0
+        self.force_reading_kg = 0
+        self.pressure_reading = 0
+        self.position_reading = 0
         self.testValue_y = []
 
         self.desPos = 0
@@ -451,20 +454,20 @@ class Ui_MainWindow(QMainWindow):
         self.refreshButton.setObjectName("button_refresh")
         self.refreshButton.clicked.connect(DB.getTable)
 
-        self.plotForceRadio = QCheckBox(self.tab_3)
-        self.plotForceRadio.setGeometry(550, 80, 120, 30)
-        self.plotForceRadio.setText("Plot Force")
-        # self.plotForceRadio.toggled.connect(lambda x: self.plotState(self.plotForceRadio))
+        self.plotForceCheckbox = QCheckBox(self.tab_3)
+        self.plotForceCheckbox.setGeometry(550, 80, 120, 30)
+        self.plotForceCheckbox.setText("Plot Force")
+        # self.plotForceCheckbox.toggled.connect(lambda x: self.plotState(self.plotForceRadio))
 
-        self.plotPressureRadio = QRadioButton(self.tab_3)
-        self.plotPressureRadio.setGeometry(550, 120, 120, 30)
-        self.plotPressureRadio.setText("Plot Pressure")
-        self.plotPressureRadio.toggled.connect(lambda x: self.plotState(self.plotPressureRadio))
+        self.plotPressureCheckbox = QCheckBox(self.tab_3)
+        self.plotPressureCheckbox.setGeometry(550, 120, 120, 30)
+        self.plotPressureCheckbox.setText("Plot Pressure")
+        # self.plotPressureCheckbox.toggled.connect(lambda x: self.plotState(self.plotPressureRadio))
 
-        self.plotWeightRadio = QRadioButton(self.tab_3)
-        self.plotWeightRadio.setGeometry(550, 160, 120, 30)
-        self.plotWeightRadio.setText("Plot Weight")
-        self.plotWeightRadio.toggled.connect(lambda x: self.plotState(self.plotWeightRadio))
+        self.plotWeightCheckbox = QCheckBox(self.tab_3)
+        self.plotWeightCheckbox.setGeometry(550, 160, 120, 30)
+        self.plotWeightCheckbox.setText("Plot Weight")
+        # self.plotWeightRadio.toggled.connect(lambda x: self.plotState(self.plotWeightRadio))
 
         self.clearButton = QPushButton(self.tab_3)
         self.clearButton.setGeometry(550, 300, 80, 30)
@@ -566,8 +569,11 @@ class Ui_MainWindow(QMainWindow):
         self.graphWidget.setBackground('w')
 
         
-        self.testVal_x = [0]  # 100 time points
-        self.testVal_y = [0]
+        self.time_x = [0]  # 100 time points
+        self.force_vals = [0]
+        self.pressure_vals = [0]
+        self.position_vals = [0]
+        # self.weight_vals = [0]
         # self.targetSpeed_y = [random.uniform(-10, 10) for _ in range(100)]
         # self.targetSpeed_y = list(range(0))
         # self.actualSpeed_x = list(range(100))  # 100 time points
@@ -576,10 +582,13 @@ class Ui_MainWindow(QMainWindow):
         self.graphLegend = self.graphWidget.addLegend()
         self.graphWidget.setTitle("Plotss", size="15pt")
         self.graphWidget.showGrid(x=True, y=True)
-        grayPen = pg.mkPen(color=(120, 120, 120))
-        redPen = pg.mkPen(color=(255,   0,   0))
-        self.graphWidget.addItem(pg.InfiniteLine(pos=0, angle=0, pen=grayPen))
-        self.testPoints = self.graphWidget.plot(self.testVal_x, self.testVal_y, name = 'Test Data', pen=redPen)
+        grayPen = pg.mkPen(color=(120, 120, 120), width=3)
+        redPen = pg.mkPen(color=(255,   0,   0), width=3)
+        blackPen = pg.mkPen(color=(255, 255, 255), width = 3)
+        self.graphWidget.addItem(pg.InfiniteLine(pos=0, angle=0, pen=blackPen))
+        self.forcePlot = self.graphWidget.plot(self.time_x, self.force_vals, name = 'Test Data', pen=grayPen)
+        self.pressurePlot = self.graphWidget.plot(self.time_x, self.pressure_vals, name = 'Pressure', pen=redPen)
+        self.positionPlot = self.graphWidget.plot(self.time_x, self.position_vals, name = 'Position', pen=grayPen)
 
         self.startTime = time.monotonic()
         self.timer = QtCore.QTimer()
@@ -854,21 +863,24 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-        # force_reading_raw = random.random()
-        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
+        force_reading_raw = random.random()
+        # force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
         self.force_reading_raw = force_reading_raw
         if force_reading_raw < 0:
             force_reading_raw = 0
         force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
+        self.force_reading_kg
         # pressure = MQtt()
         # pressure.publish(force_reading_kg,"force")
         force_reading_N = round(force_reading_kg*9.81,3)
+        self.force_reading_kg
         pistonDiameter = 20 #mm
         r = pistonDiameter/2 #mm
         r_m = r/1000    # [m]
         Area = math.pi*math.pow(r_m,2)
         pressure_reading = round((force_reading_N/Area)/1000,3)  #Kpa
-        
+        self.pressure_reading = pressure_reading
+
         self.lcdNumber.display(force_reading_kg)
         DB.insert_value('weight', force_reading_kg)
         self.lcdNumber2.display(pressure_reading)
@@ -897,21 +909,26 @@ class Ui_MainWindow(QMainWindow):
         self.UpdateForceReadingValue()
 
     def update_plot_data(self):
-        self.testVal_x.append(self.testVal_x[-1] + 1)   # Add a new value 1 higher than the last.
+        self.time_x.append(self.time_x[-1] + 1)   # Add a new value 1 higher than the last.
         # self.testVal_y.append(random.uniform(-10, 10))
         # print(self.testValue_y,self.force_reading_raw)
-        self.testVal_y.append(self.force_reading_raw)
+        self.force_vals.append(self.force_reading_raw)
+        self.pressure_vals.append(self.pressure_reading)
 
-        if self.plotForceRadio.isChecked():
-            print(self.testVal_y)
-            self.testPoints.setData(self.testVal_x, self.testVal_y)
+        if self.plotForceCheckbox.isChecked():
+            # print(self.force_vals)
+            self.forcePlot.setData(self.time_x, self.force_vals)
         else:
-            self.testPoints.clear()    
+            self.forcePlot.clear()
+        if self.plotPressureCheckbox.isChecked():
+            self.pressurePlot.setData(self.time_x, self.pressure_vals)
+        else:
+            self.pressurePlot.clear()
 
         row = self.dataTable.rowCount()
         self.dataTable.insertRow(row)
         self.dataTable.setItem(row, 0, QtGui.QTableWidgetItem(str(round(time.monotonic()-self.startTime,4))))    # Needs to be replaced with time from SCUTTLE
-        self.dataTable.setItem(row, 1, QtGui.QTableWidgetItem(str(round(self.testVal_x[-1:][0],4))))
+        self.dataTable.setItem(row, 1, QtGui.QTableWidgetItem(str(round(self.time_x[-1:][0],4))))
         # self.testDataTable.setItem(row, 2, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
         # self.testDataTable.setItem(row, 3, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
         # self.testDataTable.setItem(row, 4, QtGui.QTableWidgetItem(str(round(self.error_y[-1:][0],4))))
