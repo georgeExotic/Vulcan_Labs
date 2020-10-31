@@ -863,8 +863,8 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-        force_reading_raw = random.random()
-        # force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
+        # force_reading_raw = random.random()
+        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
         self.force_reading_raw = force_reading_raw
         if force_reading_raw < 0:
             force_reading_raw = 0
