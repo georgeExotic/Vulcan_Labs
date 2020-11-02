@@ -11,6 +11,8 @@ import pickle
 import socket
 import traceback
 import sqlite3
+import pandas as pd
+import shutil
 from datetime import datetime, date
 
 import L2_log as log
@@ -55,6 +57,7 @@ class Ui_MainWindow(QMainWindow):
         # self.elapsedTime = time.perf_counter()
         self.force_reading_raw = 0
         self.force_reading_kg = 0
+        self.force_reading_N = 0
         self.pressure_reading = 0
         self.position_reading = 0
         self.testValue_y = []
@@ -107,13 +110,13 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits Mode select dropdown component
         self.comboBox = QComboBox(self.groupBox_2)
-        self.comboBox.setGeometry(QtCore.QRect(20, 40, 200, 30)) # positioning and sizing
+        self.comboBox.setGeometry(QtCore.QRect(20, 40, 280, 60)) # positioning and sizing
         self.comboBox.setAutoFillBackground(False)
         self.comboBox.setEditable(False)
         self.comboBox.setObjectName("comboBox")
         self.comboBox.addItem("")
         self.comboBox.addItem("")
-        self.comboBox.setContentsMargins(100,100,100,100)
+        self.comboBox.setContentsMargins(0,0,0,0)
 
         #Inits Logo
         self.pixmap = QPixmap('VulcanLabsLogo.png')
@@ -457,22 +460,33 @@ class Ui_MainWindow(QMainWindow):
         self.plotForceCheckbox = QCheckBox(self.tab_3)
         self.plotForceCheckbox.setGeometry(550, 80, 120, 30)
         self.plotForceCheckbox.setText("Plot Force")
+        self.plotForceCheckbox.setStyleSheet("""QCheckBox {font-weight: bold; font-size: 16 px; color: #fff;}""")
         # self.plotForceCheckbox.toggled.connect(lambda x: self.plotState(self.plotForceRadio))
 
         self.plotPressureCheckbox = QCheckBox(self.tab_3)
-        self.plotPressureCheckbox.setGeometry(550, 120, 120, 30)
+        self.plotPressureCheckbox.setGeometry(550, 120, 160, 30)
         self.plotPressureCheckbox.setText("Plot Pressure")
+        self.plotPressureCheckbox.setStyleSheet("""QCheckBox {font-weight: bold; font-size: 16 px; color: #fff;}""")
         # self.plotPressureCheckbox.toggled.connect(lambda x: self.plotState(self.plotPressureRadio))
 
         self.plotWeightCheckbox = QCheckBox(self.tab_3)
-        self.plotWeightCheckbox.setGeometry(550, 160, 120, 30)
+        self.plotWeightCheckbox.setGeometry(550, 160, 160, 30)
         self.plotWeightCheckbox.setText("Plot Weight")
+        self.plotWeightCheckbox.setStyleSheet("""QCheckBox {font-weight: bold; font-size: 16 px; color: #fff;}""")
+        # self.plotWeightCheckbox.setStyleSheet("""QCheckBox::indicator { color: #fff; }""")
         # self.plotWeightRadio.toggled.connect(lambda x: self.plotState(self.plotWeightRadio))
 
         self.clearButton = QPushButton(self.tab_3)
         self.clearButton.setGeometry(550, 300, 80, 30)
         self.clearButton.setObjectName("button_clear")
         self.clearButton.clicked.connect(DB.clearTable)
+
+        self.exportButton = QPushButton(self.tab_3)
+        self.exportButton.setGeometry(550, 240, 80, 30)
+        self.exportButton.setObjectName("button_export")
+        # self.exportButton.setStyleSheet("""QPushButton {font-weight: bold;font-size: 16px;color: #303030;border: 2px solid #202020;
+                                # border-radius: 8px;min-width: 10px;background-color: #FF7C0A;}""")
+        self.exportButton.clicked.connect(self.exportData)
 
         # TAB 4 #
 
@@ -504,9 +518,9 @@ class Ui_MainWindow(QMainWindow):
         self.dataTable.setHorizontalHeaderItem(7, item)
         self.dataTable.horizontalHeader().setDefaultSectionSize(150)
         self.dataTable.horizontalHeader().setMinimumSectionSize(41)
-        self.exportButton = QPushButton(self.tab_4)
-        self.exportButton.setGeometry(QtCore.QRect(10, 810, 151, 20))
-        self.exportButton.setObjectName("exportButton")
+        # self.exportButton = QPushButton(self.tab_4)
+        # self.exportButton.setGeometry(QtCore.QRect(10, 810, 151, 20))
+        # self.exportButton.setObjectName("exportButton")
 
         self.tabWidget.addTab(self.tab_4, "")
         self.tab_5 = QWidget()
@@ -565,7 +579,7 @@ class Ui_MainWindow(QMainWindow):
         self.graphWidget = pg.PlotWidget(self.graphFrame)
         # self.tab_5.setCentralWidget(self.graphWidget)
         # self.graphWidget = QWidget(self.tab_5)
-        self.graphWidget.setGeometry(QtCore.QRect(9, 9, 500, 400)) # pos and size
+        self.graphWidget.setGeometry(QtCore.QRect(9, 9, 500, 340)) # pos and size
         self.graphWidget.setBackground('w')
 
         
@@ -573,7 +587,7 @@ class Ui_MainWindow(QMainWindow):
         self.force_vals = [0]
         self.pressure_vals = [0]
         self.position_vals = [0]
-        # self.weight_vals = [0]
+        self.weight_vals = [0]
         # self.targetSpeed_y = [random.uniform(-10, 10) for _ in range(100)]
         # self.targetSpeed_y = list(range(0))
         # self.actualSpeed_x = list(range(100))  # 100 time points
@@ -585,10 +599,12 @@ class Ui_MainWindow(QMainWindow):
         grayPen = pg.mkPen(color=(120, 120, 120), width=3)
         redPen = pg.mkPen(color=(255,   0,   0), width=3)
         blackPen = pg.mkPen(color=(255, 255, 255), width = 3)
+        bluePen = pg.mkPen(color=(0,0,255), width=3)
         self.graphWidget.addItem(pg.InfiniteLine(pos=0, angle=0, pen=blackPen))
         self.forcePlot = self.graphWidget.plot(self.time_x, self.force_vals, name = 'Test Data', pen=grayPen)
         self.pressurePlot = self.graphWidget.plot(self.time_x, self.pressure_vals, name = 'Pressure', pen=redPen)
         self.positionPlot = self.graphWidget.plot(self.time_x, self.position_vals, name = 'Position', pen=grayPen)
+        self.weightPlot = self.graphWidget.plot(self.time_x, self.weight_vals, name = 'Weight', pen=bluePen)
 
         self.startTime = time.monotonic()
         self.timer = QtCore.QTimer()
@@ -774,6 +790,7 @@ class Ui_MainWindow(QMainWindow):
         # self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), _translate("MainWindow", "Plots"))
         self.refreshButton.setText(_translate("MainWindow", "Refresh"))
         self.clearButton.setText(_translate("MainWindow", "Clear"))
+        self.exportButton.setText(_translate("MainWindow", "Export"))
 
 
         # -- ROUTING -- #
@@ -799,7 +816,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
         # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
-        self.checkCalibration()
+        # self.checkCalibration()
         # self.checkHomed()
 
     def checkHomed(self):
@@ -863,17 +880,17 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-        # force_reading_raw = random.random()
-        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
+        force_reading_raw = random.random()
+        # force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
         self.force_reading_raw = force_reading_raw
         if force_reading_raw < 0:
             force_reading_raw = 0
         force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
-        self.force_reading_kg
+        self.force_reading_kg = force_reading_kg
         # pressure = MQtt()
         # pressure.publish(force_reading_kg,"force")
         force_reading_N = round(force_reading_kg*9.81,3)
-        self.force_reading_kg
+        self.force_reading_N = force_reading_N
         pistonDiameter = 20 #mm
         r = pistonDiameter/2 #mm
         r_m = r/1000    # [m]
@@ -912,8 +929,9 @@ class Ui_MainWindow(QMainWindow):
         self.time_x.append(self.time_x[-1] + 1)   # Add a new value 1 higher than the last.
         # self.testVal_y.append(random.uniform(-10, 10))
         # print(self.testValue_y,self.force_reading_raw)
-        self.force_vals.append(self.force_reading_raw)
+        self.force_vals.append(self.force_reading_N)
         self.pressure_vals.append(self.pressure_reading)
+        self.weight_vals.append(self.force_reading_kg)
 
         if self.plotForceCheckbox.isChecked():
             # print(self.force_vals)
@@ -924,6 +942,8 @@ class Ui_MainWindow(QMainWindow):
             self.pressurePlot.setData(self.time_x, self.pressure_vals)
         else:
             self.pressurePlot.clear()
+        if self.plotWeightCheckbox.isChecked():
+            self.weightPlot.setData(self.time_x, self.weight_vals)
 
         row = self.dataTable.rowCount()
         self.dataTable.insertRow(row)
@@ -952,6 +972,13 @@ class Ui_MainWindow(QMainWindow):
 
     def updateDesiredParam(self):
         self.label_6.setText(f"Desired Pressure: {self.lineEdit_4.text()} {self.comboBox_6.currentText()}")
+
+    def exportData(self):
+        d = {'Force [N]':self.force_vals,'Pressure [kPa]':self.pressure_vals,'Position [mm]':self.weight_vals}
+        df = pd.DataFrame(d)
+        df.to_csv('log.csv', index=False)
+        print(df.tail())
+        path = 'media/pi/*'
 
 class sqlDatabase:
     def __init__(self):
