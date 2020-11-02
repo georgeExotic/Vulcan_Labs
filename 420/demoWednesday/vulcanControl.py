@@ -352,7 +352,7 @@ class limitSwitch():
         GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
         GPIO.setup(self.limitPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         self.home = False
-        #pin 29 GPIO 5
+        #pin 29 GPIO 5 
     def updateSwitch(self):
         # GPIO.input(self.limitPin) == GPIO.HIGH:
         result = GPIO.input(self.limitPin)
@@ -360,5 +360,6 @@ class limitSwitch():
 
 if __name__ == "__main__":
     c = Motor()
+    home = limitSwitch()
     c.writeHoldingRegs(0x46,4,51200)
 
