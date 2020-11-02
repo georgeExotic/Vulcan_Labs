@@ -1,6 +1,8 @@
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
 from ast import literal_eval #from hex to dec
+import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
+import time
 
 import time
 import math
@@ -343,6 +345,18 @@ class Motor:
         print('MODBUS COMMAND: emergency stop')
         pass
 
+
+class limitSwitch():
+    def __init__(self,limitPin):
+        self.limitPin = limitPin
+        GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
+        GPIO.setup(self.limitPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        self.home = False
+        #pin 29 GPIO 5
+    def updateSwitch(self):
+        # GPIO.input(self.limitPin) == GPIO.HIGH:
+        result = GPIO.input(self.limitPin)
+        print(result)
 
 if __name__ == "__main__":
     c = Motor()

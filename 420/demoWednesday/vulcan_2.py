@@ -38,7 +38,7 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
 
-# from vulcanControl import Motor
+from vulcanControl import Motor
 
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
@@ -976,9 +976,7 @@ class Ui_MainWindow(QMainWindow):
     def exportData(self):
         d = {'Force [N]':self.force_vals,'Pressure [kPa]':self.pressure_vals,'Position [mm]':self.weight_vals}
         df = pd.DataFrame(d)
-        df.to_csv('log.csv', index=False)
-        print(df.tail())
-        path = 'media/pi/*'
+        df.to_csv('/media/pi/BB40-F80E/log.csv', index=False)
 
 class sqlDatabase:
     def __init__(self):
