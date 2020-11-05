@@ -105,8 +105,8 @@ class Ui_MainWindow(QMainWindow):
         #Inits box area on left
         self.widget = QWidget()
         self.widget.setObjectName("widget")
-        self.widget.setStyleSheet("""QLabel:disabled { color: #A9A6A0; font-weight: bold; font-size: 14px;} """)
-        self.widget.setStyleSheet("""QLabel:enabled { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
+        self.widget.setStyleSheet("""QLabel:disabled { color: #A9A6A0; font-weight: bold; font-size: 18px;} """)
+        self.widget.setStyleSheet("""QLabel:enabled { color: #F9F6F0; font-weight: bold; font-size: 18px; }""")
         # self.groupBox_2 = QGroupBox(self.widget)
         # self.groupBox_2.setGeometry(QtCore.QRect(20, 20, 300, 360)) # positioning and sizing
         # self.groupBox_2.setObjectName("groupBox_2")
@@ -174,6 +174,10 @@ class Ui_MainWindow(QMainWindow):
         self.label_9 = QLabel(self.widget)
         self.label_9.setGeometry(QtCore.QRect(360, 50, 130, 20)) # pos and size
         self.label_9.setObjectName("label_9")
+        self.label_91 = QLabel(self.widget)
+        self.label_91.setGeometry(QtCore.QRect(360, 70, 130, 20)) # pos and size
+        self.label_91.setObjectName("label_9")
+        
         # self.label_9.setStyleSheet("""QLabel { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
         # self.setStyleSheet("""QLabel { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
 
@@ -193,13 +197,19 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits final layer label
         self.label_10 = QLabel(self.widget)
-        self.label_10.setGeometry(QtCore.QRect(360, 100, 130, 20)) # pos and size
+        self.label_10.setGeometry(QtCore.QRect(360, 130, 130, 20)) # pos and size
         self.label_10.setObjectName("label_10")
+        self.label_101 = QLabel(self.widget)
+        self.label_101.setGeometry(QtCore.QRect(360, 150, 130, 20)) # pos and size
+        self.label_101.setObjectName("label_101")
 
         #Inits number of layers label
         self.label_11 = QLabel(self.widget)
-        self.label_11.setGeometry(QtCore.QRect(360, 150, 150, 20)) # pos and size
+        self.label_11.setGeometry(QtCore.QRect(360, 260, 150, 20)) # pos and size
         self.label_11.setObjectName("label_11")
+        self.label_111 = QLabel(self.widget)
+        self.label_111.setGeometry(QtCore.QRect(360, 280, 150, 20)) # pos and size
+        self.label_111.setObjectName("label_111")
 
         #Inits number of layers input
         self.lineEdit_3 = QLineEdit(self.widget)
@@ -210,6 +220,9 @@ class Ui_MainWindow(QMainWindow):
         self.label_12 = QLabel(self.widget)
         self.label_12.setGeometry(QtCore.QRect(360, 200, 150, 20)) # pos and size
         self.label_12.setObjectName("label_12")
+        self.label_121 = QLabel(self.widget)
+        self.label_121.setGeometry(QtCore.QRect(360, 220, 150, 20)) # pos and size
+        self.label_121.setObjectName("label_121")
 
         #Inits desired pressure input
         self.lineEdit_4 = QLineEdit(self.widget)
@@ -218,10 +231,10 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits mass input
         self.labelMassInput = QLabel(self.widget)
-        self.labelMassInput.setGeometry(QtCore.QRect(380, 250, 150, 20))
+        self.labelMassInput.setGeometry(QtCore.QRect(360, 340, 150, 20))
         self.labelMassInput.setObjectName("labelMassInput")
         self.lineEditMassInput = QLineEdit(self.widget)
-        self.lineEditMassInput.setGeometry(QtCore.QRect(510, 250, 60, 30))
+        self.lineEditMassInput.setGeometry(QtCore.QRect(510, 360, 60, 30))
         self.lineEditMassInput.setObjectName("lineEditMassInput")
 
         #Inits desired pressure unit select
@@ -730,12 +743,16 @@ class Ui_MainWindow(QMainWindow):
         # self.groupBox_3.setTitle(_translate("MainWindow", "Parameter Input"))
         self.comboBox_2.setItemText(0, _translate("MainWindow", "mm"))
         self.comboBox_2.setItemText(1, _translate("MainWindow", "μm"))
-        self.label_9.setText(_translate("MainWindow", "Initial Layer Height"))
+        self.label_9.setText(_translate("MainWindow", "Initial Layer"))
+        self.label_91.setText(_translate("MainWindow", "Height"))
         self.comboBox_3.setItemText(0, _translate("MainWindow", "mm"))
         self.comboBox_3.setItemText(1, _translate("MainWindow", "μm"))
-        self.label_10.setText(_translate("MainWindow", "Compaction depth"))
-        self.label_11.setText(_translate("MainWindow", "Number of Layers"))
-        self.label_12.setText(_translate("MainWindow", "Target Pressure"))
+        self.label_10.setText(_translate("MainWindow", "Compaction"))
+        self.label_101.setText(_translate("MainWindow", "Depth"))
+        self.label_11.setText(_translate("MainWindow", "Number"))
+        self.label_111.setText(_translate("MainWindow", "Of Layers"))
+        self.label_12.setText(_translate("MainWindow", "Target"))
+        self.label_121.setText(_translate("MainWindow", "Pressure"))
         self.comboBox_6.setItemText(0, _translate("MainWindow", "kPa"))
         self.comboBox_6.setItemText(1, _translate("MainWindow", "MPa"))
         self.pushButton.setText(_translate("MainWindow", "STOP"))
@@ -849,16 +866,22 @@ class Ui_MainWindow(QMainWindow):
             self.lineEdit.setEnabled(True)
             self.lineEdit_2.setEnabled(True)
             self.label_9.setEnabled(True)
+            self.label_91.setEnabled(True)
             self.label_10.setEnabled(True)
+            self.label_101.setEnabled(True)
             self.label_12.setEnabled(False)
+            self.label_121.setEnabled(False)
             self.lineEdit_4.setEnabled(False)
         else:
             '''reverse'''
             self.lineEdit.setEnabled(False)
             self.lineEdit_2.setEnabled(False)
             self.label_9.setEnabled(False)
+            self.label_91.setEnabled(False)
             self.label_10.setEnabled(False)
+            self.label_101.setEnabled(False)
             self.label_12.setEnabled(True)
+            self.label_121.setEnabled(True)
             self.lineEdit_4.setEnabled(True)
 
     def keyboardPopUp(self):
