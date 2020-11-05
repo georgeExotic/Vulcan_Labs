@@ -81,7 +81,7 @@ class Ui_MainWindow(QMainWindow):
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.frame = QFrame(self.centralwidget)
-        self.frame.setGeometry(QtCore.QRect(9, 9, 1024, 600))
+        self.frame.setGeometry(QtCore.QRect(0, 0, 1024, 600))
         self.frame.setFrameShape(QFrame.StyledPanel)
         self.frame.setFrameShadow(QFrame.Raised)
         self.frame.setObjectName("frame")
@@ -92,11 +92,18 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.setObjectName("tabWidget")
 
         #CSS
-        self.tabWidget.setStyleSheet('QTabBar { min-height: 20px; min-width: 500px; }')
+        # self.tabWidget.setStyleSheet('QTabBar { min-height: 50px; min-width: 500px; }')
+        # self.tabWidget.setStyleSheet('QTabBar::tab:selected { font-size: 30; }')
+        # QString tabStyle = "QTabBar {background-color: #000000; color:#ffffff;}"
+        # "QTabBar::tab:!selected {height: 50px; width: 100px;background-color: #000000; color:#ffffff;font-size:12pt;}"
+        # "QTabBar::tab:selected {height: 50px; width: 100px;background-color: #000000; color:#ffffff;font-size:8pt;}";
+        # ui->tabWidget->setStyleSheet(tabStyle);
+        
+        # self.tabWidget.setFont(QtGui.QFont('SansSerif', 18))
         self.setStyleSheet("""QLineEdit:disabled { padding: 1px; color: #202020; border: 2px solid #A9A6A0; border-radius: 2px; font-weight: bold; background-color: #A9A6A0}""")
         self.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #FFF000; border-radius: 8px;}""")
         self.setStyleSheet("""QLabel->widget { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
-        self.setStyleSheet("""QLabel:disabled { color:#FFF000; font-weight: bold; font-size: 14px;}""")
+        self.setStyleSheet("""QLabel:disabled { color:#FFF000; font-weight: bold; font-size: 14px; }""")
 
         # self.setStyleSheet('QPushButton { }')
 
@@ -132,7 +139,7 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox.addItem("")
         self.comboBox.addItem("")
         self.comboBox.setContentsMargins(0,0,0,0)
-        self.comboBox.setStyleSheet("font-size: 26px")
+        self.comboBox.setStyleSheet("font-size: 24px; font-weight: bold;")
 
         #Inits window icon as logo
         self.setWindowIcon(QtGui.QIcon('3DPrinterLogo.png')) # Logo as Icon
@@ -149,7 +156,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits initial layer height input
         self.lineEdit = QLineEdit(self.widget)
-        self.lineEdit.setGeometry(QtCore.QRect(510, 50, 60, 30)) # pos and size
+        self.lineEdit.setGeometry(QtCore.QRect(490, 50, 70, 40)) # pos and size
         self.lineEdit.setObjectName("lineEdit")
 
 #         self.setStyleSheet(""")
@@ -192,7 +199,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits final layer height input
         self.lineEdit_2 = QLineEdit(self.widget)
-        self.lineEdit_2.setGeometry(QtCore.QRect(510, 100, 60, 30)) # pos and size
+        self.lineEdit_2.setGeometry(QtCore.QRect(490, 130, 70, 40)) # pos and size
         self.lineEdit_2.setObjectName("lineEdit_2")
 
         #Inits final layer label
@@ -213,7 +220,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits number of layers input
         self.lineEdit_3 = QLineEdit(self.widget)
-        self.lineEdit_3.setGeometry(QtCore.QRect(510, 150, 60, 30)) # pos and size
+        self.lineEdit_3.setGeometry(QtCore.QRect(490, 250, 70, 40)) # pos and size
         self.lineEdit_3.setObjectName("lineEdit_3")
 
         #Inits desired pressure label
@@ -226,15 +233,15 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits desired pressure input
         self.lineEdit_4 = QLineEdit(self.widget)
-        self.lineEdit_4.setGeometry(QtCore.QRect(510, 200, 60, 30)) # pos and size
+        self.lineEdit_4.setGeometry(QtCore.QRect(490, 190, 70, 40)) # pos and size
         self.lineEdit_4.setObjectName("lineEdit_4")
 
         #Inits mass input
         self.labelMassInput = QLabel(self.widget)
-        self.labelMassInput.setGeometry(QtCore.QRect(360, 340, 150, 20))
+        self.labelMassInput.setGeometry(QtCore.QRect(360, 320, 150, 20))
         self.labelMassInput.setObjectName("labelMassInput")
         self.lineEditMassInput = QLineEdit(self.widget)
-        self.lineEditMassInput.setGeometry(QtCore.QRect(510, 360, 60, 30))
+        self.lineEditMassInput.setGeometry(QtCore.QRect(490, 310, 70, 40))
         self.lineEditMassInput.setObjectName("lineEditMassInput")
 
         #Inits desired pressure unit select

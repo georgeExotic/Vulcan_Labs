@@ -83,12 +83,25 @@ QLCDNumber {
 
 QTabBar {
     font-weight: bold;
-    font-size: 16px;
+    font-size: 20px;
     color: #121212;
+    border-radius: 8px;
+}
+
+QTabBar::tab:selected {
+    background-color: #Ff7f1f;
+    border: 3px solid #202020;
+    border-radius: 8px;
+    min-height: 50px;
+    min-width: 160px;
+}
+
+QTabBar::tab:!selected {
+    background-color: #eF6F0F;
     border: 2px solid #202020;
     border-radius: 8px;
-    min-width: 10px;
-    background-color: #eb6200;
+    min-height: 50px;
+    min-width: 160px;
 }
 
 QRadioButton {
