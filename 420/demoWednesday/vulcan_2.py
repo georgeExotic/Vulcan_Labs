@@ -520,7 +520,7 @@ class Ui_MainWindow(QMainWindow):
         self.clearButton = QPushButton(self.tab_3)
         self.clearButton.setGeometry(550, 300, 80, 30)
         self.clearButton.setObjectName("button_clear")
-        self.clearButton.clicked.connect(DB.clearTable)
+        self.clearButton.clicked.connect(self.clearPlot)
 
         self.exportButton = QPushButton(self.tab_3)
         self.exportButton.setGeometry(550, 240, 80, 30)
@@ -1005,6 +1005,12 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateGUI(self):
         self.UpdateForceReadingValue()
+
+    def clearPlot(self):
+        self.force_vals = []
+        self.pressure_vals = []
+        self.weight_vals = []
+        self.time_x = []
 
     def update_plot_data(self):
         self.time_x.append(self.time_x[-1] + 1)   # Add a new value 1 higher than the last.
