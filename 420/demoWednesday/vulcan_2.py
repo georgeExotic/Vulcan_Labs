@@ -105,7 +105,7 @@ class Ui_MainWindow(QMainWindow):
         #Inits box area on left
         self.widget = QWidget()
         self.widget.setObjectName("widget")
-        self.widget.setStyleSheet("""QLabel:disabled { color: #A9A6A0; font-weight: bold; font-size: 18px;} """)
+        self.widget.setStyleSheet("""QLabel:disabled { color: #A9A6A0; font-weight: bold; font-size: 18px; font-family: courier;} """)
         self.widget.setStyleSheet("""QLabel:enabled { color: #F9F6F0; font-weight: bold; font-size: 18px; }""")
         # self.groupBox_2 = QGroupBox(self.widget)
         # self.groupBox_2.setGeometry(QtCore.QRect(20, 20, 300, 360)) # positioning and sizing
