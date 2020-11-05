@@ -26,8 +26,8 @@ from matplotlib import style
 
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
-import RPi.GPIO as GPIO #import I/O interface             #
-from hx711 import HX711 #import HX711 class               #
+# import RPi.GPIO as GPIO #import I/O interface             #
+# from hx711 import HX711 #import HX711 class               #
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
@@ -38,7 +38,8 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
 
-from vulcanControl import Motor
+# from vulcanControl import Motor
+from key import VirtualKeyboard
 
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
@@ -92,6 +93,11 @@ class Ui_MainWindow(QMainWindow):
 
         #CSS
         self.tabWidget.setStyleSheet('QTabBar { min-height: 20px; min-width: 500px; }')
+        self.setStyleSheet("""QLineEdit:disabled { padding: 1px; color: #202020; border: 2px solid #A9A6A0; border-radius: 2px; font-weight: bold; background-color: #A9A6A0}""")
+        self.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #FFF000; border-radius: 8px;}""")
+        self.setStyleSheet("""QLabel->widget { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
+        self.setStyleSheet("""QLabel:disabled { color:#FFF000; font-weight: bold; font-size: 14px;}""")
+
         # self.setStyleSheet('QPushButton { }')
 
         # TAB 1 #
@@ -99,47 +105,53 @@ class Ui_MainWindow(QMainWindow):
         #Inits box area on left
         self.widget = QWidget()
         self.widget.setObjectName("widget")
-        self.groupBox_2 = QGroupBox(self.widget)
-        self.groupBox_2.setGeometry(QtCore.QRect(20, 20, 300, 360)) # positioning and sizing
-        self.groupBox_2.setObjectName("groupBox_2")
+        self.widget.setStyleSheet("""QLabel:disabled { color: #A9A6A0; font-weight: bold; font-size: 14px;} """)
+        self.widget.setStyleSheet("""QLabel:enabled { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
+        # self.groupBox_2 = QGroupBox(self.widget)
+        # self.groupBox_2.setGeometry(QtCore.QRect(20, 20, 300, 360)) # positioning and sizing
+        # self.groupBox_2.setObjectName("groupBox_2")
         # self.groupBox_2.setStyleSheet("color: #F9F6F0;")
-        self.groupBox_2.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
+        # self.groupBox_2.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
         # self.groupBox_2.setStyleSheet("font-size: 15px;")
         # self.groupBox_2.setStyleSheet("border-radius: 8px;")
         # self.groupBox_2.setStyleSheet("font-weight: bold;")
 
+        #Inits Logo
+        self.pixmap = QPixmap('VulcanLabsLogo.png')
+        self.pixmap2 = self.pixmap.scaled(260, 200, QtCore.Qt.KeepAspectRatio) # Logo
+        self.labelLogo = QLabel(self.widget)
+        self.labelLogo.setPixmap(self.pixmap2)
+        self.labelLogo.setGeometry(20,80,300,300)
+
         #Inits Mode select dropdown component
-        self.comboBox = QComboBox(self.groupBox_2)
-        self.comboBox.setGeometry(QtCore.QRect(20, 40, 280, 60)) # positioning and sizing
+        self.comboBox = QComboBox(self.widget)
+        self.comboBox.setGeometry(QtCore.QRect(40, 80, 260, 50)) # positioning and sizing
         self.comboBox.setAutoFillBackground(False)
         self.comboBox.setEditable(False)
         self.comboBox.setObjectName("comboBox")
         self.comboBox.addItem("")
         self.comboBox.addItem("")
         self.comboBox.setContentsMargins(0,0,0,0)
-
-        #Inits Logo
-        self.pixmap = QPixmap('VulcanLabsLogo.png')
-        self.pixmap2 = self.pixmap.scaled(260, 200, QtCore.Qt.KeepAspectRatio) # Logo
-        self.labelLogo = QLabel(self.groupBox_2)
-        self.labelLogo.setPixmap(self.pixmap2)
-        self.labelLogo.setGeometry(20,80,300,300)
+        self.comboBox.setStyleSheet("font-size: 26px")
 
         #Inits window icon as logo
         self.setWindowIcon(QtGui.QIcon('3DPrinterLogo.png')) # Logo as Icon
         # self.setStyleSheet("background-color: rgb(255, 255, 255)") #Sets background color of GUI
 
         #Inits Parameter Group Box
-        self.groupBox_3 = QGroupBox(self.widget)
-        self.groupBox_3.setGeometry(QtCore.QRect(350, 20, 300, 360)) # positioning and sizing
-        self.groupBox_3.setObjectName("groupBox_3")
-        self.groupBox_3.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
+        # self.groupBox_3 = QGroupBox(self.widget)
+        # self.groupBox_3.setGeometry(QtCore.QRect(350, 20, 300, 360)) # positioning and sizing
+        # self.groupBox_3.setObjectName("groupBox_3")
+        # self.groupBox_3.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
+        # self.groupBox_3.setStyleSheet("""QLabel:enabled { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
+        # self.groupBox_3.setStyleSheet("""QLabel:disabled { font-weight: bold; font-size: 15px; color: #C9C6C0; border-radius: 8px;}""")
 
 
         #Inits initial layer height input
-        self.lineEdit = QLineEdit(self.groupBox_3)
-        self.lineEdit.setGeometry(QtCore.QRect(160, 40, 60, 30)) # pos and size
+        self.lineEdit = QLineEdit(self.widget)
+        self.lineEdit.setGeometry(QtCore.QRect(510, 50, 60, 30)) # pos and size
         self.lineEdit.setObjectName("lineEdit")
+
 #         self.setStyleSheet(""")
 # QLineEdit {
 #     padding: 1px;
@@ -150,8 +162,8 @@ class Ui_MainWindow(QMainWindow):
 # }
 
         #Inits initial layer height unit select
-        self.comboBox_2 = QComboBox(self.groupBox_3)
-        self.comboBox_2.setGeometry(QtCore.QRect(230, 40, 60, 30)) # pos and size
+        self.comboBox_2 = QComboBox(self.widget)
+        self.comboBox_2.setGeometry(QtCore.QRect(580, 50, 60, 30)) # pos and size
         self.comboBox_2.setAutoFillBackground(False)
         self.comboBox_2.setEditable(False)
         self.comboBox_2.setObjectName("comboBox_2")
@@ -159,15 +171,15 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox_2.addItem("")
 
         #Inits initial layer height label
-        self.label_9 = QLabel(self.groupBox_3)
-        self.label_9.setGeometry(QtCore.QRect(20, 40, 130, 20)) # pos and size
+        self.label_9 = QLabel(self.widget)
+        self.label_9.setGeometry(QtCore.QRect(360, 50, 130, 20)) # pos and size
         self.label_9.setObjectName("label_9")
-        self.label_9.setStyleSheet("""QLabel { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
-        self.setStyleSheet("""QLabel { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
+        # self.label_9.setStyleSheet("""QLabel { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
+        # self.setStyleSheet("""QLabel { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
 
         #Inits final layer height unit select
-        self.comboBox_3 = QComboBox(self.groupBox_3)
-        self.comboBox_3.setGeometry(QtCore.QRect(230, 100, 60, 30)) # pos and size
+        self.comboBox_3 = QComboBox(self.widget)
+        self.comboBox_3.setGeometry(QtCore.QRect(580, 100, 60, 30)) # pos and size
         self.comboBox_3.setAutoFillBackground(False)
         self.comboBox_3.setEditable(False)
         self.comboBox_3.setObjectName("comboBox_3")
@@ -175,38 +187,46 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox_3.addItem("")
 
         #Inits final layer height input
-        self.lineEdit_2 = QLineEdit(self.groupBox_3)
-        self.lineEdit_2.setGeometry(QtCore.QRect(160, 100, 60, 30)) # pos and size
+        self.lineEdit_2 = QLineEdit(self.widget)
+        self.lineEdit_2.setGeometry(QtCore.QRect(510, 100, 60, 30)) # pos and size
         self.lineEdit_2.setObjectName("lineEdit_2")
 
         #Inits final layer label
-        self.label_10 = QLabel(self.groupBox_3)
-        self.label_10.setGeometry(QtCore.QRect(20, 100, 130, 20)) # pos and size
+        self.label_10 = QLabel(self.widget)
+        self.label_10.setGeometry(QtCore.QRect(360, 100, 130, 20)) # pos and size
         self.label_10.setObjectName("label_10")
 
         #Inits number of layers label
-        self.label_11 = QLabel(self.groupBox_3)
-        self.label_11.setGeometry(QtCore.QRect(20, 150, 150, 20)) # pos and size
+        self.label_11 = QLabel(self.widget)
+        self.label_11.setGeometry(QtCore.QRect(360, 150, 150, 20)) # pos and size
         self.label_11.setObjectName("label_11")
 
         #Inits number of layers input
-        self.lineEdit_3 = QLineEdit(self.groupBox_3)
-        self.lineEdit_3.setGeometry(QtCore.QRect(160, 150, 60, 30)) # pos and size
+        self.lineEdit_3 = QLineEdit(self.widget)
+        self.lineEdit_3.setGeometry(QtCore.QRect(510, 150, 60, 30)) # pos and size
         self.lineEdit_3.setObjectName("lineEdit_3")
 
         #Inits desired pressure label
-        self.label_12 = QLabel(self.groupBox_3)
-        self.label_12.setGeometry(QtCore.QRect(20, 200, 150, 20)) # pos and size
+        self.label_12 = QLabel(self.widget)
+        self.label_12.setGeometry(QtCore.QRect(360, 200, 150, 20)) # pos and size
         self.label_12.setObjectName("label_12")
 
         #Inits desired pressure input
-        self.lineEdit_4 = QLineEdit(self.groupBox_3)
-        self.lineEdit_4.setGeometry(QtCore.QRect(160, 200, 60, 30)) # pos and size
+        self.lineEdit_4 = QLineEdit(self.widget)
+        self.lineEdit_4.setGeometry(QtCore.QRect(510, 200, 60, 30)) # pos and size
         self.lineEdit_4.setObjectName("lineEdit_4")
 
+        #Inits mass input
+        self.labelMassInput = QLabel(self.widget)
+        self.labelMassInput.setGeometry(QtCore.QRect(380, 250, 150, 20))
+        self.labelMassInput.setObjectName("labelMassInput")
+        self.lineEditMassInput = QLineEdit(self.widget)
+        self.lineEditMassInput.setGeometry(QtCore.QRect(510, 250, 60, 30))
+        self.lineEditMassInput.setObjectName("lineEditMassInput")
+
         #Inits desired pressure unit select
-        self.comboBox_6 = QComboBox(self.groupBox_3)
-        self.comboBox_6.setGeometry(QtCore.QRect(230, 200, 60, 30)) # pos and size
+        self.comboBox_6 = QComboBox(self.widget)
+        self.comboBox_6.setGeometry(QtCore.QRect(580, 200, 60, 30)) # pos and size
         self.comboBox_6.setAutoFillBackground(False)
         self.comboBox_6.setEditable(False)
         self.comboBox_6.setObjectName("comboBox_6")
@@ -218,7 +238,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.setGeometry(QtCore.QRect(700, 110, 260, 60)) # pos and size
         self.pushButton.setFont(QFont('Arial', 14))#, QFont.Bold)) #adjust font
         self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(motor.stopRun)
+        # self.pushButton.clicked.connect(motor.stopRun)
         self.pushButton.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         # self.pushButton.setStyleSheet("""QPushButton:hover { background-color: green; }""")
         self.pushButton.setStyleSheet("""QPushButton {
@@ -234,7 +254,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(700, 280, 140, 30)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
-        self.pushButton_2.clicked.connect(motor.Home)
+        # self.pushButton_2.clicked.connect(motor.Home)
         self.pushButton_2.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_2.setStyleSheet("""QPushButton {
     font-weight: bold;
@@ -249,7 +269,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_5 = QPushButton(self.widget)
         self.pushButton_5.setGeometry(QtCore.QRect(700, 320, 140, 30)) # pos and size
         self.pushButton_5.setObjectName("pushButton_5")
-        self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
+        # self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
         self.pushButton_5.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_5.setStyleSheet("""QPushButton {
     font-weight: bold;
@@ -265,7 +285,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_6.setGeometry(QtCore.QRect(700, 240, 140, 30)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
         # self.pushButton_6.clicked.connect(lambda x: DB.getTable(list([0])))
-        self.pushButton_6.clicked.connect(lambda x: motor.jogUp(self.comboBox_5.currentIndex()))
+        # self.pushButton_6.clicked.connect(lambda x: motor.jogUp(self.comboBox_5.currentIndex()))
         self.pushButton_6.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_6.setStyleSheet("""QPushButton {
     font-weight: bold;
@@ -346,8 +366,9 @@ class Ui_MainWindow(QMainWindow):
         # raise_() brings components to front layer
         self.groupBox_6.raise_()
         self.groupBox_4.raise_()
-        self.groupBox_2.raise_()
-        self.groupBox_3.raise_()
+        self.frame.raise_()
+        # self.groupBox_2.raise_()
+        # self.groupBox_3.raise_()
         self.pushButton.raise_()
         self.pushButton_2.raise_()
         self.pushButton_5.raise_()
@@ -703,16 +724,16 @@ class Ui_MainWindow(QMainWindow):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("Vulcan Labs", "Vulcan Labs"))
-        self.groupBox_2.setTitle(_translate("MainWindow", "Mode Select"))
+        # self.groupBox_2.setTitle(_translate("MainWindow", "Mode Select"))
         self.comboBox.setItemText(0, _translate("MainWindow", "Motion Limiting"))
         self.comboBox.setItemText(1, _translate("MainWindow", "Pressure Limiting"))
-        self.groupBox_3.setTitle(_translate("MainWindow", "Parameter Input"))
+        # self.groupBox_3.setTitle(_translate("MainWindow", "Parameter Input"))
         self.comboBox_2.setItemText(0, _translate("MainWindow", "mm"))
         self.comboBox_2.setItemText(1, _translate("MainWindow", "μm"))
         self.label_9.setText(_translate("MainWindow", "Initial Layer Height"))
         self.comboBox_3.setItemText(0, _translate("MainWindow", "mm"))
         self.comboBox_3.setItemText(1, _translate("MainWindow", "μm"))
-        self.label_10.setText(_translate("MainWindow", "Final Layer Height"))
+        self.label_10.setText(_translate("MainWindow", "Compaction depth"))
         self.label_11.setText(_translate("MainWindow", "Number of Layers"))
         self.label_12.setText(_translate("MainWindow", "Target Pressure"))
         self.comboBox_6.setItemText(0, _translate("MainWindow", "kPa"))
@@ -791,6 +812,7 @@ class Ui_MainWindow(QMainWindow):
         self.refreshButton.setText(_translate("MainWindow", "Refresh"))
         self.clearButton.setText(_translate("MainWindow", "Clear"))
         self.exportButton.setText(_translate("MainWindow", "Export"))
+        self.labelMassInput.setText(_translate("MainWindow", "Mass"))
 
 
         # -- ROUTING -- #
@@ -803,6 +825,7 @@ class Ui_MainWindow(QMainWindow):
 
         # Update Mode after selection
         self.comboBox.currentIndexChanged.connect(self.updateMode)
+        self.comboBox.currentIndexChanged[int].connect(self.disableWidget)
 
         # Update desired parameters
         self.lineEdit_4.textChanged.connect(self.updateDesiredParam)
@@ -816,8 +839,30 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
         # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
-        self.checkCalibration()
+        # self.checkCalibration()
         # self.checkHomed()
+
+    def disableWidget(self,currentIndex):
+        print(currentIndex)
+        if currentIndex == 0:
+            """motion widgets enabled, pressure widgets disabled"""
+            self.lineEdit.setEnabled(True)
+            self.lineEdit_2.setEnabled(True)
+            self.label_9.setEnabled(True)
+            self.label_10.setEnabled(True)
+            self.label_12.setEnabled(False)
+            self.lineEdit_4.setEnabled(False)
+        else:
+            '''reverse'''
+            self.lineEdit.setEnabled(False)
+            self.lineEdit_2.setEnabled(False)
+            self.label_9.setEnabled(False)
+            self.label_10.setEnabled(False)
+            self.label_12.setEnabled(True)
+            self.lineEdit_4.setEnabled(True)
+
+    def keyboardPopUp(self):
+        kb = VirtualKeyboard()
 
     def checkHomed(self):
         if self.systemState == 6:
@@ -1453,11 +1498,12 @@ class MQtt():
 
                 
 if __name__ == '__main__':
-    motor = Motor()
-    cellInstance = LoadCell()
+    # motor = Motor()
+    # cellInstance = LoadCell()
     DB = sqlDatabase()
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
+    # kb = VirtualKeyboard()
     mainWin = Ui_MainWindow()
     styleFile=os.path.join(os.path.split(__file__)[0],"styleVulcan.stylesheet")
     styleSheetStr = open(styleFile,"r").read()
