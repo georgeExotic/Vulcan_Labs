@@ -38,8 +38,8 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
 
-# from vulcanControl import Motor
-from key import VirtualKeyboard
+from vulcanControl import Motor
+# from key import VirtualKeyboard
 
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):

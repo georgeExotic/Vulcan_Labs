@@ -24,7 +24,7 @@ class Motor:
         # self.initialVelocity = 1000 #steps/second
         # self.finalVelocity = 750000 #steps/second
         self.hmt = 2 #default 2 = variable current mode --> current will vary as needed to postion the load with the maximun current set by the run current command 
-        # self.sethmt(2)
+        self.sethmt(2)
         
         # #testing torque
         # self.writeHoldingRegs(0x8E,1,self.hmt) 
@@ -45,11 +45,11 @@ class Motor:
 
         ## Testing Variable Current Mode ##
         #set Running Current
-        self.writeHoldingRegs(0x67,1,100)
+        # self.writeHoldingRegs(0x67,1,100)
         #Enable variable current 
         self.writeHoldingRegs(0x8E,1,self.hmt)
         #control Bound 
-        self.writeHoldingRegs(0x91,1,1)
+        self.writeHoldingRegs(0x91,1,0)
         #make up
         self.writeHoldingRegs(0xA0,1,2)
         #rotate CW
@@ -179,7 +179,7 @@ class Motor:
 
 
     """
-    def sethmt(self, hmt = 2, runCurrentpercentage = 50, torquePercentage = 50, torqueSpeed = 10, direction = "cw"):
+    def sethmt(self, hmt = 2, runCurrentpercentage = 100, torquePercentage = 50, torqueSpeed = 10, direction = "cw"):
         #will not use 0 or 1 
         self.runCurrent = runCurrentpercentage 
         self.torquePercentage = torquePercentage #1 byte / percentage 0 - 100% 
