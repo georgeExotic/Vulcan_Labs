@@ -7,6 +7,20 @@ import time
 import time
 import math
 
+class limitSwitch():
+
+    def __init__(self,limitPin):
+        self.limitPin = limitPin
+        GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
+        GPIO.setup(self.limitPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        #pin 29 GPIO 5 
+        #pin 31 GPIO 6 
+        print("EndStop configuration complete!")
+    def updateSwitch(self):
+        result = GPIO.input(self.limitPin)
+        # print(result)
+        return result
+
 class Motor:
     def __init__(self):
         #Initialization of LMD57 
@@ -19,68 +33,66 @@ class Motor:
         #connection to modbus TCP steps
         self._connectModbusClient()
         self._checkConnection()
+
         #Init variables
         self.moving = False
-        # self.initialVelocity = 1000 #steps/second
-        # self.finalVelocity = 750000 #steps/second
-        self.hmt = 2 #default 2 = variable current mode --> current will vary as needed to postion the load with the maximun current set by the run current command 
-        self.sethmt(2)
+        self.home = False
+
+        ###Velocities### 
+            #Jogging
+        self.joggingInitialVelocity = 1000
+        self.joggingMaxVelocity = 20000
+            #homing
+        self.homingInitialVelocity = 1000
+        self.homingMaxVelocity = 20000
+            #runing
+        self.runningInitialVelocity = 1000
+        self.runningMaxVelocity = 20000
+
+        ###accelerations###
+            #jogging
+        self.joggingAcceleration = 300000 
+        self.joggingDeacceleration = 300000    
+            #homing
+        self.homingAcceleration = 300000
+        self.homingDeacceleration = 300000
+            #runing 
+        self.runningAcceleration = 300000
+        self.runningDeacceleration = 300000
+
+
+        ###hmt### motor behaivor
+        self.Hmt = 2                                    #default 2 = variable current mode --> current will vary as needed to postion the load with the maximun current set by the run current command 
+        self.setHmt()
         
-        # #testing torque
-        # self.writeHoldingRegs(0x8E,1,self.hmt) 
-        # #control Bound 
-        # # self.writeHoldingRegs(0x91,1,1)
-        # #torque direction
-        # self.writeHoldingRegs(0xA5,1,1)
-        # #torque percentage
-        # self.writeHoldingRegs(0xA6,1,100)
-        # #torque speed
-        # self.writeHoldingRegs(0xA3,2,255)
 
-        # print(f'hmt: {self.readHoldingRegs(0x8E,1)}')
-        # print(f'control bounds: {self.readHoldingRegs(0x91,1)}')
-        # print(f'torque dir: {self.readHoldingRegs(0xA5,1)}')
-        # print(f'set torque: {self.readHoldingRegs(0xA6,1)}')
-        # print(f'torque speed: {self.readHoldingRegs(0xA3,2)}')
+        ###Performance settings###
+        #holding current
+        self.holdingCurrent = 50                        #0x29#0 - 100
+        #control Bound
+        self.controlBound = 0                           #0x91#best torque performance
+        #microsteeping
+        self.microStep = 256                            #0x48
 
-        ## Testing Variable Current Mode ##
-        #set Running Current
-        # self.writeHoldingRegs(0x67,1,100)
-        #Enable variable current 
-        self.writeHoldingRegs(0x8E,1,self.hmt)
-        #control Bound 
-        self.writeHoldingRegs(0x91,1,0)
-        #make up
-        self.writeHoldingRegs(0xA0,1,2)
-        #rotate CW
-        print(f'hmt: {self.readHoldingRegs(0x8E,1)}')
-        print(f'running current: {self.readHoldingRegs(0x67,1)}')
+        self.setPerformanceFeatures()
+        self.setEnable(1)
 
-        ##setUp Registers/update variables
-        # acce
-        # self.writeHoldingRegs(0x00,4,500000)
-        self.acceleration = self.readHoldingRegs(0x00,4)
-        #deaccel
-        # self.writeHoldingRegs(0x18,4,500000)
-        self.deacceleration = self.readHoldingRegs(0x18,4)
-        #enable
-        # self.writeHoldingRegs(0x1C,1,1)
-        self.enable = self.readHoldingRegs(0x1C,1)
-        #MicroStep Resolution
-        self.writeHoldingRegs(0x48,1,256)
-        #update self.moving
-        self._moving()
-        #holding current 
-        # self.writeHoldingRegs(0x29,1,25)
-        #Initial velocity
-        # self.writeHoldingRegs(0x89,4,self.initialVelocity)
-        #MAX velcity
-        # self.writeHoldingRegs(0x8B,4,self.finalVelocity)
-
+        ###hardware Settings
+        self.pistonDiameter = 19.05 #mm
+        self.leadTravel = 4 #mm per rev
+        self.stepPerRevolution = 200 * self.microStep       #200*256 = 51200 steps per rev        
         
-        print("Congratulations Initialization Complete!")
+        ###homing###
+        self.absolutePosition = 0 
+        ###init home limit switch###
+        home = limitSwitch(5)
 
-    #function to connect to LMD57 using modbus TCP 
+        # self.writeHoldingRegs(0x57,4,0)
+        # print(self.readHoldingRegs(0x57,4))
+                
+        print("Congratulations Motor Initialization Complete!")
+
+    ###function to connect to LMD57 using modbus TCP 
     def _connectModbusClient(self):
         #define mosbus server and host
         self._motor = ModbusClient()
@@ -94,7 +106,7 @@ class Motor:
             print("unable to connect to "+self.SERVER_HOST+ ":" +str(self.SERVER_PORT))
         return
 
-    #function to check is modbus tcp connection is successful 
+    ###function to check is modbus tcp connection is successful 
     def _checkConnection(self):
         if not self._motor.is_open():
             if not self._motor.open():
@@ -102,7 +114,7 @@ class Motor:
         return "connected!"
 
 
-    #function to read if the shaft is moving /// update self.moving
+    ###function to read if the shaft is moving /// update self.moving
     def _moving(self):
         x = self.readHoldingRegs(0x4A,1)
         if x[0] == 0 :
@@ -111,14 +123,14 @@ class Motor:
             self.moving = True
         return
 
-    #function to convert any hex number into decimal 
+    ###function to convert any hex number into decimal 
     def _hex2dec(self,hex):
         hex = str(hex)
         dec = literal_eval(hex)
         return dec
 
 
-    #function to read from register of LMD57 modbus register map
+    ###function to read from register of LMD57 modbus register map
     def readHoldingRegs(self,startingAddressHex,regSize = 1):                             #startingAddressHex [address of register in HEX] regSize [size of regiter]
         startingAddressDEC = self._hex2dec(startingAddressHex)                             #hex --> dec
         if regSize > 2:                                                                   #for registers with 4 byte (32bit) data
@@ -130,7 +142,7 @@ class Motor:
             ans = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)    #read 1 register from the address (remenber 1 address = 2 bytes(16bits))
         return ans
 
-    #function to write to any register of LMD57 modbus register map
+    ###function to write to any register of LMD57 modbus register map
     def writeHoldingRegs(self,startingAddressHEX,regSize,valueDEC):                         #startingAddressHex [address of register in HEX] regSize [size of regiter] ValueDEC [value in decimal to write]
         startingAddressDEC = self._hex2dec(startingAddressHEX)                               #hex --> dec
         if regSize > 2:                                                                     #for registers with 4 byte (32bit) data
@@ -143,82 +155,87 @@ class Motor:
 
 
     #function to slew axis in steps/seconds in speficied direction +/- (yes +/-!) 0 to +/- 5000000
-    def slewMotor(self,slewDir = "cw", slew = 50000):
+    def slewMotor(self, slew = 50000, slewDir = "cw"):
         #in the future translata that to mm/sec or something
         #inclomplete waiting for ccw motion 
         if slewDir == "cw":
             print("turning cw by = ", slew, "step/sec")
             self.writeHoldingRegs(0x78,4,slew)  
+        #need to finish#
         elif slewDir == "ccw":
             print("ccw")
 
         return
     
     
-    #function to set the hMT technology from schneider motor
-    """
-    0 --> hMTechnology circuity disabled.
-    1 --> Fixed current mode. Current is
-            set by the run and hold current
-            commands, Speed is set by the
-            system speed command.
-    2 --> Variable current mode. Current will
-            vary as needed to position the load
-            with the maximum current set by
-            the run current command. 
-            self.runCurrent
-    3 --> Torque mode, torque and speed
-            will vary as needed to move/
-            position the load with the maximum
-            torque % and speed as specified
-            by the torque and torque-speed
-            commands.
-            self.torquePercentage
-            self.torqueSpeed
-            self.torqueDirection
-
-
-    """
-    def sethmt(self, hmt = 2, runCurrentpercentage = 100, torquePercentage = 50, torqueSpeed = 10, direction = "cw"):
+    ###function to set the hMT technology from schneider motor
+    def setHmt(self, hmt = 2, direction = "cw"):
+        
+        self.Hmt = hmt
         #will not use 0 or 1 
-        self.runCurrent = runCurrentpercentage 
-        self.torquePercentage = torquePercentage #1 byte / percentage 0 - 100% 
-        self.torquespeed = torqueSpeed #0 - 255
-        print(self.torquespeed)
+        #hmt 2
+        self.runCurrent = 100           #0x67
+        self.makeUp = 2                 #0xA0
+
+        #hmt 3
+        self.torqueSpeed = 10            #0xA3-0xA4
+        self.torquePercentage = 100      #0xA6
+        self.torqueDirection = 1         #0xA5 1CW 0CCW
+
+        #set up shaft rotation direction ## need to change it to up and down 
         if direction == "cw":
             self.torqueDirection = 1
         else:
             self.torqueDirection = 0
 
-        torqueDirectionAddress = 0xA5 # 1byte / 0(ccw) - 1(cw) 
-        torqueSpeedAddress = 0xA3 
-        torquePercentageAddress = 0xA6 
-        
-        
-        if hmt == 2:
-            self.writeHoldingRegs(0x8E,1,hmt)
-            self.writeHoldingRegs(0x67,1,self.runCurrent)
+        ###Hmt 2### variable current mode       
+        if self.Hmt == 2:
+            self.writeHoldingRegs(0x8E,1,self.Hmt)      #set hmt
+
+            self.writeHoldingRegs(0x67,1,self.runCurrent)   #set run current
+            self.writeHoldingRegs(0xA0,1,self.makeUp)       #set makup frequency
+            
             print("Variable current mode is activated ... hmt mode = ",self.readHoldingRegs(0x8E,1))
-        elif hmt == 3:
-            self.writeHoldingRegs(0x8E,1,hmt)
-            self.writeHoldingRegs(torquePercentageAddress,1,self.torquePercentage)
-            self.writeHoldingRegs(0xA3,4,100)
-            self.writeHoldingRegs(torqueDirectionAddress,1,self.torqueDirection)
-            print("Torque mode is activated ... hmt mode = ",self.readHoldingRegs(0x8E,1))
-            print("torque percentage is = ",self.readHoldingRegs(0xA6,1))
-            print("torque speed is = ",self.readHoldingRegs(0xA3,2))
-            print("torque direction is = ",self.readHoldingRegs(0xA5,1))
+            print("Run current = ", self.readHoldingRegs(0x67,1))
+            print("make Up frequency mode = ", self.readHoldingRegs(0xA0,1))
+                     
+        ###Hmt 3### Torque mode
+        elif self.Hmt == 3:
+            self.writeHoldingRegs(0x8E,1,self.Hmt)       #set hmt 
+
+            self.writeHoldingRegs(0xA3, 4,self.torqueSpeed)     #set torque speed
+            self.writeHoldingRegs(0xA6, 1,self.torquePercentage)     #set torque percent
+            self.writeHoldingRegs(0xA5, 1,self.torqueDirection)     #set torque direction 
+
+            print("Torque mode is activated ... hmt mode = ", self.readHoldingRegs(0x8E,1))
+            print("torque speed is = ", self.readHoldingRegs(0xA3,4))
+            print("torque percentage is = ", self.readHoldingRegs(0xA6,1))
+            print("torque direction is = ", self.readHoldingRegs(0xA5,1))
 
         return
 
+    ###function to set enable on or off
+    def setEnable(self,enable=1):
+        self.writeHoldingRegs(0x1C, 1, enable)
+        self.enable = self.readHoldingRegs(0x1C,1)
 
+    ###funciton to set performance settings###
+    def setPerformanceFeatures(self):
+        self.writeHoldingRegs(0x29,1,self.holdingCurrent)
+        self.writeHoldingRegs(0x91,1,self.controlBound)
+        self.writeHoldingRegs(0x48,1,self.microStep)
 
+        print("holding current = ",self.readHoldingRegs(0x29,1))
+        print("control bound = ",self.readHoldingRegs(0x91,1))
+        print("microstep = ",self.readHoldingRegs(0x48,1))
+
+    ###function to convert linar displacement in mm to amount of steps
     def displacement2steps(self, displacment_mm):
-        """ 1 mm travel  =  12857 steps """
-        displacement_steps = displacment_mm*12857
-        # return [sign*d_lsb, sign*d_msb]
-        print(f'before d in mm: {displacment_mm}, d in steps: {displacement_steps}')
-        return displacement_steps
+        targetRevolutions = displacment_mm/self.leadTravel
+        steps = int(targetRevolutions * self.stepPerRevolution)
+        return steps
+
+
 
     def Home(self):
         """
@@ -237,81 +254,70 @@ class Motor:
         print("MODBUS COMMAND: homing")
         pass
         
-    def jogUp(self,displacement):
-        """
-        jogUp Routine:
-            check if home 
-            if home & (absolute + displacement < stroke lenght )
-                completeJog = 0
-                call function to convert displacement into step count
-                write to MA/MR the amounts of steps 
-                check motion flag MP
-                absolute position += displacement
-                completeJog = 1
-            else
-                cant jogUP
-                                
-            if not home
-                cant jogUP
-        """
-        if displacement == 0:
+    def jogUp(self,displacementChoice):
+
+        if displacementChoice == 0:
             displacement = 1
-        elif displacement == 1:
+        elif displacementChoice == 1:
             displacement = 5
         else:
             displacement = 10
 
-        d = self.displacement2steps(displacement)
-        self.writeHoldingRegs(0x46,4,d)
-        # self._motor.write_multiple_registers(70, d)
+        steps2Jog = self.displacement2steps(displacement)
+        self.setProfiles("Jogging")
+        self.writeHoldingRegs(0x46,4,steps2Jog)
 
-        print(f'MODBUS COMMAND: jogging up {displacement} mm')
+        print("Jogging UP!!")
         return
 
-    def jogDown(self,displacement):
-        """
-        does not matter if home or not
-        if not home 
-            do not do shit
-        if home (absolute + displacement < stroke lenght )
-            completeJog = 0
-            call function to convert displacement into step count
-            step count * -1
-            write to MA/MR the amounts of steps 
-            check motion flag MP
-            absolute position -= displacement
-            completeJog = 1
+    def jogDown(self,displacementChoice):
+
+        if displacementChoice == 0:
+            displacement = 1
+        elif displacementChoice == 1:
+            displacement = 5
+        else:
+            displacement = 10
+
+        steps2Jog = self.displacement2steps(displacement)
+
+        self.setProfiles("jogging")
+
+        absolutePosition = self.readHoldingRegs(0x57,4) #read absolute postion 
+
+        if absolutePosition[0] == 0:
+            self.writeHoldingRegs(0x57,4,steps2Jog)
+            self.writeHoldingRegs(0x43,4,0)
+
+        elif (steps2Jog - absolutePosition[0]) < 0 :        
+            add = steps2Jog + absolutePosition[0]
+            self.writeHoldingRegs(0x57,4,add)
+            self.writeHoldingRegs(0x43,4,absolutePosition[0])
+    
+
+        print("Jogging DOWN!!")
+        return
+
+    def setProfiles(self,motion = "homing"):
+        if motion == "homing":
+            self.writeHoldingRegs(0x89,4,self.homingInitialVelocity)
+            self.writeHoldingRegs(0x8B,4,self.homingMaxVelocity)
+            self.writeHoldingRegs(0x00,4,self.homingAcceleration)
+            self.writeHoldingRegs(0x18,4,self.homingDeacceleration)
+        elif motion == "jogging":
+            self.writeHoldingRegs(0x89,4,self.joggingInitialVelocity)
+            self.writeHoldingRegs(0x8B,4,self.joggingMaxVelocity)
+            self.writeHoldingRegs(0x00,4,self.joggingAcceleration)
+            self.writeHoldingRegs(0x18,4,self.joggingDeacceleration)
+        elif motion == "running":
+            self.writeHoldingRegs(0x89,4,self.runningInitialVelocity)
+            self.writeHoldingRegs(0x8B,4,self.runningMaxVelocity)
+            self.writeHoldingRegs(0x00,4,self.runningAcceleration)
+            self.writeHoldingRegs(0x18,4,self.runningDeacceleration)
         
-        """
-        if displacement == 0:
-            displacement = 1
-        elif displacement == 1:
-            displacement = 5
-        else:
-            displacement = 10
-
-        d = self.displacement2steps(displacement)
-        curr_pos = self.readHoldingRegs(0x57,4)
-        print(curr_pos)
-        # print(f'd before subtracting pos: {d}')
-        # print(f'current pos: {curr_pos}')
-        d = curr_pos[0] - d
-        # print(f'd after subtracting pos: {d}')
-        self.writeHoldingRegs(0x43,4,d)
-        # print(f'displacement in steps: {d}')
-        # print(self._motor.write_multiple_registers(70, d))
-        print(f'MODBUS COMMAND: jogging down {displacement}')
-        pass
-
-    def Move(self, direction, displacement):
-        d = self.displacement2steps(displacement)
-        if direction == 'cw':
-            self.writeHoldingRegs(0x46,4,d)
-        else:
-            p = self.readHoldingRegs(0x57,4)
-            d = p[0] - d
-            self.writeHoldingRegs(0x43,4,d)
+        print("motion profile set to = ",motion)
         return
+
 
     def run(self):
         """
@@ -346,20 +352,12 @@ class Motor:
         pass
 
 
-class limitSwitch():
-    def __init__(self,limitPin):
-        self.limitPin = limitPin
-        GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
-        GPIO.setup(self.limitPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        self.home = False
-        #pin 29 GPIO 5 
-    def updateSwitch(self):
-        # GPIO.input(self.limitPin) == GPIO.HIGH:
-        result = GPIO.input(self.limitPin)
-        print(result)
+
 
 if __name__ == "__main__":
     c = Motor()
-    home = limitSwitch()
-    c.writeHoldingRegs(0x46,4,51200)
-
+    # c.setProfiles()
+    # c.jogUp(3) 
+    # time.sleep(2)
+    # c.jogDown(1)
+    
