@@ -84,11 +84,10 @@ class Motor:
         
         ###homing###
         self.absolutePosition = 0 
+        
         ###init home limit switch###
         home = limitSwitch(5)
 
-        # self.writeHoldingRegs(0x57,4,0)
-        # print(self.readHoldingRegs(0x57,4))
                 
         print("Congratulations Motor Initialization Complete!")
 
@@ -164,7 +163,6 @@ class Motor:
         #need to finish#
         elif slewDir == "ccw":
             print("ccw")
-
         return
     
     
@@ -218,6 +216,7 @@ class Motor:
     def setEnable(self,enable=1):
         self.writeHoldingRegs(0x1C, 1, enable)
         self.enable = self.readHoldingRegs(0x1C,1)
+        return
 
     ###funciton to set performance settings###
     def setPerformanceFeatures(self):
@@ -228,6 +227,7 @@ class Motor:
         print("holding current = ",self.readHoldingRegs(0x29,1))
         print("control bound = ",self.readHoldingRegs(0x91,1))
         print("microstep = ",self.readHoldingRegs(0x48,1))
+        return
 
     ###function to convert linar displacement in mm to amount of steps
     def displacement2steps(self, displacment_mm):
@@ -235,24 +235,6 @@ class Motor:
         steps = int(targetRevolutions * self.stepPerRevolution)
         return steps
 
-
-
-    def Home(self):
-        """
-        Homming routine:
-            check if home 
-                if not
-                    if not enabled
-                        set enable
-                    begin moving downwards towards limit switch 
-                    hit limit switch
-                    stop moving
-                    home = true 
-                    absolute position = 0
-                    
-        """
-        print("MODBUS COMMAND: homing")
-        pass
         
     def jogUp(self,displacementChoice):
 
@@ -318,6 +300,22 @@ class Motor:
         print("motion profile set to = ",motion)
         return
 
+    def Home(self):
+        """
+        Homming routine:
+            check if home 
+                if not
+                    if not enabled
+                        set enable
+                    begin moving downwards towards limit switch 
+                    hit limit switch
+                    stop moving
+                    home = true 
+                    absolute position = 0
+                    
+        """
+        print("MODBUS COMMAND: homing")
+        pass
 
     def run(self):
         """
