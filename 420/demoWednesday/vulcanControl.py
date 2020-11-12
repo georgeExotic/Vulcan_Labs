@@ -7,19 +7,16 @@ import time
 import time
 import math
 
-class limitSwitch():
-
+class limitSwitch:
     def __init__(self,limitPin):
         self.limitPin = limitPin
         GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
         GPIO.setup(self.limitPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         #pin 29 GPIO 5 
         #pin 31 GPIO 6 
-        print("EndStop configuration complete!")
+        self.updateSwitch()
     def updateSwitch(self):
-        result = GPIO.input(self.limitPin)
-        # print(result)
-        return result
+        self.flag = GPIO.input(self.limitPin)
 
 class Motor:
     def __init__(self):
@@ -87,8 +84,8 @@ class Motor:
         
         ###init home limit switch###
         home = limitSwitch(5)
-
-                
+        top = limitSwitch(6)
+    
         print("Congratulations Motor Initialization Complete!")
 
     ###function to connect to LMD57 using modbus TCP 
@@ -354,8 +351,10 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
+    # home = limitSwitch(5)
+    # print(home)
     # c.setProfiles()
     # c.jogUp(3) 
+    
     # time.sleep(2)
     # c.jogDown(1)
-    

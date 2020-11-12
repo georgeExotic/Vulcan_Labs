@@ -18,7 +18,7 @@ class limitSwitch():
 
 if __name__ == "__main__":
     while 1:
-        home = limitSwitch(6)
+        home = limitSwitch(5)
         home.updateSwitch()
         time.sleep(0.2)
     
