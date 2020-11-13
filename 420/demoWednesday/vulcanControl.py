@@ -31,14 +31,10 @@ class Motor:
         self._connectModbusClient()
         self._checkConnection()
 
-        #Init variables
-        self.moving = False
-        self.home = False
-
         ###Velocities### 
             #Jogging
         self.joggingInitialVelocity = 1000
-        self.joggingMaxVelocity = 20000
+        self.joggingMaxVelocity = 50000
             #homing
         self.homingInitialVelocity = 1000
         self.homingMaxVelocity = 20000
@@ -81,10 +77,13 @@ class Motor:
         
         ###homing###
         self.absolutePosition = 0 
+        self.home = False
+        self.homing = False
+        self.maxPosition = 300 # mm
         
         ###init home limit switch###
-        home = limitSwitch(5)
-        top = limitSwitch(6)
+        self.homeSwitch = limitSwitch(5)
+        self.topSwitch = limitSwitch(6)
     
         print("Congratulations Motor Initialization Complete!")
 
@@ -243,7 +242,7 @@ class Motor:
             displacement = 10
 
         steps2Jog = self.displacement2steps(displacement)
-        self.setProfiles("Jogging")
+        self.setProfiles("jogging")
         self.writeHoldingRegs(0x46,4,steps2Jog)
 
         print("Jogging UP!!")
@@ -311,12 +310,50 @@ class Motor:
                     absolute position = 0
                     
         """
-        print("MODBUS COMMAND: homing")
-        pass
+        
+        self.homeSwitch.updateSwitch()      #update flag
+        
+        if self.home == False:
+            print("homing starting in 3 seconds")   
+            self.countdown()
+            steps2Jog = self.displacement2steps(30)
+            self.writeHoldingRegs(0x57,4,steps2Jog) #overwriting the absolute position
+            self.writeHoldingRegs(0x43,4,0)
+            self.homing = True      # true during homing 
+            while self.home == False:       #if not homed 
+                self.homeSwitch.updateSwitch()
+                time.sleep(0.05)
+                if self.homeSwitch.flag == 1:
+                    pos = self.readHoldingRegs(0x57, 4)
+                    self.writeHoldingRegs(0x43,4,pos[0])
+                    self.absolutePosition = 0
+                    self.writeHoldingRegs(0x57,4,0)
+                    self.home = True
+                    self.homing = False      # true during homing
+                    print("Homing Completed")
+                    break
+        elif self.home == True:
+            print("already homed")
+            pass
 
+        return
+
+    def countdown(self):
+        print("3...")
+        time.sleep(1)
+        print("2..")
+        time.sleep(1)
+        print("1..")
+        time.sleep(1)
+        return
     def run(self):
+        
         """
-        run = 1
+        things that need to be done before running
+        -home = true
+        -choosen a motion profile
+        -input the necessary input data
+        -
         """
         print("running")
         pass
@@ -351,10 +388,4 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
-    # home = limitSwitch(5)
-    # print(home)
-    # c.setProfiles()
-    # c.jogUp(3) 
-    
-    # time.sleep(2)
-    # c.jogDown(1)
+    # c.Home()
