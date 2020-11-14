@@ -84,6 +84,14 @@ class Motor:
         ###init home limit switch###
         self.homeSwitch = limitSwitch(5)
         self.topSwitch = limitSwitch(6)
+
+        ###user input params for motion profile###
+        self.initLayerHeight = 0
+        self.compactionDepth = 0
+        self.targetPressure = 0
+        self.numberOfLayers = 0
+        self.mass = 0
+        self.modeSelected = 0
     
         print("Congratulations Motor Initialization Complete!")
 

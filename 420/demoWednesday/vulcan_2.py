@@ -26,8 +26,8 @@ from matplotlib import style
 
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
-import RPi.GPIO as GPIO #import I/O interface             #
-from hx711 import HX711 #import HX711 class               #
+#import RPi.GPIO as GPIO #import I/O interface             #
+#from hx711 import HX711 #import HX711 class               #
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
@@ -138,6 +138,7 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox.setObjectName("comboBox")
         self.comboBox.addItem("")
         self.comboBox.addItem("")
+        self.comboBox.addItem("")
         self.comboBox.setContentsMargins(0,0,0,0)
         self.comboBox.setStyleSheet("font-size: 24px; font-weight: bold;")
 
@@ -158,6 +159,7 @@ class Ui_MainWindow(QMainWindow):
         self.lineEdit = QLineEdit(self.widget)
         self.lineEdit.setGeometry(QtCore.QRect(490, 50, 70, 40)) # pos and size
         self.lineEdit.setObjectName("lineEdit")
+        self.lineEdit.setText("0.00")
 
 #         self.setStyleSheet(""")
 # QLineEdit {
@@ -201,6 +203,7 @@ class Ui_MainWindow(QMainWindow):
         self.lineEdit_2 = QLineEdit(self.widget)
         self.lineEdit_2.setGeometry(QtCore.QRect(490, 110, 70, 40)) # pos and size
         self.lineEdit_2.setObjectName("lineEdit_2")
+        self.lineEdit_2.setText("0.00")
 
         #Inits final layer label
         self.label_10 = QLabel(self.widget)
@@ -222,6 +225,7 @@ class Ui_MainWindow(QMainWindow):
         self.lineEdit_3 = QLineEdit(self.widget)
         self.lineEdit_3.setGeometry(QtCore.QRect(490, 230, 70, 40)) # pos and size
         self.lineEdit_3.setObjectName("lineEdit_3")
+        self.lineEdit_3.setText("0.00")
 
         #Inits desired pressure label
         self.label_12 = QLabel(self.widget)
@@ -235,6 +239,7 @@ class Ui_MainWindow(QMainWindow):
         self.lineEdit_4 = QLineEdit(self.widget)
         self.lineEdit_4.setGeometry(QtCore.QRect(490, 170, 70, 40)) # pos and size
         self.lineEdit_4.setObjectName("lineEdit_4")
+        self.lineEdit_4.setText("0.00")
 
         #Inits mass input
         self.labelMassInput = QLabel(self.widget)
@@ -243,6 +248,7 @@ class Ui_MainWindow(QMainWindow):
         self.lineEditMassInput = QLineEdit(self.widget)
         self.lineEditMassInput.setGeometry(QtCore.QRect(490, 290, 70, 40))
         self.lineEditMassInput.setObjectName("lineEditMassInput")
+        self.lineEditMassInput.setText("0.00")
 
         #Inits desired pressure unit select
         self.comboBox_6 = QComboBox(self.widget)
@@ -258,7 +264,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.setGeometry(QtCore.QRect(690, 110, 320, 80)) # pos and size
         self.pushButton.setFont(QFont('Arial', 18))#, QFont.Bold)) #adjust font
         self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(motor.stopRun)
+        # self.pushButton.clicked.connect(motor.stopRun)
         self.pushButton.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         # self.pushButton.setStyleSheet("""QPushButton:hover { background-color: green; }""")
         self.pushButton.setStyleSheet("""QPushButton {
@@ -274,7 +280,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(860, 230, 140, 50)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
-        self.pushButton_2.clicked.connect(motor.Home)
+        #self.pushButton_2.clicked.connect(motor.Home)
         self.pushButton_2.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_2.setStyleSheet("""QPushButton {
     font-weight: bold;
@@ -289,7 +295,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_5 = QPushButton(self.widget)
         self.pushButton_5.setGeometry(QtCore.QRect(690, 290, 140, 50)) # pos and size
         self.pushButton_5.setObjectName("pushButton_5")
-        self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
+        #self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
         self.pushButton_5.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_5.setStyleSheet("""QPushButton {
     font-weight: bold;
@@ -305,7 +311,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_6.setGeometry(QtCore.QRect(690, 230, 140, 50)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
         # self.pushButton_6.clicked.connect(lambda x: DB.getTable(list([0])))
-        self.pushButton_6.clicked.connect(lambda x: motor.jogUp(self.comboBox_5.currentIndex()))
+        #self.pushButton_6.clicked.connect(lambda x: motor.jogUp(self.comboBox_5.currentIndex()))
         self.pushButton_6.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         self.pushButton_6.setStyleSheet("""QPushButton {
     font-weight: bold;
@@ -359,6 +365,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_4.setGeometry(QtCore.QRect(690, 40, 100, 50)) # pos and size
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_4.clicked.connect(self.runStartTimer)
+        self.pushButton_4.clicked.connect(self.runMotor)
         self.pushButton_4.setStyleSheet("""QPushButton {
     font-weight: bold;
     font-size: 20px;
@@ -745,8 +752,9 @@ class Ui_MainWindow(QMainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("Vulcan Labs", "Vulcan Labs"))
         # self.groupBox_2.setTitle(_translate("MainWindow", "Mode Select"))
-        self.comboBox.setItemText(0, _translate("MainWindow", "Motion Limiting"))
-        self.comboBox.setItemText(1, _translate("MainWindow", "Pressure Limiting"))
+        self.comboBox.setItemText(0, _translate("MainWindow", "Mode Selection"))
+        self.comboBox.setItemText(1, _translate("MainWindow", "Motion Limiting"))
+        self.comboBox.setItemText(2, _translate("MainWindow", "Pressure Limiting"))
         # self.groupBox_3.setTitle(_translate("MainWindow", "Parameter Input"))
         self.comboBox_2.setItemText(0, _translate("MainWindow", "mm"))
         self.comboBox_2.setItemText(1, _translate("MainWindow", "μm"))
@@ -853,6 +861,14 @@ class Ui_MainWindow(QMainWindow):
 
         # Update desired parameters
         self.lineEdit_4.textChanged.connect(self.updateDesiredParam)
+        self.lineEdit.textChanged.connect(self.updateDesiredParam)
+        self.lineEdit_2.textChanged.connect(self.updateDesiredParam)
+        self.lineEdit_3.textChanged.connect(self.updateDesiredParam)
+        self.lineEditMassInput.textChanged.connect(self.updateDesiredParam)
+        self.comboBox.currentIndexChanged.connect(self.updateDesiredParam)
+        self.comboBox_2.currentIndexChanged.connect(self.updateDesiredParam)
+        self.comboBox_3.currentIndexChanged.connect(self.updateDesiredParam)
+        self.comboBox_5.currentIndexChanged.connect(self.updateDesiredParam)
         self.comboBox_6.currentIndexChanged.connect(self.updateDesiredParam)
 
         # System state changes
@@ -865,10 +881,28 @@ class Ui_MainWindow(QMainWindow):
 
         # self.checkCalibration()
         # self.checkHomed()
+        self.updateMode()
+
+    def runMotor(self):
+        print(self.modeSelected)
+        if self.modeSelected == 1: #motion limiting
+            motor.initLayerHeight = self.initLayerHeight
+            motor.compactionDepth = self.compactionDepth
+            motor.numberOfLayers = self.numberOfLayers
+            motor.mass = self.mass
+
+        elif self.modeSelected == 2: #pressure limiting
+            motor.targetPressure = self.targetPressure
+            motor.numberOfLayers = self.numberOfLayers
+            motor.mass = self.mass
+
+        print(f'ilh: {motor.initLayerHeight}, compaction: {motor.compactionDepth}, targPress: {motor.targetPressure}, #ofLayers: {motor.numberOfLayers}, mass: {motor.mass}')
+
+
 
     def disableWidget(self,currentIndex):
         print(currentIndex)
-        if currentIndex == 0:
+        if currentIndex == 1:
             """motion widgets enabled, pressure widgets disabled"""
             self.lineEdit.setEnabled(True)
             self.lineEdit_2.setEnabled(True)
@@ -882,7 +916,7 @@ class Ui_MainWindow(QMainWindow):
             self.comboBox_2.setEnabled(True)
             self.comboBox_3.setEnabled(True)
             self.comboBox_6.setEnabled(False)
-        else:
+        elif currentIndex == 2:
             '''reverse'''
             self.lineEdit.setEnabled(False)
             self.lineEdit_2.setEnabled(False)
@@ -952,17 +986,17 @@ class Ui_MainWindow(QMainWindow):
         mode = self.comboBox.currentText()
         print(mode)
         if mode == "Motion Limiting":
-            self.modeSelected = 0
+            self.modeSelected = 1
             self.label_3_modeFeedback.setText("Motion Limiting")
         else:
-            self.modeSelected = 1
+            self.modeSelected = 2
             self.label_3_modeFeedback.setText("Pressure Limiting")
 
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-        #force_reading_raw = random.random()
-        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
+        force_reading_raw = random.random()
+        #force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
         self.force_reading_raw = force_reading_raw
         if force_reading_raw < 0:
             force_reading_raw = 0
@@ -1058,6 +1092,23 @@ class Ui_MainWindow(QMainWindow):
         # print(index)
 
     def updateDesiredParam(self):
+        
+        self.initLayerHeightVal = self.lineEdit.text()
+        self.initLayerHeightUnit = self.comboBox_2.currentIndex()
+        self.initLayerHeight = [float(self.initLayerHeightVal),self.initLayerHeightUnit]
+
+        self.compactionDepthVal = self.lineEdit_2.text()
+        self.compactionDepthUnit = self.comboBox_3.currentIndex()
+        self.compactionDepth = [float(self.compactionDepthVal),self.compactionDepthUnit]
+
+        self.targetPressureVal = self.lineEdit_4.text()
+        self.targetPressureUnit = self.comboBox_6.currentIndex()
+        self.targetPressure = [float(self.targetPressureVal),self.targetPressureUnit]
+        
+        self.numberOfLayers = float(self.lineEdit_3.text())
+        
+        self.mass = float(self.lineEditMassInput.text())
+        
         self.label_6.setText(f"Desired Pressure: {self.lineEdit_4.text()} {self.comboBox_6.currentText()}")
 
     def exportData(self):
@@ -1541,7 +1592,7 @@ class MQtt():
                 
 if __name__ == '__main__':
     motor = Motor()
-    cellInstance = LoadCell()
+#    cellInstance = LoadCell()
     DB = sqlDatabase()
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
