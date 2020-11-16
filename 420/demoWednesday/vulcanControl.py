@@ -1,7 +1,7 @@
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
 from ast import literal_eval #from hex to dec
-import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
+# import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
 import time
 
 import time
@@ -27,9 +27,10 @@ class Motor:
         self.deviceID = "LMDCE571C"
         self.softwareVersion = "2.4.0.6"
         self.manufactureName = "SCHNEIDER ELECTRIC MOTOR USA"
+        self.connectionStatus = 0
         #connection to modbus TCP steps
-        self._connectModbusClient()
-        self._checkConnection()
+        # self._connectModbusClient()
+        # self._checkConnection()
 
         ###Velocities### 
             #Jogging
@@ -56,7 +57,7 @@ class Motor:
 
         ###hmt### motor behaivor
         self.Hmt = 2                                    #default 2 = variable current mode --> current will vary as needed to postion the load with the maximun current set by the run current command 
-        self.setHmt()
+        # self.setHmt()
         
 
         ###Performance settings###
@@ -67,8 +68,8 @@ class Motor:
         #microsteeping
         self.microStep = 256                            #0x48
 
-        self.setPerformanceFeatures()
-        self.setEnable(1)
+        # self.setPerformanceFeatures()
+        # self.setEnable(1)
 
         ###hardware Settings
         self.pistonDiameter = 19.05 #mm
@@ -82,8 +83,8 @@ class Motor:
         self.maxPosition = 300 # mm
         
         ###init home limit switch###
-        self.homeSwitch = limitSwitch(5)
-        self.topSwitch = limitSwitch(6)
+        # self.homeSwitch = limitSwitch(5)
+        # self.topSwitch = limitSwitch(6)
 
         ###user input params for motion profile###
         self.initLayerHeight = 0
@@ -113,7 +114,9 @@ class Motor:
     def _checkConnection(self):
         if not self._motor.is_open():
             if not self._motor.open():
+                self.connectionStatus = 0
                 return "unable to connect" #print("unable to connect to motor")
+            self.connectionStatus = 1
         return "connected!"
 
 

@@ -40,10 +40,11 @@ QLabel {
 
 QLineEdit {
     padding: 1px;
-    color: #F9F6F0;
-    border: 2px solid #F9F6F0;
-    border-radius: 8px;
+    color: #202020;
+    border: 2px solid #aaa;
+    background-color: #EEE;
     font-weight: bold;
+    font-size: 14px;
 }
 
 QGroupBox {
