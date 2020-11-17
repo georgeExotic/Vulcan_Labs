@@ -1,7 +1,7 @@
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
 from ast import literal_eval #from hex to dec
-# import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
+import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
 import time
 
 import time
@@ -29,8 +29,8 @@ class Motor:
         self.manufactureName = "SCHNEIDER ELECTRIC MOTOR USA"
         self.connectionStatus = 0
         #connection to modbus TCP steps
-        # self._connectModbusClient()
-        # self._checkConnection()
+        self._connectModbusClient()
+        self._checkConnection()
 
         ###Velocities### 
             #Jogging
@@ -57,7 +57,7 @@ class Motor:
 
         ###hmt### motor behaivor
         self.Hmt = 2                                    #default 2 = variable current mode --> current will vary as needed to postion the load with the maximun current set by the run current command 
-        # self.setHmt()
+        self.setHmt()
         
 
         ###Performance settings###
@@ -68,8 +68,8 @@ class Motor:
         #microsteeping
         self.microStep = 256                            #0x48
 
-        # self.setPerformanceFeatures()
-        # self.setEnable(1)
+        self.setPerformanceFeatures()
+        self.setEnable(1)
 
         ###hardware Settings
         self.pistonDiameter = 19.05 #mm
@@ -83,8 +83,8 @@ class Motor:
         self.maxPosition = 300 # mm
         
         ###init home limit switch###
-        # self.homeSwitch = limitSwitch(5)
-        # self.topSwitch = limitSwitch(6)
+        self.homeSwitch = limitSwitch(5)
+        self.topSwitch = limitSwitch(6)
 
         ###user input params for motion profile###
         self.initLayerHeight = 0
@@ -327,13 +327,14 @@ class Motor:
         if self.home == False:
             print("homing starting in 3 seconds")   
             self.countdown()
+            self.setProfiles("homing")
             steps2Jog = self.displacement2steps(30)
             self.writeHoldingRegs(0x57,4,steps2Jog) #overwriting the absolute position
             self.writeHoldingRegs(0x43,4,0)
             self.homing = True      # true during homing 
             while self.home == False:       #if not homed 
                 self.homeSwitch.updateSwitch()
-                time.sleep(0.05)
+                # time.sleep(0.05)
                 if self.homeSwitch.flag == 1:
                     pos = self.readHoldingRegs(0x57, 4)
                     self.writeHoldingRegs(0x43,4,pos[0])
@@ -399,4 +400,4 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
-    # c.Home()
+    c.Home()
