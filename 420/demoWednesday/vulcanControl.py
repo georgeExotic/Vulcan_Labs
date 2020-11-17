@@ -79,12 +79,13 @@ class Motor:
         ###homing###
         self.absolutePosition = 0 
         self.home = False
+        self.homed = False
         self.homing = False
         self.maxPosition = 300 # mm
         
         ###init home limit switch###
-        self.homeSwitch = limitSwitch(5)
-        self.topSwitch = limitSwitch(6)
+        self.homeSwitch = limitSwitch(6)
+        self.topSwitch = limitSwitch(5)
 
         ###user input params for motion profile###
         self.initLayerHeight = 0
@@ -114,9 +115,7 @@ class Motor:
     def _checkConnection(self):
         if not self._motor.is_open():
             if not self._motor.open():
-                self.connectionStatus = 0
                 return "unable to connect" #print("unable to connect to motor")
-            self.connectionStatus = 1
         return "connected!"
 
 
@@ -336,14 +335,17 @@ class Motor:
                 self.homeSwitch.updateSwitch()
                 # time.sleep(0.05)
                 if self.homeSwitch.flag == 1:
-                    pos = self.readHoldingRegs(0x57, 4)
-                    self.writeHoldingRegs(0x43,4,pos[0])
+                    # pos = self.readHoldingRegs(0x57, 4)
+                    # self.writeHoldingRegs(0x43,4,pos[0])
+                    self.writeHoldingRegs(0x1C,1,0)
                     self.absolutePosition = 0
                     self.writeHoldingRegs(0x57,4,0)
                     self.home = True
+                    self.homed = True
                     self.homing = False      # true during homing
                     print("Homing Completed")
                     break
+            self.writeHoldingRegs(0x1C,1,1)
         elif self.home == True:
             print("already homed")
             pass
@@ -400,4 +402,13 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
-    c.Home()
+    # c.jogDown(2)
+    c.jogUp(2)
+    # time.sleep(3)
+    # c.writeHoldingRegs(0x1C,1,0)
+    # time.sleep(2)
+    # print(c.readHoldingRegs)
+    # print(c.readHoldingRegs(0x57,4))
+    # c.Home()
+    # time.sleep(3)
+    # print(c.readHoldingRegs(0x57,4))
