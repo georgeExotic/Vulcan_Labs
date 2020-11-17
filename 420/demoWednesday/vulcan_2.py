@@ -488,15 +488,22 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits calibration button
         self.pushButton_8 = QPushButton(self.tab_2)
-        self.pushButton_8.setGeometry(QtCore.QRect(700, 280, 140, 30)) # pos and size
+        self.pushButton_8.setGeometry(QtCore.QRect(700, 70, 140, 50)) # pos and size
         self.pushButton_8.setObjectName("pushButton_8")
         self.pushButton_8.raise_() # brings to front
 
         #Inits tare button
         self.tareButton = QPushButton(self.tab_2)
-        self.tareButton.setGeometry(QtCore.QRect(700, 220, 140, 30)) # tare Button
+        self.tareButton.setGeometry(QtCore.QRect(700, 150, 140, 50)) # tare Button
         self.tareButton.setObjectName("tareButton")
         self.tareButton.raise_() # -- tare Button
+
+        self.extractButton = QPushButton(self.tab_2)
+        self.extractButton.setGeometry(700, 230, 140, 50)
+        self.extractButton.setText("Extract")
+        self.extractButton.clicked.connect(self.extractPiston)
+        # self.extractButton.clicked.connect(motor.cleanUp)
+        self.extractButton.raise_()
 
         # TAB 3 #
 
@@ -969,6 +976,32 @@ class Ui_MainWindow(QMainWindow):
         self.updateMode()
         self.disableWidget(self.comboBox.currentIndex())
 
+    def extractPiston(self):
+        self.msg = QMessageBox()
+        self.msg.setStyleSheet("font-size: 16 px;")
+        self.msg.setWindowTitle("Extraction Warning")
+        self.msg.setText("Sliding plate must be removed before proceeding with extraction. \n\nSelect Ok when plate is removed.")
+        self.msg.setIcon(QMessageBox.Question)
+        self.msg.setStandardButtons(QMessageBox.Close|QMessageBox.Ok)
+        # self.# msg.setDefaultButton(QMessageBox.Cancel)
+        # self.msg.setEscapeButton(QMessageBox.Close)
+        self.msg.buttonClicked.connect(self.buttonClick)
+        # msg.Ok.clicked.connect(motor.cleanUp)
+        # msg.Cancel.clicked.connect(self.close)
+
+        x = self.msg.exec_()
+
+    def buttonClick(self,button):
+        print(button,button.text())
+        if button.text() == 'OK':
+            print("cleaning up")
+            motor.cleanUp()
+        if button.text() == 'Close':
+            print("cancelled")
+            self.msg.close()
+        else:
+            print('nothing matched')
+
     def mm2cylinder(self,mm):
         cylinderPosition = math.floor(mm*3.66)
         return cylinderPosition
@@ -1361,117 +1394,147 @@ class WorkerThread(QThread):
         time.sleep(3)
         self.emit(SIGNAL('threadDone()'))
 
-class newCalibrationWindow(QWidget):
+# class newCalibrationWindow(QWidget):
+#     def __init__(self):
+#         super().__init__()
+#         self.setWindowTitle('Calibration')
+#         self.resize(500,300)
+#         self.state = 0
+#         self.setLayout(QFormLayout())
+#         self.cal_buttons = QWidget()
+#         self.cal_buttons.setLayout(QHBoxLayout())
+#         self._initialized = 0
+#         self.WorkerThread = WorkerThread()
+#         self.connect(self.WorkerThread, SIGNAL("threadDone()"), self.threadDone, Qt.DirectConnection)
+
+#         self.startWindow()
+        
+    # def startWindow(self):
+    #     self.dialog = QLabel('Calibration requires an object of known weight to be placed on the scale')
+    #     self.next_button = QPushButton('Next')
+    #     self.cancel_button = QPushButton('Cancel')
+    #     self.submit_button = QPushButton('Submit')
+    #     self.layout().addRow(self.dialog)
+    #     self.cal_buttons.layout().addWidget(self.cancel_button)
+    #     self.cal_buttons.layout().addWidget(self.next_button)
+    #     self.layout().addRow('', self.cal_buttons)
+
+    #     self.next_button.clicked.connect(self.getInputWindow)
+    #     self.next_button.clicked.connect(self.startCalibration)
+    #     self.next_button.clicked.connect(self.collectingDataWindow)
+    #     # self.next_button.clicked.connect(self.startCalibration)
+    #     self.cancel_button.clicked.connect(self.close)
+
+    # def startCalibrationB(self):
+    #     # i = self.initialized()
+    #     # i = 0
+    #     self.working = 1
+    #     #start calibration
+    #     for i in reversed(range(self.layout().count())):        #Clears components from first window
+    #         self.layout().itemAt(i).widget().deleteLater()
+        
+    #     self.dialogText = QLabel('Do not touch scale. Initializing')
+    #     self.layout().addRow('',self.dialogText)
+    #     self.show()
+
+    #     self.WorkerThread.start()
+    #     self.dialogText.setText('starting')
+        
+    #     #fn to perform calibration
+    #     # Ui_MainWindow.setWorker(mainWin, self.calibration_fake)
+    #     # worker.signals.result.connect(self.print_output)
+    #     # worker.signals.finished.connect(self.thread_complete)
+    #     # worker.signals.progress.connect(self.progress_fn)
+
+    #     # if self.working == 1:
+    #     #     print(1)
+    #     # else:
+    #     #     print('alksdjhfalksjdfhakljh')
+                
+    #     # self.dialog = QLabel('wordssss')
+    #     # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
+    #     # self.inputWeight = QLineEdit()
+    #     # self.layout().addRow('',self.dialogText)
+    #     # self.layout().addRow('',self.inputWeight)
+
+
+    #     # if self.initialized == 1:
+    #     #     self.getInputWindow()
+
+    # def threadDone(self):
+    #     self.dialogText.setText('finished')
+
+    # def getInputWindow(self):
+    #     self.close()
+    #     # self.knownGrams = 0
+    #     # for i in reversed(range(self.layout().count())):        #Clears components from first window
+    #     #     self.layout().itemAt(i).widget().deleteLater()
+    #     # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
+    #     # self.dialog = QLabel('wordssss')
+    #     # # self.cancel_button = QPushButton('Cancel')
+    #     # # self.submit_button = QPushButton('Submit')
+    #     # self.inputWeight = QLineEdit()
+    #     # # buttons = QWidget()
+    #     # # buttons.setLayout(QHBoxLayout())
+    #     # # buttons.layout().addWidget(self.cancel_button)
+    #     # # buttons.layout().addWidget(self.submit_button)
+    #     # self.layout().addRow('',self.dialogText)
+    #     # self.layout().addRow('',self.inputWeight)
+    #     # self.layout().addRow('',buttons)
+    #     # self.layout().resize(300,200)
+    #     self.show()
+
+
+    #     # self.inputWeight.textChanged.connect(self.setKnownGrams)
+    #     # self.submit_button.clicked.connect(self.sendKnownInput)
+    #     # self.cancel_button.clicked.connect(self.close)
+
+    # def setKnownGrams(self,lineEdit):
+    #     self.knownGrams = self.inputWeight.text()
+
+    # def getUserInput(self):
+    #     print('user input started')
+
+    # def calibration_fake(self, *args, **kwargs):
+    #     print('Initializing...')
+    #     time.sleep(3)
+    #     self.working = 0
+    #     print(self.working)
+    #     time.sleep(1)
+    #     result = 'complete'
+    #     return self.working
+        
+class loadingScreen(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Calibration')
-        self.resize(500,300)
-        self.state = 0
+        self.resize(300,200)
+        self.dialog = QLabel("Running...")
+
         self.setLayout(QFormLayout())
-        self.cal_buttons = QWidget()
-        self.cal_buttons.setLayout(QHBoxLayout())
-        self._initialized = 0
-        self.WorkerThread = WorkerThread()
-        self.connect(self.WorkerThread, SIGNAL("threadDone()"), self.threadDone, Qt.DirectConnection)
-
-        self.startWindow()
-        
-    def startWindow(self):
-        self.dialog = QLabel('Calibration requires an object of known weight to be placed on the scale')
-        self.next_button = QPushButton('Next')
-        self.cancel_button = QPushButton('Cancel')
-        self.submit_button = QPushButton('Submit')
         self.layout().addRow(self.dialog)
-        self.cal_buttons.layout().addWidget(self.cancel_button)
-        self.cal_buttons.layout().addWidget(self.next_button)
-        self.layout().addRow('', self.cal_buttons)
 
-        self.next_button.clicked.connect(self.getInputWindow)
-        self.next_button.clicked.connect(self.startCalibration)
-        self.next_button.clicked.connect(self.collectingDataWindow)
-        self.next_button.clicked.connect(self.startCalibration)
+class removePlatePopUp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.ok_button = QPushButton('Ok')
+        self.cancel_button = QPushButton('Cancel')
+        # self.cal_button = QPushButton('Calibrate')
+        self.dialog = QLabel("Remove Sliding Plate before proceeding with extraction.\n\n Select Ok when plate is removed.")
+        self.setWindowTitle('WARNING')
+
+        self.setLayout(QFormLayout())
+        self.layout().addRow(self.dialog)
+        buttons = QWidget()
+        buttons.setLayout(QHBoxLayout())
+        buttons.layout().addWidget(self.ok_button)
+        buttons.layout().addWidget(self.cancel_button)
+        self.layout().addRow('', buttons)
+        # self.show()
+
+        #Routes front end to back end
         self.cancel_button.clicked.connect(self.close)
-
-    def startCalibration(self):
-        # i = self.initialized()
-        # i = 0
-        self.working = 1
-        #start calibration
-        for i in reversed(range(self.layout().count())):        #Clears components from first window
-            self.layout().itemAt(i).widget().deleteLater()
-        
-        self.dialogText = QLabel('Do not touch scale. Initializing')
-        self.layout().addRow('',self.dialogText)
-        self.show()
-
-        self.WorkerThread.start()
-        self.dialogText.setText('starting')
-        
-        #fn to perform calibration
-        # Ui_MainWindow.setWorker(mainWin, self.calibration_fake)
-        # worker.signals.result.connect(self.print_output)
-        # worker.signals.finished.connect(self.thread_complete)
-        # worker.signals.progress.connect(self.progress_fn)
-
-        # if self.working == 1:
-        #     print(1)
-        # else:
-        #     print('alksdjhfalksjdfhakljh')
-                
-        # self.dialog = QLabel('wordssss')
-        # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
-        # self.inputWeight = QLineEdit()
-        # self.layout().addRow('',self.dialogText)
-        # self.layout().addRow('',self.inputWeight)
-
-
-        # if self.initialized == 1:
-        #     self.getInputWindow()
-
-    def threadDone(self):
-        self.dialogText.setText('finished')
-
-    def getInputWindow(self):
-        self.close()
-        # self.knownGrams = 0
-        # for i in reversed(range(self.layout().count())):        #Clears components from first window
-        #     self.layout().itemAt(i).widget().deleteLater()
-        # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
-        # self.dialog = QLabel('wordssss')
-        # # self.cancel_button = QPushButton('Cancel')
-        # # self.submit_button = QPushButton('Submit')
-        # self.inputWeight = QLineEdit()
-        # # buttons = QWidget()
-        # # buttons.setLayout(QHBoxLayout())
-        # # buttons.layout().addWidget(self.cancel_button)
-        # # buttons.layout().addWidget(self.submit_button)
-        # self.layout().addRow('',self.dialogText)
-        # self.layout().addRow('',self.inputWeight)
-        # self.layout().addRow('',buttons)
-        # self.layout().resize(300,200)
-        self.show()
-
-
-        # self.inputWeight.textChanged.connect(self.setKnownGrams)
-        # self.submit_button.clicked.connect(self.sendKnownInput)
-        # self.cancel_button.clicked.connect(self.close)
-
-    def setKnownGrams(self,lineEdit):
-        self.knownGrams = self.inputWeight.text()
-
-    def getUserInput(self):
-        print('user input started')
-
-    def calibration_fake(self, *args, **kwargs):
-        print('Initializing...')
-        time.sleep(3)
-        self.working = 0
-        print(self.working)
-        time.sleep(1)
-        result = 'complete'
-        return self.working
-        
-
+        self.ok_button.clicked.connect(motor.cleanUp)
+        self.ok_button.clicked.connect(self.close)
 
 class calibrationWarning(QWidget):
     def __init__(self):
@@ -1495,7 +1558,7 @@ class calibrationWarning(QWidget):
         self.cal_button.clicked.connect(Ui_MainWindow.Calibration)
 
 #Class handling calibration pop up boxes
-class calibrationDialogWindow(QWidget):
+class calibrationDialogWindow(QWidget): # this one
     def __init__(self):
         super().__init__()
         self.resize(300,200)
@@ -1503,9 +1566,10 @@ class calibrationDialogWindow(QWidget):
         self.next_button = QPushButton('Next')
         self.submit_button = QPushButton('Submit')
         self.finish_button = QPushButton('Finish')
-        self.dialogText = QLabel('\n\n Calibration requires an object of known weight to be placed on the scale')
+        self.dialogText = QLabel('\n\n Calibration requires:\n\n    - an object of known weight\n\n    - top plate removed from machine\n\n\nOnce all conditions are met press next to proceed')
         self.warningText = QLabel('\n\nWarning: Continuing will pause the program')
         self.setWindowTitle('Calibration')
+        self.setStyleSheet('background-color: #fff; color: #202020; font-size: 16px; QPushButton { background-color: #fff }')
 
         #Initializes layout
         self.setLayout(QFormLayout())
@@ -1520,9 +1584,14 @@ class calibrationDialogWindow(QWidget):
         #Routes front end to back end
 
         self.next_button.clicked.connect(self.getInputWindow)
-        self.next_button.clicked.connect(self.startCalibration)
+        # self.next_button.clicked.connect(self.startCalibration)
         # self.next_button.clicked.connect(self.collectingDataWindow)
         self.cancel_button.clicked.connect(self.close)
+
+    # def raisePiston(self):
+    #     motor.cleanUp()
+    #     if motor.top == False:
+            
 
     def collectingDataWindow(self):
         self.close()
@@ -1544,8 +1613,23 @@ class calibrationDialogWindow(QWidget):
 
     #Second window in calibration branch
     def getInputWindow(self):
-        self.close()
-        self.setWindowTitle('Calibration 2')
+        # self.close()
+        for i in reversed(range(self.layout().count())):        #Clears components from first window
+            self.layout().itemAt(i).widget().deleteLater()
+        self.dialogText = QLabel('')
+        self.warningText = QLabel('')
+        self.layout().addRow('',self.dialogText)
+        self.layout().addRow('',self.inputWeight)
+        motor.cleanUp()
+        while motor.top == False:
+            self.dialogText.setText("running.")
+            time.sleep(1)
+            self.dialogText.setText("running..")
+            time.sleep(1)
+            self.dialogText.setText("running...")
+        # self.close()
+
+        # self.setWindowTitle('Calibration')
         self.knownGrams = 0
         for i in reversed(range(self.layout().count())):        #Clears components from first window
             self.layout().itemAt(i).widget().deleteLater()
@@ -1618,8 +1702,19 @@ class FakeLoadCell():
         self.initializing = 1
 
         print('getting initial data...')
+        screen = loadingScreen()
+        screen.show()
+        while motor.top == False:
+            loadingScreen.dialog.setText('loading.')
+            time.sleep(1)
+            loadingScreen.dialog.setText('loading..')
+            time.sleep(1)
+            loadingScreen.dialog.setText('loading...')
+        
         # self.reading = self.cell.get_raw_data_mean()
-        time.sleep(3)
+        self.next_button.clicked.connect(self.getInputWindow)
+        self.next_button.clicked.connect(self.startCalibration)
+        self.next_button.clicked.connect(self.collectingDataWindow)
 
         self.initializing = 0
 
@@ -1668,8 +1763,13 @@ class LoadCell():
             raise ValueError('Tare is unsuccessful.')
         self.initializing = 1
         self.reading = self.cell.get_raw_data_mean()
-        self.initializing = 0
+
         print(f'raw_data_mean: {self.reading}, predicted ratio = {self.reading/198}')
+
+        print('getting initial data...')
+
+        self.initializing = 0
+
 
     def userCalibrationPart2(self,knownGrams):
         self.initializing = 1
@@ -1766,6 +1866,7 @@ if __name__ == '__main__':
     app.setStyle('Fusion')
     # kb = VirtualKeyboard()
     mainWin = Ui_MainWindow()
+    ld = loadingScreen()
     styleFile=os.path.join(os.path.split(__file__)[0],"styleVulcan.stylesheet")
     styleSheetStr = open(styleFile,"r").read()
     mainWin.setStyleSheet(styleSheetStr)

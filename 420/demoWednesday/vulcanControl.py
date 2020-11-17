@@ -12,8 +12,6 @@ class limitSwitch:
         self.limitPin = limitPin
         GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
         GPIO.setup(self.limitPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        #pin 29 GPIO 5 
-        #pin 31 GPIO 6 
         self.updateSwitch()
     def updateSwitch(self):
         self.flag = GPIO.input(self.limitPin)
@@ -78,8 +76,9 @@ class Motor:
         
         ###homing###
         self.absolutePosition = 0 
-        self.home = False
-        self.homed = False
+        self.home = False # at bottom
+        self.top = False 
+        self.homed = False # has been homed
         self.homing = False
         self.maxPosition = 300 # mm
         
@@ -224,7 +223,7 @@ class Motor:
         self.enable = self.readHoldingRegs(0x1C,1)
         return
 
-    ###funciton to set performance settings###
+    ###function to set performance settings###
     def setPerformanceFeatures(self):
         self.writeHoldingRegs(0x29,1,self.holdingCurrent)
         self.writeHoldingRegs(0x91,1,self.controlBound)
@@ -244,6 +243,7 @@ class Motor:
         
     def jogUp(self,displacementChoice):
 
+
         if displacementChoice == 0:
             displacement = 1
         elif displacementChoice == 1:
@@ -254,8 +254,9 @@ class Motor:
         steps2Jog = self.displacement2steps(displacement)
         self.setProfiles("jogging")
         self.writeHoldingRegs(0x46,4,steps2Jog)
-
         print("Jogging UP!!")
+
+
         return
 
     def jogDown(self,displacementChoice):
@@ -307,27 +308,20 @@ class Motor:
         return
 
     def Home(self):
-        """
-        Homming routine:
-            check if home 
-                if not
-                    if not enabled
-                        set enable
-                    begin moving downwards towards limit switch 
-                    hit limit switch
-                    stop moving
-                    home = true 
-                    absolute position = 0
-                    
-        """
         
         self.homeSwitch.updateSwitch()      #update flag
+        ok = False
+
+        if self.homeSwitch.flag == 1:
+            ok = False
+        elif self.homeSwitch.flag == 0:
+            ok = True
         
-        if self.home == False:
-            print("homing starting in 3 seconds")   
-            self.countdown()
+        if self.home == False and ok == True:
+            # print("homing starting in 3 seconds")   
+            # self.countdown()
             self.setProfiles("homing")
-            steps2Jog = self.displacement2steps(30)
+            steps2Jog = self.displacement2steps(40)
             self.writeHoldingRegs(0x57,4,steps2Jog) #overwriting the absolute position
             self.writeHoldingRegs(0x43,4,0)
             self.homing = True      # true during homing 
@@ -346,12 +340,46 @@ class Motor:
                     print("Homing Completed")
                     break
             self.writeHoldingRegs(0x1C,1,1)
-        elif self.home == True:
+        elif self.home == True or ok == False:
             print("already homed")
             pass
 
         return
 
+    def cleanUp(self):
+        # print("cleanUp started")
+
+        self.topSwitch.updateSwitch()
+        ok = False  #to check if it is already in the switch
+
+        if self.topSwitch.flag == 1:
+            ok = False
+        elif self.topSwitch.flag == 0:
+            ok = True
+            
+        if self.home == False and ok == True:
+            self.setProfiles("homing")
+            current = self.readHoldingRegs(0x57,4)
+            steps2Jog = self.displacement2steps(40)
+            steps2Jog = steps2Jog + current[0]
+            self.writeHoldingRegs(0x43,4,steps2Jog) #overwriting the absolute position
+            # self.writeHoldingRegs(0x43,4,)
+            while self.top == False:
+                self.topSwitch.updateSwitch()
+                if self.topSwitch.flag == 1:
+                    self.writeHoldingRegs(0x1C,1,0)
+                    self.top = True
+                    print("ready for clean up")
+                    break
+            self.writeHoldingRegs(0x1C,1,1)
+        elif ok == False:
+            print("already at the top")
+            pass
+        elif ok == True and self.home == False:
+            print("havent home yet")
+        return
+
+            
     def countdown(self):
         print("3...")
         time.sleep(1)
@@ -402,13 +430,14 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
+    # c.cleanUp()
     # c.jogDown(2)
-    c.jogUp(2)
+    # c.jogUp(2)
+    c.Home()
     # time.sleep(3)
     # c.writeHoldingRegs(0x1C,1,0)
     # time.sleep(2)
     # print(c.readHoldingRegs)
     # print(c.readHoldingRegs(0x57,4))
-    # c.Home()
     # time.sleep(3)
     # print(c.readHoldingRegs(0x57,4))
