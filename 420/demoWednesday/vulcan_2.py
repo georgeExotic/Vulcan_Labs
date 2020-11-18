@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 import math
@@ -14,6 +15,7 @@ import sqlite3
 import pandas as pd
 import shutil
 from datetime import datetime, date
+import numpy as np
 
 import L2_log as log
 
@@ -21,7 +23,6 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from dateutil import parser
 from matplotlib import style
-# import paho.mqtt.client as paho
 # style.use('fivethirtyeight')
 
 from pyqtgraph import PlotWidget, plot
@@ -44,6 +45,7 @@ from key import VirtualKeyboard2
 from key import VirtualKeyboard3
 from key import VirtualKeyboard4
 from key import VirtualKeyboard5
+from key import VirtualKeyboard6
 
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
@@ -147,14 +149,14 @@ class Ui_MainWindow(QMainWindow):
         self.labelLogo.setGeometry(20,80,300,300)
 
         self.warningLabel = QLabel(self.frame)
-        self.warningLabel.setGeometry(QtCore.QRect(50, 70, 800, 20)) # pos and size
+        self.warningLabel.setGeometry(QtCore.QRect(50, 70, 850, 20)) # pos and size
         self.warningLabel.setObjectName("warningLabel")
         self.warningLabel.setText("")
         self.warningLabel.setStyleSheet("""background-color: transparent; color: #ff0""")
 
         #Inits Mode select dropdown component
         self.comboBox = QComboBox(self.widget)
-        self.comboBox.setGeometry(QtCore.QRect(15, 80, 260, 50)) # positioning and sizing
+        self.comboBox.setGeometry(QtCore.QRect(15, 80, 270, 50)) # positioning and sizing
         self.comboBox.setAutoFillBackground(False)
         self.comboBox.setEditable(False)
         self.comboBox.setObjectName("comboBox")
@@ -555,7 +557,7 @@ class Ui_MainWindow(QMainWindow):
         self.refreshButton.clicked.connect(DB.getTable)
 
         self.plotForceCheckbox = QCheckBox(self.tab_3)
-        self.plotForceCheckbox.setGeometry(850, 60, 120, 30)
+        self.plotForceCheckbox.setGeometry(850, 60, 160, 30)
         self.plotForceCheckbox.setText("Plot Force")
         self.plotForceCheckbox.setStyleSheet("""QCheckBox {font-weight: bold; font-size: 20 px; color: #fff;}""")
         # self.plotForceCheckbox.toggled.connect(lambda x: self.plotState(self.plotForceRadio))
@@ -625,7 +627,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Init communication box area
         self.groupBox_7 = QGroupBox(self.tab_4)
-        self.groupBox_7.setGeometry(QtCore.QRect(10, 30, 400, 300)) # pos and size
+        self.groupBox_7.setGeometry(QtCore.QRect(10, 60, 400, 300)) # pos and size
         self.groupBox_7.setObjectName("groupBox_7")
         self.groupBox_7.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
 
@@ -644,26 +646,26 @@ class Ui_MainWindow(QMainWindow):
         self.deviceIpLabel.setGeometry(QtCore.QRect(10, 90, 200, 21)) # pos and size
         self.deviceIpLabel.setObjectName("deviceIpLabel")
 
-        #Init system group box area
-        self.configGroupbox = QGroupBox(self.tab_4)
-        self.configGroupbox.setGeometry(QtCore.QRect(440, 30, 401, 300)) # pos and size
-        self.configGroupbox.setObjectName("configGroupbox")
-        self.configGroupbox.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
+        # #Init system group box area
+        # self.configGroupbox = QGroupBox(self.tab_4)
+        # self.configGroupbox.setGeometry(QtCore.QRect(440, 30, 401, 300)) # pos and size
+        # self.configGroupbox.setObjectName("configGroupbox")
+        # self.configGroupbox.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
 
         #Init system time label
-        self.sysTimeLabel = QLabel(self.configGroupbox)
-        self.sysTimeLabel.setGeometry(QtCore.QRect(10, 30, 200, 20)) # pos and size
-        self.sysTimeLabel.setObjectName("sysTimeLabel")
+        # self.sysTimeLabel = QLabel(self.configGroupbox)
+        # self.sysTimeLabel.setGeometry(QtCore.QRect(10, 30, 200, 20)) # pos and size
+        # self.sysTimeLabel.setObjectName("sysTimeLabel")
 
         #Init system date label
-        self.sysDateLabel = QLabel(self.configGroupbox)
-        self.sysDateLabel.setGeometry(QtCore.QRect(10, 60, 200, 20)) # pos and size
-        self.sysDateLabel.setObjectName("sysDateLabel")
+        # self.sysDateLabel = QLabel(self.configGroupbox)
+        # self.sysDateLabel.setGeometry(QtCore.QRect(10, 60, 200, 20)) # pos and size
+        # self.sysDateLabel.setObjectName("sysDateLabel")
 
         #Init system runtime label
-        self.sysRuntimeLabel = QLabel(self.configGroupbox)
-        self.sysRuntimeLabel.setGeometry(QtCore.QRect(10, 90, 200, 20)) # pos and size
-        self.sysRuntimeLabel.setObjectName("sysRuntimeLabel")
+        # self.sysRuntimeLabel = QLabel(self.configGroupbox)
+        # self.sysRuntimeLabel.setGeometry(QtCore.QRect(10, 90, 200, 20)) # pos and size
+        # self.sysRuntimeLabel.setObjectName("sysRuntimeLabel")
 
         #                 # TAB 5 #
 
@@ -708,6 +710,8 @@ class Ui_MainWindow(QMainWindow):
         self.timer.setInterval(50)
         self.timer.timeout.connect(self.update_plot_data)
         self.timer.timeout.connect(self.checkKeyboard)
+        self.timer.timeout.connect(self.checkHomed)
+        self.timer.timeout.connect(self.updateCylinder)
         self.timer.start()
 
         # self.graphWidget.setObjectName("stuff")
@@ -727,7 +731,7 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox = QGroupBox(self.frame_2)
         self.groupBox.setGeometry(QtCore.QRect(5, 0, 716, 600)) # pos and size
         self.groupBox.setObjectName("groupBox")
-        self.groupBox.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0;}""")
+        self.groupBox.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 14px; color: #F9F6F0;} QLabel { font-weight: bold; font-size: 12px; }""")
 
         #Init table layout
         self.tableView = QTableView(self.groupBox)
@@ -803,7 +807,7 @@ class Ui_MainWindow(QMainWindow):
         self.currentPressureLineEdit = QLineEdit(self.groupBox)
         self.currentPressureLineEdit.setGeometry(QtCore.QRect(340, 69, 60, 30))
         self.currentPressureLineEdit.setObjectName("currentPressureLineEdit")
-        self.currentPressureLineEdit.setText("0.00")
+        self.currentPressureLineEdit.setText(str(self.pressure_reading))
         self.currentPressureLabelUnit = QLabel(self.groupBox)
         self.currentPressureLabelUnit.setGeometry(QtCore.QRect(405, 72, 30, 20)) # pos and size
         self.currentPressureLabelUnit.setObjectName("currentPressureLabelUnit")
@@ -857,12 +861,12 @@ class Ui_MainWindow(QMainWindow):
         self.cylLabelStart.setPixmap(self.cylinderStart)
         self.cylLabelStart.setGeometry(793,490,200,100)
 
-        self.cylinderEnd = QPixmap('end.png')
-        self.cylinder2End = self.pixmap.scaled(280, 150, QtCore.Qt.KeepAspectRatio) # Logo
-        self.cylLabelEnd = QLabel(self.frame)
-        self.cylLabelEnd.setStyleSheet("background-color: transparent;")
-        self.cylLabelEnd.setPixmap(self.cylinderEnd)
-        self.cylLabelEnd.setGeometry(793,470,200,100)
+        # self.cylinderEnd = QPixmap('end.png')
+        # self.cylinder2End = self.pixmap.scaled(280, 150, QtCore.Qt.KeepAspectRatio) # Logo
+        # self.cylLabelEnd = QLabel(self.frame)
+        # self.cylLabelEnd.setStyleSheet("background-color: transparent;")
+        # self.cylLabelEnd.setPixmap(self.cylinderEnd)
+        # self.cylLabelEnd.setGeometry(793,470,200,100)
 
         #routing slots by name
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -943,13 +947,13 @@ class Ui_MainWindow(QMainWindow):
         # item.setText(_translate("MainWindow", "Col 5"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Data"))
         self.groupBox_7.setTitle(_translate("MainWindow", "Communication"))
-        self.connectionLabel.setText(_translate("MainWindow", "Connection:"))
+        self.connectionLabel.setText(_translate("MainWindow", "Connection: "+str(motor.connectionStatus)))
         self.ipLabel.setText(_translate("MainWindow", "System IP: "+self.IpAdd))
-        self.deviceIpLabel.setText(_translate("MainWindow", "Connected Device IP:"))
-        self.configGroupbox.setTitle(_translate("MainWindow", "General"))
-        self.sysTimeLabel.setText(_translate("MainWindow", "System Time:"))
-        self.sysDateLabel.setText(_translate("MainWindow", "System Date:"))
-        self.sysRuntimeLabel.setText(_translate("MainWindow", "System Runtime:"))
+        self.deviceIpLabel.setText(_translate("MainWindow", "Connected Device IP:"+str(motor.SERVER_HOST)))
+        # self.configGroupbox.setTitle(_translate("MainWindow", "General"))
+        # self.sysTimeLabel.setText(_translate("MainWindow", "System Time:"+str(time.time_ns())))
+        # self.sysDateLabel.setText(_translate("MainWindow", "System Date:"+str(time.time())))
+        # self.sysRuntimeLabel.setText(_translate("MainWindow", "System Runtime:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "Configuration"))
         self.groupBox.setTitle(_translate("MainWindow", "System State"))
         self.Modelabel.setText(_translate("MainWindow", "Mode: "))
@@ -1023,6 +1027,9 @@ class Ui_MainWindow(QMainWindow):
     def kbMass(self):
         kb5.show()
 
+    def kbWeight(self):
+        kb6.show()
+
     def checkKeyboard(self):
         if kb.okCheck == 1:
             self.initLayerHeightInput.setText(kb.inputString)
@@ -1040,6 +1047,8 @@ class Ui_MainWindow(QMainWindow):
             print("made it here")
             self.lineEditMassInput.setText(kb5.inputString)
             kb5.okCheck = 0
+        elif kb6.okCheck == 1:
+            self.dialog.inputWeight.setText(kb6.inputString)
 
     def extractPiston(self):
         self.msg = QMessageBox()
@@ -1075,10 +1084,12 @@ class Ui_MainWindow(QMainWindow):
         # start = int(490 - 0.1*(self.initLayerHeight[0]))
         # end = int(490 - 0.1*(self.initLayerHeight[0] - 10))
         # pos = initLayerHeight*0.001
-        pos = self.mm2cylinder(random.randint(0,30))
-
-        self.cylLabelStart.setGeometry(793,410+pos,200,100)
-        self.cylLabelEnd.setGeometry(793,520,200,100)
+        # pos = self.mm2cylinder(random.randint(0,30))
+        # pos = self.mm2cylinder(motor.absolutePosition)
+        pos = self.mm2cylinder(motor.absolutePosition)
+        # pos = self.mm2cylinder(30)
+        self.cylLabelStart.setGeometry(793,520-pos,200,100)
+        # self.cylLabelEnd.setGeometry(793,520,200,100)
     
     def checkMotorConnection(self):
         if motor.connectionStatus == 0:
@@ -1190,6 +1201,7 @@ class Ui_MainWindow(QMainWindow):
         homed = motor.homed
         # homed = 1
         if homed == 1:
+            self.warningLabel.setText("")
             self.pushButton.setEnabled(True)
             self.pushButton_2.setEnabled(True)
             self.pushButton_3.setEnabled(True)
@@ -1200,7 +1212,7 @@ class Ui_MainWindow(QMainWindow):
         elif homed == 0:
             self.warningLabel.setText("CAUTION: Home Device")
             self.pushButton.setEnabled(False)
-            self.pushButton_2.setEnabled(False)
+            self.pushButton_2.setEnabled(True)
             self.pushButton_3.setEnabled(False)
             self.pushButton_4.setEnabled(False)
             self.pushButton_5.setEnabled(False)
@@ -1254,7 +1266,7 @@ class Ui_MainWindow(QMainWindow):
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
         # force_reading_raw = random.random()
-        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
+        force_reading_raw = cellInstance.cell.get_weight_mean(4)    #5 recomended for accuracy
         self.force_reading_raw = force_reading_raw
         if force_reading_raw < 0:
             force_reading_raw = 0
@@ -1312,6 +1324,8 @@ class Ui_MainWindow(QMainWindow):
         self.force_vals.append(self.force_reading_N)
         self.pressure_vals.append(self.pressure_reading)
         self.weight_vals.append(self.force_reading_kg)
+        self.position_vals.append(motor.absolutePosition)
+        self.currentPressureLineEdit.setText(str(np.round(self.pressure_reading,2)))
 
         if self.plotForceCheckbox.isChecked():
             # print(self.force_vals)
@@ -1324,6 +1338,8 @@ class Ui_MainWindow(QMainWindow):
             self.pressurePlot.clear()
         if self.plotPositionCheckBox.isChecked():
             self.positionPlot.setData(self.time_x, self.weight_vals)
+        else:
+            self.positionPlot.clear()
 
         # row = self.dataTable.rowCount()
         # self.dataTable.insertRow(row)
@@ -1393,9 +1409,9 @@ class Ui_MainWindow(QMainWindow):
         # self.desPressureLabel.setText(f"Desired Pressure: {self.targetPressureInput.text()} {self.targetPressureUnitCombobox.currentText()}")
 
     def exportData(self):
-        d = {'Force [N]':self.force_vals,'Pressure [kPa]':self.pressure_vals,'Position [mm]':self.weight_vals}
+        d = {'Time':self.time_x,'Force [N]':self.force_vals,'Pressure [kPa]':self.pressure_vals,'Position [mm]':self.position_vals}
         df = pd.DataFrame(d)
-        df.to_csv('/media/pi/BB40-F80E/log.csv', index=False)
+        df.to_csv('/media/pi/VULCANLABS/log.csv', index=False)
 
 class sqlDatabase:
     def __init__(self):
@@ -1642,7 +1658,7 @@ class calibrationDialogWindow(QWidget): # this one
         self.next_button = QPushButton('Next')
         self.submit_button = QPushButton('Submit')
         self.finish_button = QPushButton('Finish')
-        self.dialogText = QLabel('\n\n Calibration requires:\n\n    - an object of known weight\n\n    - top plate removed from machine\n\n\nOnce all conditions are met press next to proceed')
+        self.dialogText = QLabel('\n\n Calibration requires:\n\n    - Device is at Home Position\n\n    - An object of known weight\n\n    - Top plate removed from machine\n\n\nOnce all conditions are met press next to proceed')
         self.warningText = QLabel('\n\nWarning: Continuing will pause the program')
         self.setWindowTitle('Calibration')
         self.setStyleSheet('background-color: #fff; color: #202020; font-size: 16px; QPushButton { background-color: #fff }')
@@ -1660,6 +1676,7 @@ class calibrationDialogWindow(QWidget): # this one
         #Routes front end to back end
 
         self.next_button.clicked.connect(self.getInputWindow)
+        self.next_button.clicked.connect(mainWin.kbWeight)
         # self.next_button.clicked.connect(self.startCalibration)
         # self.next_button.clicked.connect(self.collectingDataWindow)
         self.cancel_button.clicked.connect(self.close)
@@ -1692,12 +1709,14 @@ class calibrationDialogWindow(QWidget): # this one
         # self.close()
         for i in reversed(range(self.layout().count())):        #Clears components from first window
             self.layout().itemAt(i).widget().deleteLater()
-        self.dialogText = QLabel('')
-        self.warningText = QLabel('')
+        self.dialogText = QLabel('Raising...')
+        self.warningText = QLabel('Please Wait')
         self.layout().addRow('',self.dialogText)
-        self.layout().addRow('',self.inputWeight)
+        self.layout().addRow('',self.warningText)
+        self.show()
+        time.sleep(0.2)
         motor.cleanUp()
-        while motor.top == False:
+        while motor.topFlag == False:
             self.dialogText.setText("running.")
             time.sleep(1)
             self.dialogText.setText("running..")
@@ -1741,7 +1760,7 @@ class calibrationDialogWindow(QWidget): # this one
         print(f'user inputted value: {self.knownGrams}')
         # while LoadCell.calibrated == 0:
         #     self.dialogText = QLabel('Calibrating...')
-        self.dialogText = QLabel('Calibrating')
+        self.dialogText = QLabel('Calibration Complete.')
         buttons = QWidget()
         buttons.setLayout(QHBoxLayout())
         buttons.layout().addWidget(self.finish_button)
@@ -1891,48 +1910,6 @@ class LoadCell():
         self.tare = 1 
 
         print("Calibration is succesful")
-"""
-##import time
-import paho.mqtt.client as paho
-
-# Setup MQTT
-broker="broker.hivemq.com"
-port=1883
-
-topic = "scuttle/infrastructure/data/001/scale/latest"
-
-def on_publish(client,userdata,result):         # create function for callback
-    pass
-
-mqtt = paho.Client()                          # create client object
-mqtt.on_publish = on_publish                  # assign function to callback
-mqtt.connect(broker,port)                     # establish connection
-
-
-if __name__ == "__main__":
-    while 1:
-        weight = ser.readline().decode('utf-8')
-        print("Weight Station Reading: " + weight)
-        # time.sleep(0.01)
-        mqtt.publish(topic, str(weight))
-
-"""
-class MQtt():
-    #settup MQTT
-    def __init__(self):        
-        self.baseTopic = "VulcanLabs/" #base topic
-        self.mqtt = paho.Client()
-        self.broker="broker.hivemq.com"
-        self.port=1883
-    def on_publish(self,client,userdata,result):
-        pass
-    
-    def publish(self,value,topicName): # something.publish(value,"topicName")
-        self.mqtt.on_publish = self.on_publish
-        self.mqtt.connect(self.broker,self.port)
-        self.value = value
-        self.topic = topicName
-        self.mqtt.publish((self.baseTopic + self.topic), str(self.value))
 
 if __name__ == '__main__':
     motor = Motor()
@@ -1945,6 +1922,7 @@ if __name__ == '__main__':
     kb3 = VirtualKeyboard3()
     kb4 = VirtualKeyboard4()
     kb5 = VirtualKeyboard5()
+    kb6 = VirtualKeyboard6()
     mainWin = Ui_MainWindow()
     ld = loadingScreen()
     styleFile=os.path.join(os.path.split(__file__)[0],"styleVulcan.stylesheet")

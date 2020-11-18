@@ -520,6 +520,105 @@ class VirtualKeyboard5(QWidget):
     def sizeHint(self):
         return QSize(480,272)
 
+### number 6 ###
+class VirtualKeyboard6(QWidget):
+    sigInputString = pyqtSignal(object)
+    sigKeyButtonClicked = pyqtSignal()
+
+    def __init__(self):
+        super(VirtualKeyboard6, self).__init__()
+
+        self.globalLayout = QVBoxLayout(self)
+        self.keysLayout = QGridLayout()
+        self.buttonLayout = QHBoxLayout()
+        self.setWindowTitle("Keyboard")
+        self.resize(300,300)
+        # self.center()
+        self.okCheck = 0
+
+        self.keyListByLines = [
+                    ['1', '2', '3'], #, 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+                    ['4', '5', '6'], #, 'f', 'g', 'h', 'j', 'k', 'l', 'm'],
+                    ['7', '8', '9'], #, 'v', 'b', 'n', '_', '.', '/', ' '],
+                    ['', '0', '.']
+                ]
+        self.inputString = ""
+        self.state = InputState.LOWER
+
+        self.stateButton = QPushButton()
+        self.stateButton.setText('Maj.')
+        self.backButton = QPushButton()
+        self.backButton.setText('<-')
+        self.okButton = QPushButton()
+        self.okButton.setText('OK')
+        self.cancelButton = QPushButton()
+        self.cancelButton.setText("Cancel")
+
+        self.inputLine = QLineEdit()
+
+
+        for lineIndex, line in enumerate(self.keyListByLines):
+            for keyIndex, key in enumerate(line):
+                buttonName = "keyButton" + key.capitalize()
+                self.__setattr__(buttonName, KeyButton(key))
+                self.keysLayout.addWidget(self.getButtonByKey(key), self.keyListByLines.index(line), line.index(key))
+                self.getButtonByKey(key).setText(key)
+                self.getButtonByKey(key).sigKeyButtonClicked.connect(self.addInputByKey)
+                self.keysLayout.setColumnMinimumWidth(keyIndex, 50)
+            self.keysLayout.setRowMinimumHeight(lineIndex, 50)
+
+        self.stateButton.clicked.connect(self.switchState)
+        self.backButton.clicked.connect(self.backspace)
+        self.okButton.clicked.connect(self.emitInputString)
+        self.okButton.clicked.connect(self.emit2Gui) 
+        self.okButton.clicked.connect(self.close)
+        self.cancelButton.clicked.connect(self.emitCancel)
+
+
+        self.buttonLayout.addWidget(self.cancelButton)
+        self.buttonLayout.addWidget(self.backButton)
+        self.buttonLayout.addWidget(self.stateButton)
+        self.buttonLayout.addWidget(self.okButton)
+
+        self.globalLayout.addWidget(self.inputLine)
+        self.globalLayout.addLayout(self.keysLayout)
+
+        self.globalLayout.addLayout(self.buttonLayout)
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        
+    def emit2Gui(self):
+        print("ok")
+        self.okCheck = 1
+
+    def getButtonByKey(self, key):
+        return getattr(self, "keyButton" + key.capitalize())
+
+    def getLineForButtonByKey(self, key):
+        return [key in keyList for keyList in self.keyListByLines].index(True)
+
+    def switchState(self):
+        self.state = not self.state
+
+    def addInputByKey(self, key):
+        self.inputString += (key.lower(), key.capitalize())[self.state]
+        self.inputLine.setText(self.inputString)
+        # mainWin.currentlineEdit.setText(self.inputString)
+
+    def backspace(self):
+        self.inputLine.backspace()
+        # mainWin.currentlineEdit = self.inputString[:-1]
+        self.inputString = self.inputString[:-1]
+        self.sigInputString.emit("")
+
+    def emitInputString(self):
+        self.sigInputString.emit(self.inputString)
+
+    def emitCancel(self):
+        self.sigInputString.emit()
+
+    def sizeHint(self):
+        return QSize(480,272)
+
 
 class Test(QWidget):
     def __init__(self):

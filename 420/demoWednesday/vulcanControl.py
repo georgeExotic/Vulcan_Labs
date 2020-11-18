@@ -1,11 +1,29 @@
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
+# import paho.mqtt.client as paho
 from ast import literal_eval #from hex to dec
 import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
 import time
 
 import time
 import math
+
+class MQtt():
+    #settup MQTT
+    def __init__(self):        
+        self.baseTopic = "VulcanLabs/" #base topic
+        self.mqtt = paho.Client()
+        self.broker="broker.hivemq.com"
+        self.port=1883
+    def on_publish(self,client,userdata,result):
+        pass
+    
+    def publish(self,value,topicName): # something.publish(value,"topicName")
+        self.mqtt.on_publish = self.on_publish
+        self.mqtt.connect(self.broker,self.port)
+        self.value = value
+        self.topic = topicName
+        self.mqtt.publish((self.baseTopic + self.topic), str(self.value))
 
 class limitSwitch:
     def __init__(self,limitPin):
@@ -81,8 +99,10 @@ class Motor:
         self.home = False # at bottom
         self.top = False #is at the top
         self.homed = False  # has been homed Default False
-        self.homing = False 
-        self.flagCheck = False #will be updated to true if any flag is triggered
+        self.flag = False #will be updated to true if any flag is triggered
+        self.moving = False #shaft moving
+        self.homeFlag = False
+        self.topFlag = False
        
         ###Homing
         self.absolutePosition = 0 
@@ -120,7 +140,9 @@ class Motor:
     def _checkConnection(self):
         if not self._motor.is_open():
             if not self._motor.open():
+                self.connectionStatus = 0
                 return "unable to connect" #print("unable to connect to motor")
+            self.connectionStatus = 1
         return "connected!"
 
 
@@ -140,21 +162,21 @@ class Motor:
         return dec
 
     ###function will be called as much as posible to check the status of both flags and check that they have not been trigger during motion
-    def _updateFlagCheck(self):
+    def _updateFlag(self):
+
         self.topSwitch.updateSwitch()
         self.homeSwitch.updateSwitch()
-        # print("updating checkflag")
-        if self.home == True and self.homed == True:
-            self.flagCheck = False
-            self.home = False
-            time.sleep(0.5)
-            print("jorge")
-        elif self.home == False and self.homed == True:
-            if self.topSwitch.flag == 1 or self.homeSwitch.flag == 1:
-                print("here")
-                self.flagCheck = True
-            else:
-                self.flagCheck = False
+        
+        if self.topSwitch.flag == 1:
+            self.topFlag = True
+        else:
+            self.topFlag = False
+
+        if self.homeSwitch.flag == 1:
+            self.homeFlag = True
+        else:
+            self.homeFlag = False
+
         return
 
     ###function to read from register of LMD57 modbus register map
@@ -221,9 +243,9 @@ class Motor:
             self.writeHoldingRegs(0x67,1,self.runCurrent)   #set run current
             self.writeHoldingRegs(0xA0,1,self.makeUp)       #set makup frequency
             
-            print("Variable current mode is activated ... hmt mode = ",self.readHoldingRegs(0x8E,1))
-            print("Run current = ", self.readHoldingRegs(0x67,1))
-            print("make Up frequency mode = ", self.readHoldingRegs(0xA0,1))
+            # print("Variable current mode is activated ... hmt mode = ",self.readHoldingRegs(0x8E,1))
+            # print("Run current = ", self.readHoldingRegs(0x67,1))
+            # print("make Up frequency mode = ", self.readHoldingRegs(0xA0,1))
                      
         ###Hmt 3### Torque mode
         elif self.Hmt == 3:
@@ -233,10 +255,10 @@ class Motor:
             self.writeHoldingRegs(0xA6, 1,self.torquePercentage)     #set torque percent
             self.writeHoldingRegs(0xA5, 1,self.torqueDirection)     #set torque direction 
 
-            print("Torque mode is activated ... hmt mode = ", self.readHoldingRegs(0x8E,1))
-            print("torque speed is = ", self.readHoldingRegs(0xA3,4))
-            print("torque percentage is = ", self.readHoldingRegs(0xA6,1))
-            print("torque direction is = ", self.readHoldingRegs(0xA5,1))
+            # print("Torque mode is activated ... hmt mode = ", self.readHoldingRegs(0x8E,1))
+            # print("torque speed is = ", self.readHoldingRegs(0xA3,4))
+            # print("torque percentage is = ", self.readHoldingRegs(0xA6,1))
+            # print("torque direction is = ", self.readHoldingRegs(0xA5,1))
 
         return
 
@@ -252,9 +274,9 @@ class Motor:
         self.writeHoldingRegs(0x91,1,self.controlBound)
         self.writeHoldingRegs(0x48,1,self.microStep)
 
-        print("holding current = ",self.readHoldingRegs(0x29,1))
-        print("control bound = ",self.readHoldingRegs(0x91,1))
-        print("microstep = ",self.readHoldingRegs(0x48,1))
+        # print("holding current = ",self.readHoldingRegs(0x29,1))
+        # print("control bound = ",self.readHoldingRegs(0x91,1))
+        # print("microstep = ",self.readHoldingRegs(0x48,1))
         return
 
     ###function to convert linar displacement in mm to amount of steps
@@ -263,42 +285,51 @@ class Motor:
         steps = int(targetRevolutions * self.stepPerRevolution)
         return steps
 
+    def steps2displacement(self,steps):
+        revs = steps/self.stepPerRevolution
+        displacement = revs * self.leadTravel
+        return displacement
         
     def jogUp(self,displacementChoice):
-
-        #verify that we are not on the limit already!
-        self.topSwitch.updateSwitch()
-        ok = False  
-        if self.topSwitch.flag == 1:
-            ok = False
-        elif self.topSwitch.flag == 0:
-            ok = True
 
         #displacement choice from GUI
         if displacementChoice == 0:
             displacement = 1
         elif displacementChoice == 1:
             displacement = 5
-        else:
+        elif displacementChoice == 2:
             displacement = 10
-        print(self.homed)
-        print(ok)
-        if self.homed == True and ok == True:
+        elif displacementChoice > 2:
+            displacement = displacementChoice
+        
+        if self.homed == True:
+            initialStepPosition = self.readHoldingRegs(0x57,4)
+            print("initstepPosition:",initialStepPosition)
+
             steps2Jog = self.displacement2steps(displacement)
-            # self.setProfiles("jogging")
-            self.writeHoldingRegs(0x46,4,steps2Jog)
-            self._moving()
-            self._updateFlagCheck()
-            print(self.flagCheck)
-            print(self.moving)
-            while self.flagCheck == False and self.moving == True:
-                self._updateFlagCheck()
+            self.setProfiles("jogging")
+            self._updateFlag()
+            if self.topFlag == False:
+                self.writeHoldingRegs(0x46,4,steps2Jog) #already started moving
                 self._moving()
-                # print("Jogging UP!!") 
-            if self.flagCheck == True:
-                self.writeHoldingRegs(0x1C,1,0)
-                print("driver off beacuse of trip of trigger")
-        # time.sleep(0.2)
+                while self.topFlag == False and self.moving == True:
+                    self._updateFlag()
+                    self._moving()
+                if self.topFlag == True:
+                    self.writeHoldingRegs(0x1C,1,0)
+                    self.home = False
+
+            finalStepPosition = self.readHoldingRegs(0x57,4)
+            print("finalstepPosition:",finalStepPosition)
+
+            DeltaStepsPosition = finalStepPosition[0] - initialStepPosition[0]
+            print(DeltaStepsPosition)
+            self.absolutePosition = self.absolutePosition + self.steps2displacement(DeltaStepsPosition)
+            print(self.absolutePosition)           
+
+        elif self.homed == False:
+            print("please home")
+
         self.writeHoldingRegs(0x1C,1,1)
         print("driver enable again")
         
@@ -314,22 +345,77 @@ class Motor:
             displacement = 10
 
         steps2Jog = self.displacement2steps(displacement)
-
         self.setProfiles("jogging")
+        currentStepPos = self.readHoldingRegs(0x57,4) #read absolute postion 
+        initialStepPosition = self.readHoldingRegs(0x57,4)
+        
+        print(initialStepPosition)
 
-        absolutePosition = self.readHoldingRegs(0x57,4) #read absolute postion 
+        if (steps2Jog - currentStepPos[0]) <= 0 :
+            currentStepPos = currentStepPos[0] + steps2Jog
+            self._updateFlag()
+            if self.homeFlag == False:
+                self.writeHoldingRegs(0x57,4,currentStepPos)
+                self.writeHoldingRegs(0x43,4,(currentStepPos-steps2Jog))
+                self._moving()
+                while self.homeFlag == False and self.moving == True:
+                    self._updateFlag()
+                    self._moving()
 
-        if absolutePosition[0] == 0:
-            self.writeHoldingRegs(0x57,4,steps2Jog)
-            self.writeHoldingRegs(0x43,4,0)
+                if self.homeFlag == True:
+                    self.writeHoldingRegs(0x1C,1,0)
+                    self.home = True
+                finalStepPosition = self.readHoldingRegs(0x57,4)
+                finalStepPosition = finalStepPosition[0] - steps2Jog
+                DeltaStepsPosition = finalStepPosition- initialStepPosition[0]
 
-        elif (steps2Jog - absolutePosition[0]) < 0 :        
-            add = steps2Jog + absolutePosition[0]
-            self.writeHoldingRegs(0x57,4,add)
-            self.writeHoldingRegs(0x43,4,absolutePosition[0])
-    
 
+
+            self.absolutePosition = self.absolutePosition - self.steps2displacement(abs(DeltaStepsPosition))       
+
+        self.writeHoldingRegs(0x1C,1,1)
         print("Jogging DOWN!!")
+        return
+
+
+    def Home(self):
+        self.homeSwitch.updateSwitch()      #update flag
+        ok = False
+
+        if self.homeSwitch.flag == 1:
+            ok = False
+        elif self.homeSwitch.flag == 0:
+            ok = True
+        
+        if self.home == False and ok == True:
+            # print("homing starting in 3 seconds")   
+            # self.countdown()
+            self.setProfiles("homing")
+            steps2Jog = self.displacement2steps(40)
+            self.writeHoldingRegs(0x57,4,steps2Jog) #overwriting the absolute position
+            self.writeHoldingRegs(0x43,4,0)
+            self.homing = True      # true during homing 
+            while self.home == False:       #if not homed 
+                self.homeSwitch.updateSwitch()
+                if self.homeSwitch.flag == 1:
+                    self.writeHoldingRegs(0x1C,1,0)
+                    self.absolutePosition = 0
+                    self.home = True
+                    self.homed = True
+                    self.homing = False      # true during homing
+                    print("Homing Completed")
+                    break
+            self.writeHoldingRegs(0x1C,1,1)
+            self.writeHoldingRegs(0x57,4,0)
+            time.sleep(0.2)
+        elif self.home == True or ok == False:
+            self.absolutePosition = 0
+            self.writeHoldingRegs(0x57,4,0)
+            self.home = True
+            self.homed = True
+            print("already homed")
+            print("setting absolute position to 0")
+            pass
         return
 
     def setProfiles(self,motion = "homing"):
@@ -352,75 +438,9 @@ class Motor:
         print("motion profile set to = ",motion)
         return
 
-    def Home(self):
-        self.homeSwitch.updateSwitch()      #update flag
-        ok = False
-
-        if self.homeSwitch.flag == 1:
-            ok = False
-        elif self.homeSwitch.flag == 0:
-            ok = True
-        
-        if self.homed == False and ok == True:
-            # print("homing starting in 3 seconds")   
-            # self.countdown()
-            self.setProfiles("homing")
-            steps2Jog = self.displacement2steps(40)
-            self.writeHoldingRegs(0x57,4,steps2Jog) #overwriting the absolute position
-            self.writeHoldingRegs(0x43,4,0)
-            self.homing = True      # true during homing 
-            while self.homed == False:       #if not homed 
-                self.homeSwitch.updateSwitch()
-                # time.sleep(0.05)
-                if self.homeSwitch.flag == 1:
-                    # pos = self.readHoldingRegs(0x57, 4)
-                    # self.writeHoldingRegs(0x43,4,pos[0])
-                    self.writeHoldingRegs(0x1C,1,0)
-                    self.absolutePosition = 0
-                    self.writeHoldingRegs(0x57,4,0)
-                    self.home = True
-                    self.homed = True
-                    self.homing = False      # true during homing
-                    print("Homing Completed")
-                    break
-            self.writeHoldingRegs(0x1C,1,1)
-        elif self.homed == True or ok == False:
-            print("already homed")
-            self.homed = True
-            pass
-
-        return
-
     def cleanUp(self):
-        self.topSwitch.updateSwitch()
-        ok = False  #to check if it is already in the switch
-
-        if self.topSwitch.flag == 1:
-            ok = False
-        elif self.topSwitch.flag == 0:
-            ok = True
-        
-        if self.homed == True and ok == True:
-            self.setProfiles("homing")
-            current = self.readHoldingRegs(0x57,4)
-            steps2Jog = self.displacement2steps(40)
-            steps2Jog = steps2Jog + current[0]
-            self.writeHoldingRegs(0x43,4,steps2Jog) #overwriting the absolute position
-            # self.writeHoldingRegs(0x43,4,)
-            while self.top == False:
-                self.topSwitch.updateSwitch()
-                if self.topSwitch.flag == 1:
-                    self.writeHoldingRegs(0x1C,1,0)
-                    self.top = True #at the max (top)
-                    self.home = False # not at the button anymore
-                    print("ready for clean up")
-                    break
-            self.writeHoldingRegs(0x1C,1,1)
-        elif ok == False:
-            print("already at the top")
-            pass
-        elif ok == True and self.homed == False:
-            print("havent home yet")
+        self.jogUp(35)
+        self.top = True
         return
 
             
@@ -474,14 +494,14 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
-    c.Home()
-    time.sleep(3)
+    # c.Home()
+    # time.sleep(3)
     # c.jogDown(2)
-    c.jogUp(1)
-    time.sleep(2)
-    c.jogUp(2)
-    time.sleep(5)
-    c.jogUp(2)
+    # c.jogUp(5)
+    # time.sleep(2)
+    # c.jogUp(2)
+    # time.sleep(5)
+    # c.jogUp(2)
     # c.cleanUp()
     # time.sleep(2)
     # c.writeHoldingRegs(0x1C,1,0)
