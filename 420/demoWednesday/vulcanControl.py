@@ -60,7 +60,7 @@ class Motor:
 
         ###Performance settings###
         #holding current
-        self.holdingCurrent = 50                        #0x29#0 - 100
+        self.holdingCurrent = 100                        #0x29#0 - 100
         #control Bound
         self.controlBound = 0                           #0x91#best torque performance
         #microsteeping
@@ -75,11 +75,17 @@ class Motor:
         self.stepPerRevolution = 200 * self.microStep       #200*256 = 51200 steps per rev        
         
         ###homing###
-        self.absolutePosition = 0 
+
+
+        ###Flags
         self.home = False # at bottom
-        self.top = False 
-        self.homed = False # has been homed
-        self.homing = False
+        self.top = False #is at the top
+        self.homed = False  # has been homed Default False
+        self.homing = False 
+        self.flagCheck = False #will be updated to true if any flag is triggered
+       
+        ###Homing
+        self.absolutePosition = 0 
         self.maxPosition = 300 # mm
         
         ###init home limit switch###
@@ -133,6 +139,23 @@ class Motor:
         dec = literal_eval(hex)
         return dec
 
+    ###function will be called as much as posible to check the status of both flags and check that they have not been trigger during motion
+    def _updateFlagCheck(self):
+        self.topSwitch.updateSwitch()
+        self.homeSwitch.updateSwitch()
+        # print("updating checkflag")
+        if self.home == True and self.homed == True:
+            self.flagCheck = False
+            self.home = False
+            time.sleep(0.5)
+            print("jorge")
+        elif self.home == False and self.homed == True:
+            if self.topSwitch.flag == 1 or self.homeSwitch.flag == 1:
+                print("here")
+                self.flagCheck = True
+            else:
+                self.flagCheck = False
+        return
 
     ###function to read from register of LMD57 modbus register map
     def readHoldingRegs(self,startingAddressHex,regSize = 1):                             #startingAddressHex [address of register in HEX] regSize [size of regiter]
@@ -243,20 +266,42 @@ class Motor:
         
     def jogUp(self,displacementChoice):
 
+        #verify that we are not on the limit already!
+        self.topSwitch.updateSwitch()
+        ok = False  
+        if self.topSwitch.flag == 1:
+            ok = False
+        elif self.topSwitch.flag == 0:
+            ok = True
 
+        #displacement choice from GUI
         if displacementChoice == 0:
             displacement = 1
         elif displacementChoice == 1:
             displacement = 5
         else:
             displacement = 10
-
-        steps2Jog = self.displacement2steps(displacement)
-        self.setProfiles("jogging")
-        self.writeHoldingRegs(0x46,4,steps2Jog)
-        print("Jogging UP!!")
-
-
+        print(self.homed)
+        print(ok)
+        if self.homed == True and ok == True:
+            steps2Jog = self.displacement2steps(displacement)
+            # self.setProfiles("jogging")
+            self.writeHoldingRegs(0x46,4,steps2Jog)
+            self._moving()
+            self._updateFlagCheck()
+            print(self.flagCheck)
+            print(self.moving)
+            while self.flagCheck == False and self.moving == True:
+                self._updateFlagCheck()
+                self._moving()
+                # print("Jogging UP!!") 
+            if self.flagCheck == True:
+                self.writeHoldingRegs(0x1C,1,0)
+                print("driver off beacuse of trip of trigger")
+        # time.sleep(0.2)
+        self.writeHoldingRegs(0x1C,1,1)
+        print("driver enable again")
+        
         return
 
     def jogDown(self,displacementChoice):
@@ -308,7 +353,6 @@ class Motor:
         return
 
     def Home(self):
-        
         self.homeSwitch.updateSwitch()      #update flag
         ok = False
 
@@ -317,7 +361,7 @@ class Motor:
         elif self.homeSwitch.flag == 0:
             ok = True
         
-        if self.home == False and ok == True:
+        if self.homed == False and ok == True:
             # print("homing starting in 3 seconds")   
             # self.countdown()
             self.setProfiles("homing")
@@ -325,7 +369,7 @@ class Motor:
             self.writeHoldingRegs(0x57,4,steps2Jog) #overwriting the absolute position
             self.writeHoldingRegs(0x43,4,0)
             self.homing = True      # true during homing 
-            while self.home == False:       #if not homed 
+            while self.homed == False:       #if not homed 
                 self.homeSwitch.updateSwitch()
                 # time.sleep(0.05)
                 if self.homeSwitch.flag == 1:
@@ -340,15 +384,14 @@ class Motor:
                     print("Homing Completed")
                     break
             self.writeHoldingRegs(0x1C,1,1)
-        elif self.home == True or ok == False:
+        elif self.homed == True or ok == False:
             print("already homed")
+            self.homed = True
             pass
 
         return
 
     def cleanUp(self):
-        # print("cleanUp started")
-
         self.topSwitch.updateSwitch()
         ok = False  #to check if it is already in the switch
 
@@ -356,8 +399,8 @@ class Motor:
             ok = False
         elif self.topSwitch.flag == 0:
             ok = True
-            
-        if self.home == False and ok == True:
+        
+        if self.homed == True and ok == True:
             self.setProfiles("homing")
             current = self.readHoldingRegs(0x57,4)
             steps2Jog = self.displacement2steps(40)
@@ -368,14 +411,15 @@ class Motor:
                 self.topSwitch.updateSwitch()
                 if self.topSwitch.flag == 1:
                     self.writeHoldingRegs(0x1C,1,0)
-                    self.top = True
+                    self.top = True #at the max (top)
+                    self.home = False # not at the button anymore
                     print("ready for clean up")
                     break
             self.writeHoldingRegs(0x1C,1,1)
         elif ok == False:
             print("already at the top")
             pass
-        elif ok == True and self.home == False:
+        elif ok == True and self.homed == False:
             print("havent home yet")
         return
 
@@ -430,11 +474,16 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
-    # c.cleanUp()
-    # c.jogDown(2)
-    # c.jogUp(2)
     c.Home()
-    # time.sleep(3)
+    time.sleep(3)
+    # c.jogDown(2)
+    c.jogUp(1)
+    time.sleep(2)
+    c.jogUp(2)
+    time.sleep(5)
+    c.jogUp(2)
+    # c.cleanUp()
+    # time.sleep(2)
     # c.writeHoldingRegs(0x1C,1,0)
     # time.sleep(2)
     # print(c.readHoldingRegs)
