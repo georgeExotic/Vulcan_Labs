@@ -26,8 +26,8 @@ from matplotlib import style
 
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
-# import RPi.GPIO as GPIO #import I/O interface             #
-# from hx711 import HX711 #import HX711 class               #
+import RPi.GPIO as GPIO #import I/O interface             #
+from hx711 import HX711 #import HX711 class               #
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
@@ -38,7 +38,7 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
 
-# from vulcanControl import Motor
+from vulcanControl import Motor
 from key import VirtualKeyboard
 from key import VirtualKeyboard2
 from key import VirtualKeyboard3
@@ -310,7 +310,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.setGeometry(QtCore.QRect(690, 110, 320, 80)) # pos and size
         self.pushButton.setFont(QFont('Arial', 18))#, QFont.Bold)) #adjust font
         self.pushButton.setObjectName("pushButton")
-        # self.pushButton.clicked.connect(motor.stopRun)
+        self.pushButton.clicked.connect(motor.stopRun)
         self.pushButton.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
         # self.pushButton.setStyleSheet("""QPushButton:hover { background-color: green; }""")
         # self.pushButton.setStyleSheet("""QPushButton {
@@ -326,7 +326,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(860, 230, 140, 50)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
-        # self.pushButton_2.clicked.connect(motor.Home)
+        self.pushButton_2.clicked.connect(motor.Home)
     #     self.pushButton_2.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
     #     self.pushButton_2.setStyleSheet("""QPushButton {
     # font-weight: bold;
@@ -341,7 +341,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_5 = QPushButton(self.widget)
         self.pushButton_5.setGeometry(QtCore.QRect(690, 290, 140, 50)) # pos and size
         self.pushButton_5.setObjectName("pushButton_5")
-        # self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
+        self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
     #     self.pushButton_5.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
     #     self.pushButton_5.setStyleSheet("""QPushButton {
     # font-weight: bold;
@@ -357,7 +357,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_6.setGeometry(QtCore.QRect(690, 230, 140, 50)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
         # self.pushButton_6.clicked.connect(lambda x: DB.getTable(list([0])))
-        # self.pushButton_6.clicked.connect(lambda x: motor.jogUp(self.comboBox_5.currentIndex()))
+        self.pushButton_6.clicked.connect(lambda x: motor.jogUp(self.comboBox_5.currentIndex()))
     #     self.pushButton_6.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
     #     self.pushButton_6.setStyleSheet("""QPushButton {
     # font-weight: bold;
@@ -412,7 +412,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_4.setGeometry(QtCore.QRect(690, 40, 100, 50)) # pos and size
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_4.clicked.connect(self.runStartTimer)
-        # self.pushButton_4.clicked.connect(self.runMotor)
+        self.pushButton_4.clicked.connect(self.runMotor)
     #     self.pushButton_4.setStyleSheet("""QPushButton { font-weight: bold; font-size: 20px; color: #303030; border: 2px solid #202020; border-radius: 8px; min-width: 10px;
     # background-color: #FF7C0A;} QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
     #     # self.pushButton_4.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
@@ -533,7 +533,7 @@ class Ui_MainWindow(QMainWindow):
         self.extractButton.setGeometry(700, 230, 140, 50)
         self.extractButton.setText("Extract")
         self.extractButton.clicked.connect(self.extractPiston)
-        # self.extractButton.clicked.connect(motor.cleanUp)
+        self.extractButton.clicked.connect(motor.cleanUp)
         self.extractButton.raise_()
 
         # TAB 3 #
@@ -1002,8 +1002,8 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
         # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
-        # self.checkCalibration()
-        # self.checkMotorConnection()
+        self.checkCalibration()
+        self.checkMotorConnection()
         self.checkHomed()
         self.updateMode()
         self.disableWidget(self.comboBox.currentIndex())
@@ -1187,8 +1187,8 @@ class Ui_MainWindow(QMainWindow):
         kb.show()
 
     def checkHomed(self):
-        # homed = motor.homed
-        homed = 1
+        homed = motor.homed
+        # homed = 1
         if homed == 1:
             self.pushButton.setEnabled(True)
             self.pushButton_2.setEnabled(True)
@@ -1253,8 +1253,8 @@ class Ui_MainWindow(QMainWindow):
 
     def UpdateForceReadingValue(self):
         """Updates the LCD Force Reading Value"""
-        force_reading_raw = random.random()
-        # force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
+        # force_reading_raw = random.random()
+        force_reading_raw = cellInstance.cell.get_weight_mean(3)    #5 recomended for accuracy
         self.force_reading_raw = force_reading_raw
         if force_reading_raw < 0:
             force_reading_raw = 0
@@ -1935,8 +1935,8 @@ class MQtt():
         self.mqtt.publish((self.baseTopic + self.topic), str(self.value))
 
 if __name__ == '__main__':
-    # motor = Motor()
-    # cellInstance = LoadCell()
+    motor = Motor()
+    cellInstance = LoadCell()
     DB = sqlDatabase()
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
