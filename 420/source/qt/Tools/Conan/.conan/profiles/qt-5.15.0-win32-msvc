@@ -1,0 +1,11 @@
+[settings]
+    os=Windows
+    arch=x86_64
+    compiler=Visual Studio
+    compiler.version=15
+    build_type=Release
+[options]
+[build_requires]
+[env]
+%PATH_APPEND_QT_INSTALLATION_PATH_BIN%
+
