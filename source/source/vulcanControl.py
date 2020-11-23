@@ -88,7 +88,7 @@ class Motor:
         self.setEnable(1)
 
         ###hardware Settings
-        self.strokeLength = 300 # mm
+        self.strokeLength = 30 # mm
         self.pistonDiameter = 19.05 #mm
         self.leadTravel = 4 #mm per rev
         self.stepPerRevolution = 200 * self.microStep       #200*256 = 51200 steps per rev        
@@ -107,10 +107,6 @@ class Motor:
 
         ###run
 
-        ###init home limit switch###
-        self.homeSwitch = limitSwitch(6)
-        self.topSwitch = limitSwitch(5)
-
         ###user input params for motion profile###
         self.initLayerHeight = 0
         self.compactedLayerHeight = 0
@@ -118,6 +114,14 @@ class Motor:
         self.numberOfLayers = 0
         self.mass = 0
         self.modeSelected = 0
+        self.mass = 0 
+        self.totalCycleStroke = 0 
+        self.layerNumber = 0 
+        
+        ###init home limit switch###
+        self.homeSwitch = limitSwitch(6)
+        self.topSwitch = limitSwitch(5)
+
 
         print("Congratulations Motor Initialization Complete!")
 
@@ -497,6 +501,8 @@ class Motor:
 
         -
         """
+        
+        # if self.modeSelected = 1
         print("running")
         pass
 
@@ -508,6 +514,12 @@ class Motor:
         """
         self._motor.write_multiple_registers(70,[0,0])
         print("stopped")
+        pass
+
+    def motionRun(self):
+        """
+        if self.totalCycleStroke >= self.totalStroke
+        """
         pass
 
     def eStop(self):
