@@ -10,14 +10,14 @@ import math
 
 class MQtt():
     #settup MQTT
-    def __init__(self):        
+    def __init__(self):
         self.baseTopic = "VulcanLabs/" #base topic
         self.mqtt = paho.Client()
         self.broker="broker.hivemq.com"
         self.port=1883
     def on_publish(self,client,userdata,result):
         pass
-    
+
     def publish(self,value,topicName): # something.publish(value,"topicName")
         self.mqtt.on_publish = self.on_publish
         self.mqtt.connect(self.broker,self.port)
@@ -36,7 +36,7 @@ class limitSwitch:
 
 class Motor:
     def __init__(self):
-        #Initialization of LMD57 
+        #Initialization of LMD57
         #device information
         self.SERVER_HOST = "192.168.33.1"
         self.SERVER_PORT = 502
@@ -48,7 +48,7 @@ class Motor:
         self._connectModbusClient()
         self._checkConnection()
 
-        ###Velocities### 
+        ###Velocities###
             #Jogging
         self.joggingInitialVelocity = 1000
         self.joggingMaxVelocity = 100000
@@ -61,12 +61,12 @@ class Motor:
 
         ###accelerations###
             #jogging
-        self.joggingAcceleration = 500000 
-        self.joggingDeacceleration = 500000    
+        self.joggingAcceleration = 500000
+        self.joggingDeacceleration = 500000
             #homing
         self.homingAcceleration = 300000
         self.homingDeacceleration = 300000
-            #runing 
+            #runing
         self.runningAcceleration = 300000
         self.runningDeacceleration = 300000
 
@@ -74,7 +74,7 @@ class Motor:
         ###hmt### motor behaivor
         self.Hmt = 2                                    #default 2 = variable current mode --> current will vary as needed to postion the load with the maximun current set by the run current command 
         self.setHmt()
-        
+
 
         ###Performance settings###
         #holding current
@@ -92,7 +92,7 @@ class Motor:
         self.pistonDiameter = 19.05 #mm
         self.leadTravel = 4 #mm per rev
         self.stepPerRevolution = 200 * self.microStep       #200*256 = 51200 steps per rev        
-        
+
 
         ###Flags
         self.home = False # at bottom
@@ -101,13 +101,12 @@ class Motor:
         self.moving = False #shaft moving
         self.homeFlag = False
         self.topFlag = False
-       
+
         ###Homing
-        self.absolutePosition = 0 
+        self.absolutePosition = 0
 
         ###run
 
-        
         ###init home limit switch###
         self.homeSwitch = limitSwitch(6)
         self.topSwitch = limitSwitch(5)
@@ -119,10 +118,10 @@ class Motor:
         self.numberOfLayers = 0
         self.mass = 0
         self.modeSelected = 0
-    
+
         print("Congratulations Motor Initialization Complete!")
 
-    ###function to connect to LMD57 using modbus TCP 
+    ###function to connect to LMD57 using modbus TCP
     def _connectModbusClient(self):
         #define mosbus server and host
         self._motor = ModbusClient()
@@ -136,7 +135,7 @@ class Motor:
             print("unable to connect to "+self.SERVER_HOST+ ":" +str(self.SERVER_PORT))
         return
 
-    ###function to check is modbus tcp connection is successful 
+    ###function to check is modbus tcp connection is successful
     def _checkConnection(self):
         if not self._motor.is_open():
             if not self._motor.open():
@@ -155,7 +154,7 @@ class Motor:
             self.moving = True
         return
 
-    ###function to convert any hex number into decimal 
+    ###function to convert any hex number into decimal
     def _hex2dec(self,hex):
         hex = str(hex)
         dec = literal_eval(hex)
@@ -166,7 +165,7 @@ class Motor:
 
         self.topSwitch.updateSwitch()
         self.homeSwitch.updateSwitch()
-        
+
         if self.topSwitch.flag == 1:
             self.topFlag = True
         else:
@@ -206,21 +205,21 @@ class Motor:
     #function to slew axis in steps/seconds in speficied direction +/- (yes +/-!) 0 to +/- 5000000
     def slewMotor(self, slew = 50000, slewDir = "cw"):
         #in the future translata that to mm/sec or something
-        #inclomplete waiting for ccw motion 
+        #inclomplete waiting for ccw motion
         if slewDir == "cw":
             print("turning cw by = ", slew, "step/sec")
-            self.writeHoldingRegs(0x78,4,slew)  
+            self.writeHoldingRegs(0x78,4,slew)
         #need to finish#
         elif slewDir == "ccw":
             print("ccw")
         return
-    
-    
+
+
     ###function to set the hMT technology from schneider motor
     def setHmt(self, hmt = 2, direction = "cw"):
-        
+
         self.Hmt = hmt
-        #will not use 0 or 1 
+        #will not use 0 or 1
         #hmt 2
         self.runCurrent = 100           #0x67
         self.makeUp = 2                 #0xA0
@@ -236,20 +235,20 @@ class Motor:
         else:
             self.torqueDirection = 0
 
-        ###Hmt 2### variable current mode       
+        ###Hmt 2### variable current mode
         if self.Hmt == 2:
             self.writeHoldingRegs(0x8E,1,self.Hmt)      #set hmt
 
             self.writeHoldingRegs(0x67,1,self.runCurrent)   #set run current
             self.writeHoldingRegs(0xA0,1,self.makeUp)       #set makup frequency
-            
+
             # print("Variable current mode is activated ... hmt mode = ",self.readHoldingRegs(0x8E,1))
             # print("Run current = ", self.readHoldingRegs(0x67,1))
             # print("make Up frequency mode = ", self.readHoldingRegs(0xA0,1))
-                     
+
         ###Hmt 3### Torque mode
         elif self.Hmt == 3:
-            self.writeHoldingRegs(0x8E,1,self.Hmt)       #set hmt 
+            self.writeHoldingRegs(0x8E,1,self.Hmt)       #set hmt
 
             self.writeHoldingRegs(0xA3, 4,self.torqueSpeed)     #set torque speed
             self.writeHoldingRegs(0xA6, 1,self.torquePercentage)     #set torque percent
@@ -289,7 +288,7 @@ class Motor:
         revs = steps/self.stepPerRevolution
         displacement = revs * self.leadTravel
         return displacement
-        
+
     def jogUp(self,displacementChoice):
 
         #displacement choice from GUI
@@ -301,7 +300,9 @@ class Motor:
             displacement = 10
         elif displacementChoice > 2:
             displacement = displacementChoice
-        
+        else:
+            displacement = displacementChoice
+        self.homed = True
         if self.homed == True:
             initialStepPosition = self.readHoldingRegs(0x57,4)
             print("initstepPosition:",initialStepPosition)
@@ -313,6 +314,7 @@ class Motor:
             if self.topFlag == False:
                 self.writeHoldingRegs(0x46,4,steps2Jog) #already started moving
                 self._moving()
+                self.home = False
                 while self.topFlag == False and self.moving == True:
                     self._updateFlag()
                     self._moving()
@@ -327,7 +329,7 @@ class Motor:
             DeltaStepsPosition = finalStepPosition[0] - initialStepPosition[0]
             print(DeltaStepsPosition)
             self.absolutePosition = self.absolutePosition + self.steps2displacement(DeltaStepsPosition)
-            print(self.absolutePosition)           
+            print(self.absolutePosition)
 
         elif self.homed == False:
             print("please home")
@@ -335,11 +337,9 @@ class Motor:
         # self.writeHoldingRegs(0x1C,1,1)
         self.setEnable(1)
         print("driver enable again")
-        
         return
 
     def jogDown(self,displacementChoice):
-        
         self.setProfiles("jogging")
         initialStepPosition = self.readHoldingRegs(0x57,4)
         homeCheck = 0
@@ -359,7 +359,7 @@ class Motor:
 
         if self.homeFlag == True:
 
-            self.absolutePosition = 0 
+            self.absolutePosition = 0
 
         else:
 
@@ -373,7 +373,7 @@ class Motor:
                 self._updateFlag()
                 self._moving()
                 self.home = False
-                
+
                 if self.homeFlag == True:
                     homeCheck = 1   #to check if we need to substract or not
                     self.setEnable(0)
@@ -388,7 +388,7 @@ class Motor:
                 finalStepPosition = initialStepPosition[0] - steps2Jog
                 delta = finalStepPosition - initialStepPosition[0]
                 self.absolutePosition = self.absolutePosition + self.steps2displacement(delta)
-            
+
             else:
 
                 self.absolutePosition = 0
@@ -400,28 +400,29 @@ class Motor:
 
 
     def Home(self):
-        self.homeSwitch.updateSwitch()      #update flag
+        self.homeSwitch.updateSwitch()
         ok = False
-
+        print('homeswitch: ',self.homeSwitch.flag)
         if self.homeSwitch.flag == 1:
             ok = False
         elif self.homeSwitch.flag == 0:
             ok = True
-        
+        print(f'homeFlag={self.homeSwitch.flag},ok={ok},self.home={self.home}')
+
         if self.home == False and ok == True:
-            # print("homing starting in 3 seconds")   
+            print("homing starting in 3 seconds")
             # self.countdown()
             self.setProfiles("homing")
             steps2Jog = self.displacement2steps(40)
             self.writeHoldingRegs(0x57,4,steps2Jog) #overwriting the absolute position
             self.writeHoldingRegs(0x43,4,0)
-            self.homing = True      # true during homing 
-            while self.home == False:       #if not homed 
+            self.homing = True      # true during homing
+            while self.home == False:
                 self.homeSwitch.updateSwitch()
                 if self.homeSwitch.flag == 1:
+                    print("made it here")
                     # self.writeHoldingRegs(0x1C,1,0)
                     self.setEnable(0)
-                    
                     self.absolutePosition = 0
                     self.home = True
                     self.homed = True
@@ -458,7 +459,7 @@ class Motor:
             self.writeHoldingRegs(0x8B,4,self.runningMaxVelocity)
             self.writeHoldingRegs(0x00,4,self.runningAcceleration)
             self.writeHoldingRegs(0x18,4,self.runningDeacceleration)
-        
+
         print("motion profile set to = ",motion)
         return
 
@@ -467,7 +468,7 @@ class Motor:
         self.top = True
         return
 
-            
+
     def countdown(self):
         print("3...")
         time.sleep(1)
@@ -476,29 +477,23 @@ class Motor:
         print("1..")
         time.sleep(1)
         return
-    
-    
-    
-    
-    
+
     def run(self):
-        
         """
         things that need to be done before running
 
         -home = true
         -choosen a motion profile
         -input the necessary input data
-            -number of layers 
-            -compacted layer height 
+            -number of layers
+            -compacted layer height
             -layer height
             -mass of powder inserted in machine
         -constants
             - stroke length
-            - piston diameter 
+            - piston diameter
         calculations
             -calculate density every layer
-             
 
         -
         """
@@ -507,25 +502,22 @@ class Motor:
 
     def stopRun(self):
         """
-        stop sending motion commands / cancel run 
-        if run = 1 
-            run , homing = 0 
-            
-            
+        stop sending motion commands / cancel run
+        if run = 1
+            run , homing = 0
         """
         self._motor.write_multiple_registers(70,[0,0])
         print("stopped")
         pass
-    
+
     def eStop(self):
         """
-        if run = 1 
+        if run = 1
             write_single_register(0x001E,0) # write to enable register
-            run = 0 
+            run = 0
             homing = 0 ( so jogs are off - only option is re-homing)
         else :
-            nothing 
-        
+            nothing
         """
         print('MODBUS COMMAND: emergency stop')
         pass
@@ -538,7 +530,7 @@ if __name__ == "__main__":
     # c.Home()
     # time.sleep(3)
     # c.jogDown(2)
-    # c.jogUp(0)
+    # c.jogUp(2)
     # time.sleep(2)
     # c.jogUp(2)
     # time.sleep(5)

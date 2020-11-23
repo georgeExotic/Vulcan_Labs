@@ -151,13 +151,13 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits initial layer height input
         self.initLayerHeightInput = QLineEdit(self.widget)
-        self.initLayerHeightInput.setGeometry(QtCore.QRect(490, 50, 70, 40)) # pos and size
+        self.initLayerHeightInput.setGeometry(QtCore.QRect(495, 50, 70, 40)) # pos and size
         self.initLayerHeightInput.setObjectName("initLayerHeightInput")
         self.initLayerHeightInput.setText("0.00")
 
         #Inits initial layer height unit select
         self.initLayerHeightUnitCombobox = QComboBox(self.widget)
-        self.initLayerHeightUnitCombobox.setGeometry(QtCore.QRect(580, 50, 70, 40)) # pos and size
+        self.initLayerHeightUnitCombobox.setGeometry(QtCore.QRect(585, 50, 70, 40)) # pos and size
         self.initLayerHeightUnitCombobox.setAutoFillBackground(False)
         self.initLayerHeightUnitCombobox.setEditable(False)
         self.initLayerHeightUnitCombobox.setObjectName("initLayerHeightUnitCombobox")
@@ -179,7 +179,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits compaction unit select
         self.compactedLayerHeightComboBox = QComboBox(self.widget)
-        self.compactedLayerHeightComboBox.setGeometry(QtCore.QRect(580, 110, 70, 40)) # pos and size
+        self.compactedLayerHeightComboBox.setGeometry(QtCore.QRect(585, 110, 70, 40)) # pos and size
         self.compactedLayerHeightComboBox.setAutoFillBackground(False)
         self.compactedLayerHeightComboBox.setEditable(False)
         self.compactedLayerHeightComboBox.setObjectName("compactedLayerHeightComboBox")
@@ -193,7 +193,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits final layer height input
         self.compactedLayerHeightInput = QLineEdit(self.widget)
-        self.compactedLayerHeightInput.setGeometry(QtCore.QRect(490, 110, 70, 40)) # pos and size
+        self.compactedLayerHeightInput.setGeometry(QtCore.QRect(495, 110, 70, 40)) # pos and size
         self.compactedLayerHeightInput.setObjectName("compactedLayerHeightInput")
         self.compactedLayerHeightInput.setText("0.00")
 
@@ -215,7 +215,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits number of layers input
         self.layerCountInput = QLineEdit(self.widget)
-        self.layerCountInput.setGeometry(QtCore.QRect(490, 230, 70, 40)) # pos and size
+        self.layerCountInput.setGeometry(QtCore.QRect(495, 230, 70, 40)) # pos and size
         self.layerCountInput.setObjectName("layerCountInput")
         self.layerCountInput.setText("1")
         self.layerCountInputButton = QPushButton(self.widget)
@@ -233,7 +233,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits target pressure
         self.targetPressureInput = QLineEdit(self.widget)
-        self.targetPressureInput.setGeometry(QtCore.QRect(490, 170, 70, 40)) # pos and size
+        self.targetPressureInput.setGeometry(QtCore.QRect(495, 170, 70, 40)) # pos and size
         self.targetPressureInput.setObjectName("targetPressureInput")
         self.targetPressureInput.setText("0.00")
 
@@ -247,7 +247,7 @@ class Ui_MainWindow(QMainWindow):
         self.labelMassInput.setGeometry(QtCore.QRect(360, 300, 150, 20))
         self.labelMassInput.setObjectName("labelMassInput")
         self.lineEditMassInput = QLineEdit(self.widget)
-        self.lineEditMassInput.setGeometry(QtCore.QRect(490, 290, 70, 40))
+        self.lineEditMassInput.setGeometry(QtCore.QRect(495, 290, 70, 40))
         self.lineEditMassInput.setObjectName("lineEditMassInput")
         self.lineEditMassInput.setText("0.00")
         self.lineEditMassInputButton = QPushButton(self.widget)
@@ -257,7 +257,7 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits desired pressure unit select
         self.targetPressureUnitCombobox = QComboBox(self.widget)
-        self.targetPressureUnitCombobox.setGeometry(QtCore.QRect(580, 170, 70, 40)) # pos and size
+        self.targetPressureUnitCombobox.setGeometry(QtCore.QRect(585, 170, 70, 40)) # pos and size
         self.targetPressureUnitCombobox.setAutoFillBackground(False)
         self.targetPressureUnitCombobox.setEditable(False)
         self.targetPressureUnitCombobox.setObjectName("targetPressureUnitCombobox")
@@ -1068,8 +1068,9 @@ class Ui_MainWindow(QMainWindow):
     def update_plot_data(self):
         self.time_x.append(time.time() - self.StartingTime)   # Add a new value 1 higher than the last.
         self.force_vals.append(self.force_reading_N)
-        self.force_vals_fixed = signal.medfilt(self.force_vals,23)
+        self.force_vals_fixed = signal.medfilt(self.force_vals,33)
         self.pressure_vals.append(self.pressure_reading)
+        self.pressure_vals_fixed = signal.medfilt(self.pressure_vals,33)
         self.weight_vals.append(self.force_reading_kg)
         self.position_vals.append(motor.absolutePosition)
         self.currentPressureLineEdit.setText(str(np.round(self.pressure_reading,2)))
@@ -1079,7 +1080,7 @@ class Ui_MainWindow(QMainWindow):
         else:
             self.forcePlot.clear()
         if self.plotPressureCheckbox.isChecked():
-            self.pressurePlot.setData(self.time_x, self.pressure_vals)
+            self.pressurePlot.setData(self.time_x, self.pressure_vals_fixed)
         else:
             self.pressurePlot.clear()
         if self.plotPositionCheckBox.isChecked():
