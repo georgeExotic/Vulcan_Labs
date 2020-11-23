@@ -54,8 +54,8 @@ class Motor:
         self.joggingMaxVelocity = 100000
             #homing
         self.homingInitialVelocity = 1000
-        self.homingMaxVelocity = 30000
-            #runing
+        self.homingMaxVelocity = 60000
+            #running
         self.runningInitialVelocity = 1000
         self.runningMaxVelocity = 20000
 
@@ -66,7 +66,7 @@ class Motor:
             #homing
         self.homingAcceleration = 300000
         self.homingDeacceleration = 300000
-            #runing
+            #running
         self.runningAcceleration = 300000
         self.runningDeacceleration = 300000
 
@@ -90,6 +90,7 @@ class Motor:
         ###hardware Settings
         self.strokeLength = 30 # mm
         self.pistonDiameter = 19.05 #mm
+        self.pistonRadius = self.pistonDiameter/2
         self.leadTravel = 4 #mm per rev
         self.stepPerRevolution = 200 * self.microStep       #200*256 = 51200 steps per rev        
 
@@ -108,16 +109,29 @@ class Motor:
         ###run
 
         ###user input params for motion profile###
-        self.initLayerHeight = 0
-        self.compactedLayerHeight = 0
+        self.initLayerHeight = 0    #initial Layer Height 
+        self.compactedLayerHeight = 0   #final Layer Height 
+        self.mass = 0       #keep track of mass of power
+        self.modeSelected = 0   #motion mode 1 pressure mode 2
+        self.layerDensity = 0   #keep track of density
         self.targetPressure = 0
-        self.numberOfLayers = 0
-        self.mass = 0
-        self.modeSelected = 0
-        self.mass = 0 
-        self.totalCycleStroke = 0 
-        self.layerNumber = 0 
-        
+        self.totalCycleStroke = 0   #to check that our total motion does not exceed our available stroke lenght
+        self.numberOfLayers = 0     #user input number of layers
+        self.layerNumber = 0    #keep track of layers
+        self.running = False    # 
+        self.massInput = False  #for guy to know when to ask for mass to the user
+        self.massIn = False     # to know if user have input mass succesfully
+        self.runCompleted = False #Set to true when run is complete, is reset in GUI
+        self.cumulativeMass = 0 #addng mass each layer
+        self.flushPosition = 0 #mm value at flush position after moving up 30 from bottom
+        self.initialDensity = 0
+        self.finalDensity = 0
+        self.density = 0
+        self.volume = 0
+        self.height = 0
+
+
+
         ###init home limit switch###
         self.homeSwitch = limitSwitch(6)
         self.topSwitch = limitSwitch(5)
@@ -145,7 +159,7 @@ class Motor:
             if not self._motor.open():
                 self.connectionStatus = 0
                 return "unable to connect" #print("unable to connect to motor")
-            self.connectionStatus = 1
+        self.connectionStatus = 1
         return "connected!"
 
 
@@ -181,6 +195,19 @@ class Motor:
             self.homeFlag = False
 
         return
+
+    def _micron2mm(self):
+        
+        if self.initLayerHeight[1] == 0:
+            self.initLayerHeightConverted = self.initLayerHeight[0]
+        elif self.initLayerHeight[1] == 1:
+            self.initLayerHeightConverted = self.initLayerHeight[0]/1000
+        
+        if self.compactedLayerHeight[1] == 0:
+            self.compactedLayerHeightConverted = self.compactedLayerHeight[0]
+        elif self.initLayerHeight[1] == 1:
+            self.compactedLayerHeightConverted = self.compactedLayerHeight[0]/1000
+            
 
     ###function to read from register of LMD57 modbus register map
     def readHoldingRegs(self,startingAddressHex,regSize = 1):                             #startingAddressHex [address of register in HEX] regSize [size of regiter]
@@ -293,159 +320,175 @@ class Motor:
         displacement = revs * self.leadTravel
         return displacement
 
-    def jogUp(self,displacementChoice):
+    def jogUp(self,displacementChoice, anyRun = 0):
 
-        #displacement choice from GUI
-        if displacementChoice == 0:
-            displacement = 1
-        elif displacementChoice == 1:
-            displacement = 5
-        elif displacementChoice == 2:
-            displacement = 10
-        elif displacementChoice > 2:
-            displacement = displacementChoice
+        if self.running == False or self.running == True:
+            if anyRun == 0:
+            #displacement choice from GUI
+                if displacementChoice == 0:
+                    displacement = 1
+                elif displacementChoice == 1:
+                    displacement = 5
+                elif displacementChoice == 2:
+                    displacement = 10
+                elif displacementChoice > 2:
+                    displacement = displacementChoice
+            elif anyRun == 1:
+                displacement = displacementChoice
+
+
+
+            self.homed = True
+            if self.homed == True:
+                initialStepPosition = self.readHoldingRegs(0x57,4)
+                print("initstepPosition:",initialStepPosition)
+
+                steps2Jog = self.displacement2steps(displacement)
+                self.setProfiles("jogging")
+                self._updateFlag()
+
+                if self.topFlag == False:
+                    self.writeHoldingRegs(0x46,4,steps2Jog) #already started moving
+                    self._moving()
+                    self.home = False
+                    while self.topFlag == False and self.moving == True:
+                        self._updateFlag()
+                        self._moving()
+                    if self.topFlag == True:
+                        # self.writeHoldingRegs(0x1C,1,0)
+                        self.setEnable(0)
+                        self.home = False
+
+                finalStepPosition = self.readHoldingRegs(0x57,4)
+                # print("finalstepPosition:",finalStepPosition)
+                DeltaStepsPosition = finalStepPosition[0] - initialStepPosition[0]
+                # print(DeltaStepsPosition)
+                self.absolutePosition = self.absolutePosition + self.steps2displacement(DeltaStepsPosition)
+                # print(self.absolutePosition)
+
+            elif self.homed == False:
+                print("please home")
+
+            self.home = False
+            self.setEnable(1)
+            print("driver enable again")
+            return
         else:
-            displacement = displacementChoice
-        self.homed = True
-        if self.homed == True:
+            print("cannot perform function while running")
+
+    def jogDown(self,displacementChoice,anyRun = 0):
+        print(self.running)
+        if self.running == False or self.running == True:
+            self.setProfiles("jogging")
             initialStepPosition = self.readHoldingRegs(0x57,4)
-            print("initstepPosition:",initialStepPosition)
+            homeCheck = 0
+
+            if anyRun == 0:
+                if displacementChoice == 0:
+                    displacement = 1
+                elif displacementChoice == 1:
+                    displacement = 5
+                elif displacementChoice == 2:
+                    displacement = 10
+                elif displacementChoice > 2:
+                    displacement = displacementChoice
+            if anyRun == 1:
+                displacement = displacementChoice
 
             steps2Jog = self.displacement2steps(displacement)
-            self.setProfiles("jogging")
+
             self._updateFlag()
 
-            if self.topFlag == False:
-                self.writeHoldingRegs(0x46,4,steps2Jog) #already started moving
-                self._moving()
-                self.home = False
-                while self.topFlag == False and self.moving == True:
-                    self._updateFlag()
-                    self._moving()
-                if self.topFlag == True:
-                    # self.writeHoldingRegs(0x1C,1,0)
-                    self.setEnable(0)
-                    self.home = False
-
-            finalStepPosition = self.readHoldingRegs(0x57,4)
-            print("finalstepPosition:",finalStepPosition)
-
-            DeltaStepsPosition = finalStepPosition[0] - initialStepPosition[0]
-            print(DeltaStepsPosition)
-            self.absolutePosition = self.absolutePosition + self.steps2displacement(DeltaStepsPosition)
-            print(self.absolutePosition)
-
-        elif self.homed == False:
-            print("please home")
-
-        # self.writeHoldingRegs(0x1C,1,1)
-        self.setEnable(1)
-        print("driver enable again")
-        return
-
-    def jogDown(self,displacementChoice):
-        self.setProfiles("jogging")
-        initialStepPosition = self.readHoldingRegs(0x57,4)
-        homeCheck = 0
-
-        if displacementChoice == 0:
-            displacement = 1
-        elif displacementChoice == 1:
-            displacement = 5
-        elif displacementChoice == 2:
-            displacement = 10
-        elif displacementChoice > 2:
-            displacement = displacementChoice
-
-        steps2Jog = self.displacement2steps(displacement)
-
-        self._updateFlag()
-
-        if self.homeFlag == True:
-
-            self.absolutePosition = 0
-
-        else:
-
-            currentStepPos = initialStepPosition[0] + steps2Jog
-            self.writeHoldingRegs(0x57,4,currentStepPos) #overwriting motor absolute
-            self.writeHoldingRegs(0x43,4,(currentStepPos-steps2Jog)) #making it move
-
-            self._moving()
-
-            while self.homeFlag == False and self.moving == True:
-                self._updateFlag()
-                self._moving()
-                self.home = False
-
-                if self.homeFlag == True:
-                    homeCheck = 1   #to check if we need to substract or not
-                    self.setEnable(0)
-                    self.setEnable(1)
-                    self.absolutePosition = 0
-                    self.writeHoldingRegs(0x57,4,self.absolutePosition)
-                    self.home = True
-
-            #if we havent home then substract to have an accurate absolute postion 
-            if homeCheck == 0:
-
-                finalStepPosition = initialStepPosition[0] - steps2Jog
-                delta = finalStepPosition - initialStepPosition[0]
-                self.absolutePosition = self.absolutePosition + self.steps2displacement(delta)
-
-            else:
+            if self.homeFlag == True:
 
                 self.absolutePosition = 0
 
-            homeCheck = 0
+            else:
 
-        print("Jogging DOWN!!")
-        return
+                currentStepPos = initialStepPosition[0] + steps2Jog
+                self.writeHoldingRegs(0x57,4,currentStepPos) #overwriting motor absolute
+                self.writeHoldingRegs(0x43,4,(currentStepPos-steps2Jog)) #making it move
+
+                self._moving()
+
+                while self.homeFlag == False and self.moving == True:
+                    self._updateFlag()
+                    self._moving()
+                    self.home = False
+
+                    if self.homeFlag == True:
+                        homeCheck = 1   #to check if we need to substract or not
+                        self.setEnable(0)
+                        self.setEnable(1)
+                        self.absolutePosition = 0
+                        self.writeHoldingRegs(0x57,4,self.absolutePosition)
+                        self.home = True
+
+                #if we havent home then substract to have an accurate absolute postion 
+                if homeCheck == 0:
+
+                    finalStepPosition = initialStepPosition[0] - steps2Jog
+                    delta = finalStepPosition - initialStepPosition[0]
+                    self.absolutePosition = self.absolutePosition + self.steps2displacement(delta)
+
+                else:
+
+                    self.absolutePosition = 0
+
+                homeCheck = 0
+
+            print("Jogging DOWN!!")
+            return
+        else:
+            print("cannot perform function while running")
 
 
     def Home(self):
-        self.homeSwitch.updateSwitch()
-        ok = False
-        print('homeswitch: ',self.homeSwitch.flag)
-        if self.homeSwitch.flag == 1:
+        if self.running == False or self.running == True:
+            self.homeSwitch.updateSwitch()
             ok = False
-        elif self.homeSwitch.flag == 0:
-            ok = True
-        print(f'homeFlag={self.homeSwitch.flag},ok={ok},self.home={self.home}')
+            print('homeswitch: ',self.homeSwitch.flag)
+            if self.homeSwitch.flag == 1:
+                ok = False
+            elif self.homeSwitch.flag == 0:
+                ok = True
+            print(f'homeFlag={self.homeSwitch.flag},ok={ok},self.home={self.home}')
 
-        if self.home == False and ok == True:
-            print("homing starting in 3 seconds")
-            # self.countdown()
-            self.setProfiles("homing")
-            steps2Jog = self.displacement2steps(40)
-            self.writeHoldingRegs(0x57,4,steps2Jog) #overwriting the absolute position
-            self.writeHoldingRegs(0x43,4,0)
-            self.homing = True      # true during homing
-            while self.home == False:
-                self.homeSwitch.updateSwitch()
-                if self.homeSwitch.flag == 1:
-                    print("made it here")
-                    # self.writeHoldingRegs(0x1C,1,0)
-                    self.setEnable(0)
-                    self.absolutePosition = 0
-                    self.home = True
-                    self.homed = True
-                    self.homing = False      # true during homing
-                    print("Homing Completed")
-                    break
-            # self.writeHoldingRegs(0x1C,1,1)
-            self.setEnable(1)
-            self.writeHoldingRegs(0x57,4,0)
-            time.sleep(0.2)
-        elif self.home == True or ok == False:
-            self.absolutePosition = 0
-            self.writeHoldingRegs(0x57,4,0)
-            self.home = True
-            self.homed = True
-            print("already homed")
-            print("setting absolute position to 0")
-            pass
-        return
+            if self.home == False and ok == True:
+                print("homing starting in 3 seconds")
+                # self.countdown()
+                self.setProfiles("homing")
+                steps2Jog = self.displacement2steps(40)
+                self.writeHoldingRegs(0x57,4,steps2Jog) #overwriting the absolute position
+                self.writeHoldingRegs(0x43,4,0)
+                self.homing = True      # true during homing
+                while self.home == False:
+                    self.homeSwitch.updateSwitch()
+                    if self.homeSwitch.flag == 1:
+                        print("made it here")
+                        # self.writeHoldingRegs(0x1C,1,0)
+                        self.setEnable(0)
+                        self.absolutePosition = 0
+                        self.home = True
+                        self.homed = True
+                        self.homing = False      # true during homing
+                        print("Homing Completed")
+                        break
+                # self.writeHoldingRegs(0x1C,1,1)
+                self.setEnable(1)
+                self.writeHoldingRegs(0x57,4,0)
+                time.sleep(0.2)
+            elif self.home == True or ok == False:
+                self.absolutePosition = 0
+                self.writeHoldingRegs(0x57,4,0)
+                self.home = True
+                self.homed = True
+                print("already homed")
+                print("setting absolute position to 0")
+                pass
+            return
+        else:
+            print("cannot perform function while running")
 
     def setProfiles(self,motion = "homing"):
         if motion == "homing":
@@ -472,7 +515,6 @@ class Motor:
         self.top = True
         return
 
-
     def countdown(self):
         print("3...")
         time.sleep(1)
@@ -483,30 +525,135 @@ class Motor:
         return
 
     def run(self):
-        """
-        things that need to be done before running
-
-        -home = true
-        -choosen a motion profile
-        -input the necessary input data
-            -number of layers
-            -compacted layer height
-            -layer height
-            -mass of powder inserted in machine
-        -constants
-            - stroke length
-            - piston diameter
-        calculations
-            -calculate density every layer
-
-        -
-        """
         
-        # if self.modeSelected = 1
-        print("running")
-        pass
+        self.cumulativeMass = 0
+        self.density = 0
+        self.volume = 0
+        self._micron2mm()
+        self.totalCycleStroke = self.initLayerHeightConverted * self.numberOfLayers
+
+        if self.totalCycleStroke <= self.strokeLength:
+    
+            print("its gonna home, are you ready for it Miao?")
+            self.Home()
+            
+            if self.home == True:
+                self.jogUp(30.16,1) # jog to flush poition 
+                self.flushPosition = self.absolutePosition
+                self.jogDownLayerHeight()
+                self.running = True
+
+            if self.modeSelected == 0:
+                print("no mode selected")
+            elif self.modeSelected == 1:
+                print("Motion Limiting")
+                self.newLayerMotionRun()
+            elif self.modeSelected == 2:
+                print("Pressure Limiting")
+                self.newLayerMotionRun()
+                print("havent done this one! Come later")
+
+        elif self.totalCycleStroke > self.totalCycleStroke:
+            print("you cant do that, you dont enough stroke")       
+
+    def motionRun(self):
+        if self.massIn == True:
+            self.cumulativeMass += self.mass
+            if self.layerNumber < self.numberOfLayers:
+                self._micron2mm()  
+                delta = self.initLayerHeightConverted - self.compactedLayerHeightConverted
+                self.calculateDensity()
+                self.initialDensity = self.density
+                print("density: ",self.density)
+                self.jogUp(delta,1)
+                print("done")
+                self.calculateDensity()
+                self.finalDensity = self.density
+                print("density: ",self.density)
+                self.massIn = False
+                self.layerNumber += 1
+                print("layer num: ",self.layerNumber)
+                self.jogDownLayerHeight()
+                print("abs: ",self.absolutePosition)
+                if self.layerNumber == self.numberOfLayers:
+                    self.layerNumber = 0
+                    self.runCompleted = True
+                    print("hello")
+                    pass
+                # elif self.layerNumber == self.numberOfLayers:
+                #     self.runCompleted = True
+                else:
+                    self.newLayerMotionRun()
+            else:
+                print(";;;;;;;;;;;;;;;;;;;;;;;;;;;;;")
+                # self.runCompleted = True
+                print("run complete")
+            
+        """ if check layer count """
+        # self.newLayerMotionRun()
+
+    def newLayerMotionRun(self):
+        self.massInput = True
+
+    def pressureRun(self):
+        if self.massIn == True:
+            self.cumulativeMass += self.mass
+            if self.layerNumber < self.numberOfLayers:
+                self._micron2mm()  
+                self.calculateDensity()
+                self.initialDensity = self.density
+                print("density: ",self.density)
+                self.jogUp(30,1) #########
+                print("done")
+                self.calculateDensity()
+                self.finalDensity = self.density
+                print("density: ",self.density)
+                self.massIn = False
+                self.layerNumber += 1
+                print("layer num: ",self.layerNumber)
+                self.jogDownLayerHeight()
+                print("abs: ",self.absolutePosition)
+                if self.layerNumber == self.numberOfLayers:
+                    self.layerNumber = 0
+                    self.runCompleted = True
+                else:
+                    self.newLayerMotionRun()
+            else:
+                print(";;;;;;;;;;;;;;;;;;;;;;;;;;;;;")
+                # self.runCompleted = True
+                print("run complete")
+            
+        """ if check layer count """
+        # self.newLayerMotionRun()
+
+    def jogDownLayerHeight(self):
+        self.jogDown(self.initLayerHeightConverted,1) #jog down for a layer height
+
+    def calculateDensity(self):
+        
+        ###density = m / v
+        # volume = pi * (pistonDiameter/2)^2 * h 
+        # h = finalabsolute - initial absolute
+        #
+        
+        
+        self.volume = 3.1415927 * (self.pistonRadius)**2 * (self.flushPosition - self.absolutePosition)
+        self.density = self.cumulativeMass / self.volume
+
+
+
+        """
+        self.massInput = True
+        if powder is in place
+        delta = displacement2steps(self.initLayerHeight - self.compactedLayerHeight)
+        self.writeHoldingRegs(0x46,4,delta)
+        while _moving()
+        """
+        print("22222222222: ",self.mass)
+    
 
     def stopRun(self):
+
         """
         stop sending motion commands / cancel run
         if run = 1
@@ -514,12 +661,6 @@ class Motor:
         """
         self._motor.write_multiple_registers(70,[0,0])
         print("stopped")
-        pass
-
-    def motionRun(self):
-        """
-        if self.totalCycleStroke >= self.totalStroke
-        """
         pass
 
     def eStop(self):

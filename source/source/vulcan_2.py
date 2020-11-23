@@ -3,6 +3,7 @@
 
 import math
 import time
+import thread
 import timeit
 import random
 import sys
@@ -47,6 +48,7 @@ from key import VirtualKeyboard3
 from key import VirtualKeyboard4
 from key import VirtualKeyboard5
 from key import VirtualKeyboard6
+from key import VirtualKeyboard7
 
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
@@ -60,6 +62,7 @@ class Ui_MainWindow(QMainWindow):
         self.modeSelected = 0                                   # 0:motion 1:pressure
         self.connectionState = 0                                # 0:No Connection 1:Connection Secure
         self.IpAdd = socket.gethostbyname(socket.gethostname())
+        self.mass = 0
         self.systemState = 0                                    # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing 6:Homed
         self.systemCalibrated = 0           # 0: no 1: calibrated                    
         self.lineEditState = 0
@@ -243,17 +246,17 @@ class Ui_MainWindow(QMainWindow):
         self.targetPressureButton.clicked.connect(self.kbPressure)
 
         #Inits mass input
-        self.labelMassInput = QLabel(self.widget)
-        self.labelMassInput.setGeometry(QtCore.QRect(360, 300, 150, 20))
-        self.labelMassInput.setObjectName("labelMassInput")
-        self.lineEditMassInput = QLineEdit(self.widget)
-        self.lineEditMassInput.setGeometry(QtCore.QRect(495, 290, 70, 40))
-        self.lineEditMassInput.setObjectName("lineEditMassInput")
-        self.lineEditMassInput.setText("0.00")
-        self.lineEditMassInputButton = QPushButton(self.widget)
-        self.lineEditMassInputButton.setGeometry(290,295,60,30)
-        self.lineEditMassInputButton.setText("Edit")
-        self.lineEditMassInputButton.clicked.connect(self.kbMass)
+        # self.labelMassInput = QLabel(self.widget)
+        # self.labelMassInput.setGeometry(QtCore.QRect(360, 300, 150, 20))
+        # self.labelMassInput.setObjectName("labelMassInput")
+        # self.lineEditMassInput = QLineEdit(self.widget)
+        # self.lineEditMassInput.setGeometry(QtCore.QRect(495, 290, 70, 40))
+        # self.lineEditMassInput.setObjectName("lineEditMassInput")
+        # self.lineEditMassInput.setText("0.00")
+        # self.lineEditMassInputButton = QPushButton(self.widget)
+        # self.lineEditMassInputButton.setGeometry(290,295,60,30)
+        # self.lineEditMassInputButton.setText("Edit")
+        # self.lineEditMassInputButton.clicked.connect(self.kbMass)
 
         #Inits desired pressure unit select
         self.targetPressureUnitCombobox = QComboBox(self.widget)
@@ -318,16 +321,16 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits run button
         self.pushButton_4 = QPushButton(self.widget)
-        self.pushButton_4.setGeometry(QtCore.QRect(690, 40, 100, 50)) # pos and size
+        self.pushButton_4.setGeometry(QtCore.QRect(690, 40, 320, 50)) # pos and size
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_4.clicked.connect(self.runStartTimer)
         self.pushButton_4.clicked.connect(self.runMotor)
 
         #Inits resume button
-        self.pushButton_7 = QPushButton(self.widget)
-        self.pushButton_7.setGeometry(QtCore.QRect(910, 40, 100, 50)) # pos and size
-        self.pushButton_7.setObjectName("pushButton_7")
-        self.pushButton_7.clicked.connect(self.keyboardPopUp)
+        # self.pushButton_7 = QPushButton(self.widget)
+        # self.pushButton_7.setGeometry(QtCore.QRect(910, 40, 100, 50)) # pos and size
+        # self.pushButton_7.setObjectName("pushButton_7")
+        # self.pushButton_7.clicked.connect(self.newLayer)
 
         # raise_() brings components to front layer
         self.groupBox_6.raise_()
@@ -339,7 +342,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_6.raise_()
         self.pushButton_3.raise_()
         self.pushButton_4.raise_()
-        self.pushButton_7.raise_()
+        # self.pushButton_7.raise_()
 
         # TAB 2 #
 
@@ -509,6 +512,8 @@ class Ui_MainWindow(QMainWindow):
         self.pressure_vals = [0]
         self.position_vals = [0]
         self.weight_vals = [0]
+        self.init_density_vals = [0]
+        self.final_density_vals = [0]
 
         # self.graphLegend = self.graphWidget.addLegend()
         self.graphWidget.setTitle("Data Logging", size="16pt")
@@ -531,7 +536,11 @@ class Ui_MainWindow(QMainWindow):
         self.timer.timeout.connect(self.checkHomed)
         self.timer.timeout.connect(self.updateCylinder)
         self.timer.timeout.connect(self.printAbsPos)
+        self.timer.timeout.connect(self.newLayer)
+        self.timer.timeout.connect(self.runCompletePopUpper)
         self.timer.start()
+
+
 
         # BOTTOM TAB #
 
@@ -708,7 +717,7 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox_6.setTitle(_translate("MainWindow", ""))
         self.pushButton_3.setText(_translate("MainWindow", "Pause"))
         self.pushButton_4.setText(_translate("MainWindow", "Run"))
-        self.pushButton_7.setText(_translate("MainWindow", "Resume"))
+        # self.pushButton_7.setText(_translate("MainWindow", "Resume"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.widget), _translate("MainWindow", "Control"))
         self.label_21.setText(_translate("MainWindow", "Load Cell Reading:"))
         self.label_tab2_pressure.setText(_translate("MainWindow", "Current Pressure:"))
@@ -735,7 +744,7 @@ class Ui_MainWindow(QMainWindow):
         # self.refreshButton.setText(_translate("MainWindow", "Refresh"))
         self.clearButton.setText(_translate("MainWindow", "Clear"))
         self.exportButton.setText(_translate("MainWindow", "Export"))
-        self.labelMassInput.setText(_translate("MainWindow", "Mass [kg]"))
+        # self.labelMassInput.setText(_translate("MainWindow", "Mass [kg]"))
 
         # -- ROUTING -- #
 
@@ -754,7 +763,7 @@ class Ui_MainWindow(QMainWindow):
         self.initLayerHeightInput.textChanged.connect(self.updateDesiredParam)
         self.compactedLayerHeightInput.textChanged.connect(self.updateDesiredParam)
         self.layerCountInput.textChanged.connect(self.updateDesiredParam)
-        self.lineEditMassInput.textChanged.connect(self.updateDesiredParam)
+        # self.lineEditMassInput.textChanged.connect(self.updateDesiredParam)
         self.comboBox.currentIndexChanged.connect(self.updateDesiredParam)
         self.initLayerHeightUnitCombobox.currentIndexChanged.connect(self.updateDesiredParam)
         self.compactedLayerHeightComboBox.currentIndexChanged.connect(self.updateDesiredParam)
@@ -766,7 +775,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
         # self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
         self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
-        self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
+        # self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
         self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
         # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
@@ -794,8 +803,12 @@ class Ui_MainWindow(QMainWindow):
     def kbWeight(self):
         kb6.show()
 
+    def kbMassNext(self):
+        kb7.show()
+
     def printAbsPos(self):
         # print(f'abs pos: {motor.absolutePosition}')
+        # print("00000000000000: ",motor.absolutePosition)
         self.warningLabel.setText(str(motor.absolutePosition))
 
     def checkKeyboard(self):
@@ -811,11 +824,13 @@ class Ui_MainWindow(QMainWindow):
         elif kb4.okCheck == 1:
             self.layerCountInput.setText(kb4.inputString)
             kb4.okCheck = 0
-        elif kb5.okCheck == 1:
-            self.lineEditMassInput.setText(kb5.inputString)
-            kb5.okCheck = 0
+        # elif kb5.okCheck == 1:
+            # self.lineEditMassInput.setText(kb5.inputString)
+            # kb5.okCheck = 0
         elif kb6.okCheck == 1:
             self.dialog.inputWeight.setText(kb6.inputString)
+        elif kb7.okCheck == 1:
+            self.nL.input.setText(kb7.inputString)
 
     def extractPiston(self):
         self.msg = QMessageBox()
@@ -827,6 +842,52 @@ class Ui_MainWindow(QMainWindow):
         self.msg.buttonClicked.connect(self.buttonClick)
 
         x = self.msg.exec_()
+
+    def newLayer(self):
+        if motor.massInput == True:
+            self.nL = newLayer()
+            self.nL.show()
+            motor.massInput = False
+        else:
+            pass
+
+    def runCompletePopUpper(self):
+        # print(motor.runCompleted)
+        if motor.runCompleted == True:
+            print("I AM HERERE")
+            self.runCompletePopUp()
+            motor.runCompleted = False
+        else:
+            pass
+            
+
+    def sendMassData(self):
+        self.mass = self.nL.input.text()
+        motor.mass = int(self.mass)
+        motor.massIn = True
+        print("0000: ",self.mass)
+        if self.modeSelected == 1:
+            motor.motionRun()
+        elif self.modeSelected == 2:
+            motor.pressureRun()
+        
+    def runCompletePopUp(self):
+        self.msg2 = QMessageBox()
+        self.msg2.setStyleSheet("font-size: 20 px; font-weight: bold;")
+        self.msg2.setWindowTitle("Run Status")
+        self.msg2.setText("Run Sequence Completed\n\n\nRemember to Export the results on the\nData tab\n\n")
+        # self.msg.setIcon(QMessageBox.Question)
+        self.msg2.setStandardButtons(QMessageBox.Ok)
+        self.msg2.buttonClicked.connect(self.buttonClickMessage)
+
+        x = self.msg2.exec_()
+
+    def buttonClickMessage(self,button):
+        if button.text() == 'OK':
+            self.msg2.close()
+        else:
+            print('nothing matched')
+
 
     def buttonClick(self,button):
         print(button,button.text())
@@ -863,13 +924,16 @@ class Ui_MainWindow(QMainWindow):
             motor.compactedLayerHeight = self.compactedLayerHeight
             motor.numberOfLayers = self.numberOfLayers
             motor.mass = self.mass
+            motor.modeSelected = self.modeSelected
 
         elif self.modeSelected == 2: #pressure limiting
+            motor.modeSelected = self.modeSelected
             motor.targetPressure = self.targetPressure
             motor.numberOfLayers = self.numberOfLayers
             motor.mass = self.mass
 
-        print(f'ilh: {motor.initLayerHeight}, compaction: {motor.compactedLayerHeight}, targPress: {motor.targetPressure}, #ofLayers: {motor.numberOfLayers}, mass: {motor.mass}')
+        print(f'mode selected: {motor.modeSelected},ilh: {motor.initLayerHeight}, compaction: {motor.compactedLayerHeight}, targPress: {motor.targetPressure}, #ofLayers: {motor.numberOfLayers}, mass: {motor.mass}')
+        motor.run()
 
     def disableWidget(self,currentIndex):
         print(currentIndex)
@@ -897,7 +961,7 @@ class Ui_MainWindow(QMainWindow):
             self.pushButton_4.setEnabled(False)
             self.pushButton_5.setEnabled(False)
             self.pushButton_6.setEnabled(False)
-            self.pushButton_7.setEnabled(False)
+            # self.pushButton_7.setEnabled(False)
         elif currentIndex == 1:
             """motion widgets enabled, pressure widgets disabled"""
             self.initLayerHeightInput.setEnabled(True)
@@ -921,22 +985,22 @@ class Ui_MainWindow(QMainWindow):
             self.pushButton_4.setEnabled(True)
             self.pushButton_5.setEnabled(True)
             self.pushButton_6.setEnabled(True)
-            self.pushButton_7.setEnabled(True)
+            # self.pushButton_7.setEnabled(True)
         elif currentIndex == 2:
             '''reverse'''
-            self.initLayerHeightInput.setEnabled(False)
+            self.initLayerHeightInput.setEnabled(True)
             self.compactedLayerHeightInput.setEnabled(False)
-            self.label_9.setEnabled(False)
-            self.label_91.setEnabled(False)
+            self.label_9.setEnabled(True)
+            self.label_91.setEnabled(True)
             self.label_10.setEnabled(False)
             self.label_101.setEnabled(False)
             self.label_12.setEnabled(True)
             self.label_121.setEnabled(True)
             self.targetPressureInput.setEnabled(True)
-            self.initLayerHeightUnitCombobox.setEnabled(False)
+            self.initLayerHeightUnitCombobox.setEnabled(True)
             self.compactedLayerHeightComboBox.setEnabled(False)
             self.targetPressureUnitCombobox.setEnabled(True)
-            self.editLayerHeightButton.setEnabled(False)
+            self.editLayerHeightButton.setEnabled(True)
             self.compactedLayerHeightButton.setEnabled(False)
             self.targetPressureButton.setEnabled(True)
             self.pushButton.setEnabled(True)
@@ -945,7 +1009,7 @@ class Ui_MainWindow(QMainWindow):
             self.pushButton_4.setEnabled(True)
             self.pushButton_5.setEnabled(True)
             self.pushButton_6.setEnabled(True)
-            self.pushButton_7.setEnabled(True)
+            # self.pushButton_7.setEnabled(True)
 
     def keyboardPopUp(self):
         kb.show()
@@ -961,7 +1025,7 @@ class Ui_MainWindow(QMainWindow):
             self.pushButton_4.setEnabled(True)
             self.pushButton_5.setEnabled(True)
             self.pushButton_6.setEnabled(True)
-            self.pushButton_7.setEnabled(True)
+            # self.pushButton_7.setEnabled(True)
         elif homed == 0:
             self.warningLabel.setText("CAUTION: Home Device")
             self.pushButton.setEnabled(False)
@@ -970,7 +1034,7 @@ class Ui_MainWindow(QMainWindow):
             self.pushButton_4.setEnabled(False)
             self.pushButton_5.setEnabled(False)
             self.pushButton_6.setEnabled(False)
-            self.pushButton_7.setEnabled(False)
+            # self.pushButton_7.setEnabled(False)
 
     def tare(self):
         cellInstance.zeroCell()
@@ -1071,6 +1135,8 @@ class Ui_MainWindow(QMainWindow):
         self.force_vals_fixed = signal.medfilt(self.force_vals,33)
         self.pressure_vals.append(self.pressure_reading)
         self.pressure_vals_fixed = signal.medfilt(self.pressure_vals,33)
+        self.init_density_vals.append(motor.initialDensity)
+        self.final_density_vals.append(motor.finalDensity)
         self.weight_vals.append(self.force_reading_kg)
         self.position_vals.append(motor.absolutePosition)
         self.currentPressureLineEdit.setText(str(np.round(self.pressure_reading,2)))
@@ -1123,7 +1189,7 @@ class Ui_MainWindow(QMainWindow):
         self.layerCountLineEdit.setText("  __ / "+str(self.layerCountInput.text()))
         self.numberOfLayers = int(self.layerCountInput.text())
         
-        self.mass = float(self.lineEditMassInput.text())
+        # self.mass = float(self.lineEditMassInput.text())
 
         if self.compactedLayerHeightUnit == 0:
             runStroke = self.compactedLayerHeight[0]*0.001
@@ -1139,9 +1205,47 @@ class Ui_MainWindow(QMainWindow):
             self.warningLabel.setText("")
 
     def exportData(self):
-        d = {'Time':self.time_x,'Force [N]':self.force_vals,'Pressure [kPa]':self.pressure_vals,'Position [mm]':self.position_vals}
+        d = {'Time':self.time_x,'Force [N]':self.force_vals,'Pressure [kPa]':self.pressure_vals,'Position [mm]':self.position_vals,'Initial Density [g/mm^3]':self.init_density_vals,'Final Density [g/mm^3]':self.final_density_vals}
         df = pd.DataFrame(d)
         df.to_csv('/media/pi/VULCANLABS/log.csv', index=False)
+
+class newLayer(QWidget):
+    def __init__(self):
+        super().__init__()
+        mainWin.kbMassNext()
+        self.resize(300,200)
+        self.cancel_button = QPushButton('Cancel')
+        # self.next_button = QPushButton('Next')
+        self.input = QLineEdit()
+        self.submit_button = QPushButton('Submit')
+        # self.finish_button = QPushButton('Finish')
+        self.dialogText = QLabel('\n\n New Layer Parameters:\n\n\n\n1. Place powder in cylinder\n\n2. Record mass(g) of powder added below:\n\n')
+        # self.warningText = QLabel('\n\nWarning: Continuing will pause the program')
+        self.setWindowTitle('Layering')
+        self.setStyleSheet('background-color: #fff; color: #202020; font-size: 16px; QPushButton { background-color: #fff }')
+
+        # #Initializes layout
+        self.setLayout(QFormLayout())
+        self.layout().addRow(self.dialogText)
+        self.layout().addRow(self.input)
+        buttons = QWidget()
+        buttons.setLayout(QHBoxLayout())
+        buttons.layout().addWidget(self.cancel_button)
+        buttons.layout().addWidget(self.submit_button)
+        self.layout().addRow('', buttons)
+        # self.layout().addRow('',self.warningText)
+
+        # #Routes front end to back end
+        # self.input.setText("8998989898")
+        # mainWin.mass = self.input.text()
+        # a = self.input.text()
+        # b = self.input.value()
+        # print("A",a)
+        # print("B",b)
+        # self.next_button.clicked.connect(self.getInputWindow)
+        self.submit_button.clicked.connect(mainWin.sendMassData)
+        self.submit_button.clicked.connect(self.close)
+        self.cancel_button.clicked.connect(self.close)
 
 class sqlDatabase:
     def __init__(self):
@@ -1520,6 +1624,7 @@ if __name__ == '__main__':
     kb4 = VirtualKeyboard4()
     kb5 = VirtualKeyboard5()
     kb6 = VirtualKeyboard6()
+    kb7 = VirtualKeyboard7()
     mainWin = Ui_MainWindow()
     ld = loadingScreen()
     styleFile=os.path.join(os.path.split(__file__)[0],"styleVulcan.stylesheet")

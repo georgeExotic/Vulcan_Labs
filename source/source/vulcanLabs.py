@@ -16,6 +16,7 @@ import pandas as pd
 import shutil
 from datetime import datetime, date
 import numpy as np
+from scipy import signal
 
 import L2_log as log
 
@@ -46,6 +47,7 @@ from key import VirtualKeyboard3
 from key import VirtualKeyboard4
 from key import VirtualKeyboard5
 from key import VirtualKeyboard6
+from key import VirtualKeyboard7
 
 # Main window containing all GUI components
 class Ui_MainWindow(QMainWindow):
@@ -59,11 +61,11 @@ class Ui_MainWindow(QMainWindow):
         self.modeSelected = 0                                   # 0:motion 1:pressure
         self.connectionState = 0                                # 0:No Connection 1:Connection Secure
         self.IpAdd = socket.gethostbyname(socket.gethostname())
+        self.mass = 0
         self.systemState = 0                                    # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing 6:Homed
         self.systemCalibrated = 0           # 0: no 1: calibrated                    
         self.lineEditState = 0
         self.currentlineEdit = 0
-        # self.elapsedTime = time.perf_counter()
         self.force_reading_raw = 0
         self.force_reading_kg = 0
         self.force_reading_N = 0
@@ -94,9 +96,9 @@ class Ui_MainWindow(QMainWindow):
         self.frame.setFrameShape(QFrame.StyledPanel)
         self.frame.setFrameShadow(QFrame.Raised)
         self.frame.setObjectName("frame")
-#        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        # self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.closeWindowButton = QPushButton(self.frame)
-        self.b = QtGui.QPushButton("exit", self, clicked=self.close)
+        self.b = QtGui.QPushButton("Exit", self, clicked=self.close)
         self.b.setGeometry(940,10,60,30)
 
         #Initializes tab layout
@@ -104,42 +106,21 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.setGeometry(QtCore.QRect(0, 0, 1024, 420))
         self.tabWidget.setObjectName("tabWidget")
         self.frame.setStyleSheet("QTabWidget::pane { border: 0; }")
-
-        #CSS
-        # self.tabWidget.setStyleSheet('QTabBar { min-height: 50px; min-width: 500px; }')
-        # self.tabWidget.setStyleSheet('QTabBar::tab:selected { font-size: 30; }')
-        # QString tabStyle = "QTabBar {background-color: #000000; color:#ffffff;}"
-        # "QTabBar::tab:!selected {height: 50px; width: 100px;background-color: #000000; color:#ffffff;font-size:12pt;}"
-        # "QTabBar::tab:selected {height: 50px; width: 100px;background-color: #000000; color:#ffffff;font-size:8pt;}";
-        # ui->tabWidget->setStyleSheet(tabStyle);
-        
-        # self.tabWidget.setFont(QtGui.QFont('SansSerif', 18))
         self.setStyleSheet("""QLineEdit:disabled { padding: 1px; color: #202020; border: 2px solid #A9A6A0; border-radius: 2px; font-weight: bold; background-color: #A9A6A0}""")
         self.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #FFF000; border-radius: 8px;}""")
         self.setStyleSheet("""QLabel->widget { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
         self.setStyleSheet("""QLabel:disabled { color:#FFF000; font-weight: bold; font-size: 14px; }""")
-
-        # self.setStyleSheet('QPushButton { }')
 
         # TAB 1 #
 
         #Inits box area on left
         self.widget = QWidget()
         self.widget.setObjectName("widget")
-        # self.widget.setStyleSheet("""QLabel:disabled { color: #A9A6A0; font-weight: bold; font-size: 18px; font-family: courier;} """)
         self.widget.setStyleSheet("""QLabel:enabled { color: #F9F6F0; font-weight: bold; font-size: 18px; } QComboBox { font-size: 18px; font-weight: bold;} 
                                     QLineEdit:disabled { padding: 1px; color: #202020; border: 2px solid #A9A6A0; border-radius: 2px; font-weight: bold; background-color: #A9A6A0}
                                     QLineEdit:enabled { padding: 1px; color: #202020; border: 2px solid #A9A6A0; border-radius: 2px; font-weight: bold; font-size: 18px; background-color: #fff}
                                     QPushButton { font-weight: bold; font-size: 20px; color: #303030; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #FF7C0A;} 
                                     QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
-        # self.groupBox_2 = QGroupBox(self.widget)
-        # self.groupBox_2.setGeometry(QtCore.QRect(20, 20, 300, 360)) # positioning and sizing
-        # self.groupBox_2.setObjectName("groupBox_2")
-        # self.groupBox_2.setStyleSheet("color: #F9F6F0;")
-        # self.groupBox_2.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
-        # self.groupBox_2.setStyleSheet("font-size: 15px;")
-        # self.groupBox_2.setStyleSheet("border-radius: 8px;")
-        # self.groupBox_2.setStyleSheet("font-weight: bold;")
 
         #Inits Logo
         self.pixmap = QPixmap('VulcanLabsLogo.png')
@@ -170,34 +151,15 @@ class Ui_MainWindow(QMainWindow):
         self.setWindowIcon(QtGui.QIcon('3DPrinterLogo.png')) # Logo as Icon
         # self.setStyleSheet("background-color: rgb(255, 255, 255)") #Sets background color of GUI
 
-        #Inits Parameter Group Box
-        # self.groupBox_3 = QGroupBox(self.widget)
-        # self.groupBox_3.setGeometry(QtCore.QRect(350, 20, 300, 360)) # positioning and sizing
-        # self.groupBox_3.setObjectName("groupBox_3")
-        # self.groupBox_3.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
-        # self.groupBox_3.setStyleSheet("""QLabel:enabled { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
-        # self.groupBox_3.setStyleSheet("""QLabel:disabled { font-weight: bold; font-size: 15px; color: #C9C6C0; border-radius: 8px;}""")
-
-
         #Inits initial layer height input
         self.initLayerHeightInput = QLineEdit(self.widget)
-        self.initLayerHeightInput.setGeometry(QtCore.QRect(490, 50, 70, 40)) # pos and size
+        self.initLayerHeightInput.setGeometry(QtCore.QRect(495, 50, 70, 40)) # pos and size
         self.initLayerHeightInput.setObjectName("initLayerHeightInput")
         self.initLayerHeightInput.setText("0.00")
-        # self.initLayerHeightInput.cursorPositionChanged.connect(lambda x: self.lineEditController(self.initLayerHeightInput.cursorPosition()))
-
-#         self.setStyleSheet(""")
-# QLineEdit {
-#     padding: 1px;
-#     color: #F9F6F0;
-#     border: 2px solid #F9F6F0;
-#     border-radius: 8px;
-#     font-weight: bold;
-# }
 
         #Inits initial layer height unit select
         self.initLayerHeightUnitCombobox = QComboBox(self.widget)
-        self.initLayerHeightUnitCombobox.setGeometry(QtCore.QRect(580, 50, 70, 40)) # pos and size
+        self.initLayerHeightUnitCombobox.setGeometry(QtCore.QRect(585, 50, 70, 40)) # pos and size
         self.initLayerHeightUnitCombobox.setAutoFillBackground(False)
         self.initLayerHeightUnitCombobox.setEditable(False)
         self.initLayerHeightUnitCombobox.setObjectName("initLayerHeightUnitCombobox")
@@ -214,31 +176,28 @@ class Ui_MainWindow(QMainWindow):
 
         self.editLayerHeightButton = QPushButton(self.widget)
         self.editLayerHeightButton.setGeometry(290,55,60,30)
-        self.editLayerHeightButton.setText("edit")
+        self.editLayerHeightButton.setText("Edit")
         self.editLayerHeightButton.clicked.connect(self.kbLayer)
-        
-        # self.label_9.setStyleSheet("""QLabel { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
-        # self.setStyleSheet("""QLabel { color: #F9F6F0; font-weight: bold; font-size: 14px; }""")
 
         #Inits compaction unit select
-        self.compactionDepthUnitComboBox = QComboBox(self.widget)
-        self.compactionDepthUnitComboBox.setGeometry(QtCore.QRect(580, 110, 70, 40)) # pos and size
-        self.compactionDepthUnitComboBox.setAutoFillBackground(False)
-        self.compactionDepthUnitComboBox.setEditable(False)
-        self.compactionDepthUnitComboBox.setObjectName("compactionDepthUnitComboBox")
-        self.compactionDepthUnitComboBox.addItem("")
-        self.compactionDepthUnitComboBox.addItem("")
+        self.compactedLayerHeightComboBox = QComboBox(self.widget)
+        self.compactedLayerHeightComboBox.setGeometry(QtCore.QRect(585, 110, 70, 40)) # pos and size
+        self.compactedLayerHeightComboBox.setAutoFillBackground(False)
+        self.compactedLayerHeightComboBox.setEditable(False)
+        self.compactedLayerHeightComboBox.setObjectName("compactedLayerHeightComboBox")
+        self.compactedLayerHeightComboBox.addItem("")
+        self.compactedLayerHeightComboBox.addItem("")
 
-        self.compactionDepthButton = QPushButton(self.widget)
-        self.compactionDepthButton.setGeometry(290,115,60,30)
-        self.compactionDepthButton.setText("edit")
-        self.compactionDepthButton.clicked.connect(self.kbDepth)
+        self.compactedLayerHeightButton = QPushButton(self.widget)
+        self.compactedLayerHeightButton.setGeometry(290,115,60,30)
+        self.compactedLayerHeightButton.setText("Edit")
+        self.compactedLayerHeightButton.clicked.connect(self.kbCompacted)
 
         #Inits final layer height input
-        self.compactionDepthInput = QLineEdit(self.widget)
-        self.compactionDepthInput.setGeometry(QtCore.QRect(490, 110, 70, 40)) # pos and size
-        self.compactionDepthInput.setObjectName("compactionDepthInput")
-        self.compactionDepthInput.setText("0.00")
+        self.compactedLayerHeightInput = QLineEdit(self.widget)
+        self.compactedLayerHeightInput.setGeometry(QtCore.QRect(495, 110, 70, 40)) # pos and size
+        self.compactedLayerHeightInput.setObjectName("compactedLayerHeightInput")
+        self.compactedLayerHeightInput.setText("0.00")
 
         #Inits final layer label
         self.label_10 = QLabel(self.widget)
@@ -258,12 +217,12 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits number of layers input
         self.layerCountInput = QLineEdit(self.widget)
-        self.layerCountInput.setGeometry(QtCore.QRect(490, 230, 70, 40)) # pos and size
+        self.layerCountInput.setGeometry(QtCore.QRect(495, 230, 70, 40)) # pos and size
         self.layerCountInput.setObjectName("layerCountInput")
         self.layerCountInput.setText("1")
         self.layerCountInputButton = QPushButton(self.widget)
         self.layerCountInputButton.setGeometry(290,235,60,30)
-        self.layerCountInputButton.setText("edit")
+        self.layerCountInputButton.setText("Edit")
         self.layerCountInputButton.clicked.connect(self.kbLayerCount)
 
         #Inits desired pressure label
@@ -276,31 +235,31 @@ class Ui_MainWindow(QMainWindow):
 
         #Inits target pressure
         self.targetPressureInput = QLineEdit(self.widget)
-        self.targetPressureInput.setGeometry(QtCore.QRect(490, 170, 70, 40)) # pos and size
+        self.targetPressureInput.setGeometry(QtCore.QRect(495, 170, 70, 40)) # pos and size
         self.targetPressureInput.setObjectName("targetPressureInput")
         self.targetPressureInput.setText("0.00")
 
         self.targetPressureButton = QPushButton(self.widget)
         self.targetPressureButton.setGeometry(290,175,60,30)
-        self.targetPressureButton.setText("edit")
+        self.targetPressureButton.setText("Edit")
         self.targetPressureButton.clicked.connect(self.kbPressure)
 
         #Inits mass input
-        self.labelMassInput = QLabel(self.widget)
-        self.labelMassInput.setGeometry(QtCore.QRect(360, 300, 150, 20))
-        self.labelMassInput.setObjectName("labelMassInput")
-        self.lineEditMassInput = QLineEdit(self.widget)
-        self.lineEditMassInput.setGeometry(QtCore.QRect(490, 290, 70, 40))
-        self.lineEditMassInput.setObjectName("lineEditMassInput")
-        self.lineEditMassInput.setText("0.00")
-        self.lineEditMassInputButton = QPushButton(self.widget)
-        self.lineEditMassInputButton.setGeometry(290,295,60,30)
-        self.lineEditMassInputButton.setText("edit")
-        self.lineEditMassInputButton.clicked.connect(self.kbMass)
+        # self.labelMassInput = QLabel(self.widget)
+        # self.labelMassInput.setGeometry(QtCore.QRect(360, 300, 150, 20))
+        # self.labelMassInput.setObjectName("labelMassInput")
+        # self.lineEditMassInput = QLineEdit(self.widget)
+        # self.lineEditMassInput.setGeometry(QtCore.QRect(495, 290, 70, 40))
+        # self.lineEditMassInput.setObjectName("lineEditMassInput")
+        # self.lineEditMassInput.setText("0.00")
+        # self.lineEditMassInputButton = QPushButton(self.widget)
+        # self.lineEditMassInputButton.setGeometry(290,295,60,30)
+        # self.lineEditMassInputButton.setText("Edit")
+        # self.lineEditMassInputButton.clicked.connect(self.kbMass)
 
         #Inits desired pressure unit select
         self.targetPressureUnitCombobox = QComboBox(self.widget)
-        self.targetPressureUnitCombobox.setGeometry(QtCore.QRect(580, 170, 70, 40)) # pos and size
+        self.targetPressureUnitCombobox.setGeometry(QtCore.QRect(585, 170, 70, 40)) # pos and size
         self.targetPressureUnitCombobox.setAutoFillBackground(False)
         self.targetPressureUnitCombobox.setEditable(False)
         self.targetPressureUnitCombobox.setObjectName("targetPressureUnitCombobox")
@@ -310,73 +269,32 @@ class Ui_MainWindow(QMainWindow):
         #Inits STOP button
         self.pushButton = QPushButton(self.widget)
         self.pushButton.setGeometry(QtCore.QRect(690, 110, 320, 80)) # pos and size
-        self.pushButton.setFont(QFont('Arial', 18))#, QFont.Bold)) #adjust font
         self.pushButton.setObjectName("pushButton")
         self.pushButton.clicked.connect(motor.stopRun)
-        self.pushButton.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
-        # self.pushButton.setStyleSheet("""QPushButton:hover { background-color: green; }""")
-        # self.pushButton.setStyleSheet("""QPushButton {
-    # font-weight: bold;
-    # font-size: 30px;
-    # color: #303030;
-    # border: 2px solid #202020;
-    # border-radius: 8px;
-    # min-width: 10px;
-    # background-color: #FF7C0A;}""")
 
         #Inits Home button
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(860, 230, 140, 50)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
         self.pushButton_2.clicked.connect(motor.Home)
-    #     self.pushButton_2.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
-    #     self.pushButton_2.setStyleSheet("""QPushButton {
-    # font-weight: bold;
-    # font-size: 20px;
-    # color: #303030;
-    # border: 2px solid #202020;
-    # border-radius: 8px;
-    # min-width: 10px;
-    # background-color: #FF7C0A;}""")
 
         #Inits Down button
         self.pushButton_5 = QPushButton(self.widget)
         self.pushButton_5.setGeometry(QtCore.QRect(690, 290, 140, 50)) # pos and size
         self.pushButton_5.setObjectName("pushButton_5")
         self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
-    #     self.pushButton_5.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
-    #     self.pushButton_5.setStyleSheet("""QPushButton {
-    # font-weight: bold;
-    # font-size: 20px;
-    # color: #303030;
-    # border: 2px solid #202020;
-    # border-radius: 8px;
-    # min-width: 10px;
-    # background-color: #FF7C0A;}""")
 
         #Inits Up button
         self.pushButton_6 = QPushButton(self.widget)
         self.pushButton_6.setGeometry(QtCore.QRect(690, 230, 140, 50)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
-        # self.pushButton_6.clicked.connect(lambda x: DB.getTable(list([0])))
         self.pushButton_6.clicked.connect(lambda x: motor.jogUp(self.comboBox_5.currentIndex()))
-    #     self.pushButton_6.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
-    #     self.pushButton_6.setStyleSheet("""QPushButton {
-    # font-weight: bold;
-    # font-size: 20px;
-    # color: #303030;
-    # border: 2px solid #202020;
-    # border-radius: 8px;
-    # min-width: 10px;
-    # background-color: #FF7C0A;}""")
-
 
         #Inits Jogging box area
         self.groupBox_4 = QGroupBox(self.widget)
         self.groupBox_4.setGeometry(QtCore.QRect(810, 200, 300, 180)) # pos and size
         self.groupBox_4.setObjectName("groupBox_4")
         self.groupBox_4.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 18px; color: #F9F6F0; border-radius: 8px;}""")
-
 
         #Inits jog step size select
         self.comboBox_5 = QComboBox(self.groupBox_4)
@@ -399,54 +317,31 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_3 = QPushButton(self.widget)
         self.pushButton_3.setGeometry(QtCore.QRect(800, 40, 100, 50)) # pos and size
         self.pushButton_3.setObjectName("pushButton_3")
-    #     self.pushButton_3.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
-    #     self.pushButton_3.setStyleSheet("""QPushButton {
-    # font-weight: bold;
-    # font-size: 20px;
-    # color: #303030;
-    # border: 2px solid #202020;
-    # border-radius: 8px;
-    # min-width: 10px;
-    # background-color: #FF7C0A;}""")
 
         #Inits run button
         self.pushButton_4 = QPushButton(self.widget)
-        self.pushButton_4.setGeometry(QtCore.QRect(690, 40, 100, 50)) # pos and size
+        self.pushButton_4.setGeometry(QtCore.QRect(690, 40, 320, 50)) # pos and size
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_4.clicked.connect(self.runStartTimer)
         self.pushButton_4.clicked.connect(self.runMotor)
-    #     self.pushButton_4.setStyleSheet("""QPushButton { font-weight: bold; font-size: 20px; color: #303030; border: 2px solid #202020; border-radius: 8px; min-width: 10px;
-    # background-color: #FF7C0A;} QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
-    #     # self.pushButton_4.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
 
         #Inits resume button
-        self.pushButton_7 = QPushButton(self.widget)
-        self.pushButton_7.setGeometry(QtCore.QRect(910, 40, 100, 50)) # pos and size
-        self.pushButton_7.setObjectName("pushButton_7")
-        self.pushButton_7.clicked.connect(self.keyboardPopUp)
-    #     self.pushButton_7.setStyleSheet("""QPushButton:disabled {font-weight: bold; font-size: 16px; color: #000; border: 2px solid #202020; border-radius: 8px; min-width: 10px; background-color: #66380d;}""")
-    #     self.pushButton_7.setStyleSheet("""QPushButton {
-    # font-weight: bold;
-    # font-size: 20px;
-    # color: #303030;
-    # border: 2px solid #202020;
-    # border-radius: 8px;
-    # min-width: 10px;
-    # background-color: #FF7C0A;}""")
+        # self.pushButton_7 = QPushButton(self.widget)
+        # self.pushButton_7.setGeometry(QtCore.QRect(910, 40, 100, 50)) # pos and size
+        # self.pushButton_7.setObjectName("pushButton_7")
+        # self.pushButton_7.clicked.connect(self.newLayer)
 
         # raise_() brings components to front layer
         self.groupBox_6.raise_()
         self.groupBox_4.raise_()
         self.frame.raise_()
-        # self.groupBox_2.raise_()
-        # self.groupBox_3.raise_()
         self.pushButton.raise_()
         self.pushButton_2.raise_()
         self.pushButton_5.raise_()
         self.pushButton_6.raise_()
         self.pushButton_3.raise_()
         self.pushButton_4.raise_()
-        self.pushButton_7.raise_()
+        # self.pushButton_7.raise_()
 
         # TAB 2 #
 
@@ -454,6 +349,7 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.addTab(self.widget, "")
         self.tab_2 = QWidget()
         self.tab_2.setObjectName("tab_2")
+        self.tab_2.setStyleSheet("""QLabel {font-size: 20px; font-weight: bold;} QPushButton {font-size:18px; font-weight:bold}""")
         self.lcdNumber = QLCDNumber(self.tab_2)                     #VALUE DISPLAY ON TAB 3
         self.lcdNumber.setGeometry(QtCore.QRect(350, 70, 191, 51))
         self.lcdNumber.setObjectName("lcdNumber2")
@@ -471,10 +367,8 @@ class Ui_MainWindow(QMainWindow):
         self.label_tab2_pressure_units.setGeometry(QtCore.QRect(550, 270, 300, 51))
         self.label_tab2_force = QLabel(self.tab_2)
         self.label_tab2_force.setGeometry(QtCore.QRect(20, 170, 300, 51))
-        self.label_tab2_force.setFont(QFont('Arial', 18))
         self.label_tab2_force_units = QLabel(self.tab_2)
         self.label_tab2_force_units.setGeometry(QtCore.QRect(550, 170, 300, 51))
-        self.label_tab2_force_units.setFont(QFont('Arial', 18))
         self.label_tab2_load_units = QLabel(self.tab_2)
         self.label_tab2_load_units.setGeometry(QtCore.QRect(550, 70, 300, 51))
         self.pushButton_8 = QPushButton(self.tab_2)
@@ -498,26 +392,22 @@ class Ui_MainWindow(QMainWindow):
         #Inits load cell reading label
         self.label_21 = QLabel(self.tab_2)
         self.label_21.setGeometry(QtCore.QRect(20, 70, 300, 51)) # pos and size
-        self.label_21.setFont(QFont('Arial', 18))
         self.label_21.setObjectName("label_21")
 
         #Inits pressure reading label
         self.label_tab2_pressure = QLabel(self.tab_2)
         self.label_tab2_pressure.setGeometry(QtCore.QRect(20, 270, 300, 51)) # pos and size
-        self.label_tab2_pressure.setFont(font)
         self.label_tab2_pressure.setObjectName("label_tab2_pressure")
 
         #Inits pressure reading units label
         self.label_tab2_pressure_units = QLabel(self.tab_2)
         self.label_tab2_pressure_units.setGeometry(QtCore.QRect(550, 270, 300, 51)) # pos and size
-        self.label_tab2_pressure_units.setFont(font)
         self.label_tab2_pressure_units.setObjectName("label_tab2_pressure_units")
 
         #Inits load cell reading units label
         self.label_tab2_load_units = QLabel(self.tab_2)
         self.label_tab2_load_units.setGeometry(QtCore.QRect(550, 70, 300, 51)) # pos and size
         self.label_tab2_load_units.setObjectName("label_tab2_load_units")
-        self.label_tab2_load_units.setFont(QFont('Arial', 18))
 
         #Inits calibration button
         self.pushButton_8 = QPushButton(self.tab_2)
@@ -551,29 +441,25 @@ class Ui_MainWindow(QMainWindow):
         self.widget_2.setObjectName("widget_2")
 
         #Inits refresh plot button
-        self.refreshButton = QPushButton(self.tab_3)
-        self.refreshButton.setGeometry(850, 190, 80, 30)
-        self.refreshButton.setObjectName("button_refresh")
-        self.refreshButton.clicked.connect(DB.getTable)
+        # self.refreshButton = QPushButton(self.tab_3)
+        # self.refreshButton.setGeometry(850, 190, 80, 30)
+        # self.refreshButton.setObjectName("button_refresh")
+        # self.refreshButton.clicked.connect(DB.getTable)
 
         self.plotForceCheckbox = QCheckBox(self.tab_3)
         self.plotForceCheckbox.setGeometry(850, 60, 160, 30)
         self.plotForceCheckbox.setText("Plot Force")
         self.plotForceCheckbox.setStyleSheet("""QCheckBox {font-weight: bold; font-size: 20 px; color: #fff;}""")
-        # self.plotForceCheckbox.toggled.connect(lambda x: self.plotState(self.plotForceRadio))
 
         self.plotPressureCheckbox = QCheckBox(self.tab_3)
         self.plotPressureCheckbox.setGeometry(850, 100, 160, 30)
         self.plotPressureCheckbox.setText("Plot Pressure")
         self.plotPressureCheckbox.setStyleSheet("""QCheckBox {font-weight: bold; font-size: 20 px; color: #fff;}""")
-        # self.plotPressureCheckbox.toggled.connect(lambda x: self.plotState(self.plotPressureRadio))
 
         self.plotPositionCheckBox = QCheckBox(self.tab_3)
         self.plotPositionCheckBox.setGeometry(850, 140, 160, 30)
         self.plotPositionCheckBox.setText("Plot Position")
         self.plotPositionCheckBox.setStyleSheet("""QCheckBox {font-weight: bold; font-size: 20 px; color: #fff;}""")
-        # self.plotPositionCheckBox.setStyleSheet("""QCheckBox::indicator { color: #fff; }""")
-        # self.plotWeightRadio.toggled.connect(lambda x: self.plotState(self.plotWeightRadio))
 
         self.clearButton = QPushButton(self.tab_3)
         self.clearButton.setGeometry(850, 240, 80, 30)
@@ -583,8 +469,6 @@ class Ui_MainWindow(QMainWindow):
         self.exportButton = QPushButton(self.tab_3)
         self.exportButton.setGeometry(850, 290, 80, 30)
         self.exportButton.setObjectName("button_export")
-        # self.exportButton.setStyleSheet("""QPushButton {font-weight: bold;font-size: 16px;color: #303030;border: 2px solid #202020;
-                                # border-radius: 8px;min-width: 10px;background-color: #FF7C0A;}""")
         self.exportButton.clicked.connect(self.exportData)
 
         # TAB 4 #
@@ -593,37 +477,6 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.addTab(self.tab_3, "")
         self.tab_4 = QWidget()
         self.tab_4.setObjectName("tab_4")
-
-        # self.dataTable = QTableWidget(self.tab_4)
-        # self.dataTable.setGeometry(QtCore.QRect(10,10,881,791))
-        # self.dataTable.setRowCount(50)
-        # self.dataTable.setColumnCount(8)
-        # self.dataTable.setObjectName("dataTable")
-        # item = QTableWidgetItem()
-        # self.dataTable.setHorizontalHeaderItem(0, item)
-        # item = QTableWidgetItem()
-        # self.dataTable.setHorizontalHeaderItem(1, item)
-        # item = QTableWidgetItem()
-        # self.dataTable.setHorizontalHeaderItem(2, item)
-        # item = QTableWidgetItem()
-        # self.dataTable.setHorizontalHeaderItem(3, item)
-        # item = QTableWidgetItem()
-        # self.dataTable.setHorizontalHeaderItem(4, item)
-        # item = QTableWidgetItem()
-        # self.dataTable.setHorizontalHeaderItem(5, item)
-        # item = QTableWidgetItem()
-        # self.dataTable.setHorizontalHeaderItem(6, item)
-        # item = QTableWidgetItem()
-        # self.dataTable.setHorizontalHeaderItem(7, item)
-        # self.dataTable.horizontalHeader().setDefaultSectionSize(150)
-        # self.dataTable.horizontalHeader().setMinimumSectionSize(41)
-        # self.exportButton = QPushButton(self.tab_4)
-        # self.exportButton.setGeometry(QtCore.QRect(10, 810, 151, 20))
-        # self.exportButton.setObjectName("exportButton")
-
-        # self.tabWidget.addTab(self.tab_4, "")
-        # self.tab_5 = QWidget()
-        # self.tab_5.setObjectName("tab_5")
 
         #Init communication box area
         self.groupBox_7 = QGroupBox(self.tab_4)
@@ -643,41 +496,12 @@ class Ui_MainWindow(QMainWindow):
 
         #Init Connection IP label
         self.deviceIpLabel = QLabel(self.groupBox_7)
-        self.deviceIpLabel.setGeometry(QtCore.QRect(10, 90, 200, 21)) # pos and size
+        self.deviceIpLabel.setGeometry(QtCore.QRect(10, 90, 500, 21)) # pos and size
         self.deviceIpLabel.setObjectName("deviceIpLabel")
 
-        # #Init system group box area
-        # self.configGroupbox = QGroupBox(self.tab_4)
-        # self.configGroupbox.setGeometry(QtCore.QRect(440, 30, 401, 300)) # pos and size
-        # self.configGroupbox.setObjectName("configGroupbox")
-        # self.configGroupbox.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 15px; color: #F9F6F0; border-radius: 8px;}""")
-
-        #Init system time label
-        # self.sysTimeLabel = QLabel(self.configGroupbox)
-        # self.sysTimeLabel.setGeometry(QtCore.QRect(10, 30, 200, 20)) # pos and size
-        # self.sysTimeLabel.setObjectName("sysTimeLabel")
-
-        #Init system date label
-        # self.sysDateLabel = QLabel(self.configGroupbox)
-        # self.sysDateLabel.setGeometry(QtCore.QRect(10, 60, 200, 20)) # pos and size
-        # self.sysDateLabel.setObjectName("sysDateLabel")
-
-        #Init system runtime label
-        # self.sysRuntimeLabel = QLabel(self.configGroupbox)
-        # self.sysRuntimeLabel.setGeometry(QtCore.QRect(10, 90, 200, 20)) # pos and size
-        # self.sysRuntimeLabel.setObjectName("sysRuntimeLabel")
-
-        #                 # TAB 5 #
-
-        # #Inits tab 5
-        # self.tabWidget.addTab(self.tab_4,"")
-        # self.tab_5 = QWidget()
-        # self.tab_5.setObjectName("tab_5")
         self.graphFrame = QFrame(self.tab_3)
         self.graphFrame.setGeometry(9,19,800,360)
         self.graphWidget = pg.PlotWidget(self.graphFrame)
-        # self.tab_5.setCentralWidget(self.graphWidget)
-        # self.graphWidget = QWidget(self.tab_5)
         self.graphWidget.setGeometry(QtCore.QRect(9, 19, 800, 320)) # pos and size
         self.graphWidget.setBackground('w')
 
@@ -687,10 +511,6 @@ class Ui_MainWindow(QMainWindow):
         self.pressure_vals = [0]
         self.position_vals = [0]
         self.weight_vals = [0]
-        # self.targetSpeed_y = [random.uniform(-10, 10) for _ in range(100)]
-        # self.targetSpeed_y = list(range(0))
-        # self.actualSpeed_x = list(range(100))  # 100 time points
-        # self.actualSpeed_y = [random.uniform(-10, 10) for _ in range(1)]
 
         # self.graphLegend = self.graphWidget.addLegend()
         self.graphWidget.setTitle("Data Logging", size="16pt")
@@ -712,9 +532,9 @@ class Ui_MainWindow(QMainWindow):
         self.timer.timeout.connect(self.checkKeyboard)
         self.timer.timeout.connect(self.checkHomed)
         self.timer.timeout.connect(self.updateCylinder)
+        self.timer.timeout.connect(self.printAbsPos)
+        self.timer.timeout.connect(self.newLayer)
         self.timer.start()
-
-        # self.graphWidget.setObjectName("stuff")
 
         # BOTTOM TAB #
 
@@ -722,20 +542,17 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.addTab(self.tab_4, "")
         self.frame_2 = QFrame(self.frame)
         self.frame_2.setGeometry(QtCore.QRect(0, 440, 1000, 261)) # pos and size
-        # self.frame_2.setFrameShape(QFrame.StyledPanel)
-        # self.frame_2.setFrameShadow(QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
-        # self.frame_2.setStyleSheet("""QFrame""")
 
         #Init bottom box area
         self.groupBox = QGroupBox(self.frame_2)
-        self.groupBox.setGeometry(QtCore.QRect(5, 0, 716, 600)) # pos and size
+        self.groupBox.setGeometry(QtCore.QRect(5, 0, 746, 600)) # pos and size
         self.groupBox.setObjectName("groupBox")
         self.groupBox.setStyleSheet("""QGroupBox { font-weight: bold; font-size: 14px; color: #F9F6F0;} QLabel { font-weight: bold; font-size: 12px; }""")
 
         #Init table layout
         self.tableView = QTableView(self.groupBox)
-        self.tableView.setGeometry(QtCore.QRect(10, 25, 705, 200)) # pos and size
+        self.tableView.setGeometry(QtCore.QRect(10, 25, 735, 200)) # pos and size
         self.tableView.setObjectName("tableView")
 
         #Init Mode label
@@ -743,7 +560,7 @@ class Ui_MainWindow(QMainWindow):
         self.Modelabel.setGeometry(QtCore.QRect(20, 65, 150, 20)) # pos and size
         self.Modelabel.setObjectName("Modelabel")
         self.ModeLineEdit = QLineEdit(self.groupBox)
-        self.ModeLineEdit.setGeometry(80, 60, 80, 30)
+        self.ModeLineEdit.setGeometry(70, 60, 130, 30)
         self.ModeLineEdit.setObjectName("ModeLineEdit")
 
         #Init system status label
@@ -751,109 +568,97 @@ class Ui_MainWindow(QMainWindow):
         self.MotorLabel.setGeometry(QtCore.QRect(20, 110, 150, 20)) # pos and size
         self.MotorLabel.setObjectName("label_2")
         self.MotorLineEdit = QLineEdit(self.groupBox)
-        self.MotorLineEdit.setGeometry(80, 105, 120, 30)
+        self.MotorLineEdit.setGeometry(70, 105, 130, 30)
         self.MotorLineEdit.setObjectName("MotorLineEdit")
 
         #Init mode label
         self.targetPressureLabel = QLabel(self.groupBox)
-        self.targetPressureLabel.setGeometry(QtCore.QRect(215, 35, 150, 20)) # pos and size
+        self.targetPressureLabel.setGeometry(QtCore.QRect(220, 35, 150, 20)) # pos and size
         self.targetPressureLabel.setObjectName("targetPressureLabel")
         self.targetPressureLineEdit = QLineEdit(self.groupBox)
-        self.targetPressureLineEdit.setGeometry(QtCore.QRect(340, 33, 60, 30))
+        self.targetPressureLineEdit.setGeometry(QtCore.QRect(350, 33, 60, 30))
         self.targetPressureLineEdit.setObjectName("targetPressureLineEdit")
         self.targetPressureLineEdit.setText(self.targetPressureInput.text())
         self.targetPressureLabelUnit = QLabel(self.groupBox)
-        self.targetPressureLabelUnit.setGeometry(QtCore.QRect(405, 35, 30, 20)) # pos and size
+        self.targetPressureLabelUnit.setGeometry(QtCore.QRect(415, 35, 30, 20)) # pos and size
         self.targetPressureLabelUnit.setObjectName("targetPressureLabelUnit")
         self.targetPressureLabelUnit.setText("kPa")
 
         #initial layer height label
         self.initLayerHeightLabel = QLabel(self.groupBox)
-        self.initLayerHeightLabel.setGeometry(QtCore.QRect(450, 35, 150, 20))
+        self.initLayerHeightLabel.setGeometry(QtCore.QRect(470, 35, 150, 20))
         self.initLayerHeightLabel.setObjectName("initLayerHeightLabel")
         self.initLayerHeightLineEdit = QLineEdit(self.groupBox)
-        self.initLayerHeightLineEdit.setGeometry(QtCore.QRect(610, 33, 60, 30))
+        self.initLayerHeightLineEdit.setGeometry(QtCore.QRect(630, 33, 60, 30))
         self.initLayerHeightLineEdit.setObjectName("initLayerHeightLineEdit")
         self.initLayerHeightLineEdit.setText(self.initLayerHeightInput.text())
         self.initLayerHeightUnitLabel = QLabel(self.groupBox)
-        self.initLayerHeightUnitLabel.setGeometry(QtCore.QRect(675, 35, 30, 20))
+        self.initLayerHeightUnitLabel.setGeometry(QtCore.QRect(695, 35, 30, 20))
         self.initLayerHeightUnitLabel.setText("mm")
 
         #Init layer count label
         self.layerCountLabel = QLabel(self.groupBox)
-        self.layerCountLabel.setGeometry(QtCore.QRect(285, 110, 150, 20)) # pos and size
+        self.layerCountLabel.setGeometry(QtCore.QRect(220, 110, 150, 20)) # pos and size
         self.layerCountLabel.setObjectName("layerCountLabel")
         self.layerCountLineEdit = QLineEdit(self.groupBox)
-        self.layerCountLineEdit.setGeometry(QtCore.QRect(340, 105, 60, 30))
+        self.layerCountLineEdit.setGeometry(QtCore.QRect(350, 105, 60, 30))
         self.layerCountLineEdit.setObjectName("initLayerCountLineEdit")
         self.layerCountLineEdit.setText("  __ / "+str(self.layerCountInput.text()))
 
         #Init desired position label
-        self.desCompDepthLabel = QLabel(self.groupBox)
-        self.desCompDepthLabel.setGeometry(QtCore.QRect(450, 72, 200, 20)) # pos and size
-        self.desCompDepthLabel.setObjectName("desCompDepthLabel")
-        self.desCompLineEdit = QLineEdit(self.groupBox)
-        self.desCompLineEdit.setGeometry(QtCore.QRect(610, 69, 60, 30))
-        self.desCompLineEdit.setObjectName("desCompLineEdit")
-        self.desCompLineEdit.setText(self.compactionDepthInput.text())
-        self.desCompUnitLabel = QLabel(self.groupBox)
-        self.desCompUnitLabel.setGeometry(QtCore.QRect(675, 69, 30, 20))
-        self.desCompUnitLabel.setText("mm")
+        self.compactedLayerHeightLabel = QLabel(self.groupBox)
+        self.compactedLayerHeightLabel.setGeometry(QtCore.QRect(470, 72, 200, 20)) # pos and size
+        self.compactedLayerHeightLabel.setObjectName("compactedLayerHeightLabel")
+        self.compactedLayerHeightLineEdit = QLineEdit(self.groupBox)
+        self.compactedLayerHeightLineEdit.setGeometry(QtCore.QRect(630, 69, 60, 30))
+        self.compactedLayerHeightLineEdit.setObjectName("compactedLayerHeightLineEdit")
+        self.compactedLayerHeightLineEdit.setText(self.compactedLayerHeightInput.text())
+        self.compactedLayerHeightUnitLabel = QLabel(self.groupBox)
+        self.compactedLayerHeightUnitLabel.setGeometry(QtCore.QRect(695, 69, 30, 20))
+        self.compactedLayerHeightUnitLabel.setText("mm")
 
         #Init desired pressure label
         self.currentPressureLabel = QLabel(self.groupBox)
-        self.currentPressureLabel.setGeometry(QtCore.QRect(210, 72, 200, 20)) # pos and size
+        self.currentPressureLabel.setGeometry(QtCore.QRect(220, 72, 200, 20)) # pos and size
         self.currentPressureLabel.setObjectName("currentPressureLabel")
         self.currentPressureLineEdit = QLineEdit(self.groupBox)
-        self.currentPressureLineEdit.setGeometry(QtCore.QRect(340, 69, 60, 30))
+        self.currentPressureLineEdit.setGeometry(QtCore.QRect(350, 69, 60, 30))
         self.currentPressureLineEdit.setObjectName("currentPressureLineEdit")
         self.currentPressureLineEdit.setText(str(self.pressure_reading))
         self.currentPressureLabelUnit = QLabel(self.groupBox)
-        self.currentPressureLabelUnit.setGeometry(QtCore.QRect(405, 72, 30, 20)) # pos and size
+        self.currentPressureLabelUnit.setGeometry(QtCore.QRect(415, 72, 30, 20)) # pos and size
         self.currentPressureLabelUnit.setObjectName("currentPressureLabelUnit")
         self.currentPressureLabelUnit.setText("kPa")
 
         #Init current pressure label
         self.currentLayerHeightLabel = QLabel(self.groupBox)
-        self.currentLayerHeightLabel.setGeometry(QtCore.QRect(450, 110, 220, 20)) # pos and size
+        self.currentLayerHeightLabel.setGeometry(QtCore.QRect(470, 110, 220, 20)) # pos and size
         self.currentLayerHeightLabel.setObjectName("currentLayerHeightLabel")
         self.currentLayerHeightLineEdit = QLineEdit(self.groupBox)
-        self.currentLayerHeightLineEdit.setGeometry(QtCore.QRect(610, 105, 60, 30))
+        self.currentLayerHeightLineEdit.setGeometry(QtCore.QRect(630, 105, 60, 30))
         self.currentLayerHeightLineEdit.setObjectName("currentlayerHeightLineEdit")
         self.currentLayerHeightLineEdit.setText(" - - - - ")
         self.currentLayerHeightUnitLabel = QLabel(self.groupBox)
-        self.currentLayerHeightUnitLabel.setGeometry(QtCore.QRect(675, 105, 30, 20))
+        self.currentLayerHeightUnitLabel.setGeometry(QtCore.QRect(695, 105, 30, 20))
         self.currentLayerHeightUnitLabel.setText("mm")
-
-        #Init desired position label
-        # self.label_8 = QLabel(self.groupBox)
-        # self.label_8.setGeometry(QtCore.QRect(680, 40, 200, 20)) # pos and size
-        # self.label_8.setObjectName("label_8")
 
         #center main window with status bar
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
-
-        # self.pixmap = QPixmap('VulcanLabsLogo.png')
-        # self.labelLogo = QLabel(self)
-        # self.labelLogo.setPixmap(self.pixmap)
-        # self.labelLogo.setGeometry(30,30,100,100)
         
         #run class fnc to annotate labels properly
         self.retranslateUi(MainWindow)
 
         #set default index of GUI to tab 0
         self.tabWidget.setCurrentIndex(0)
-
         self.cylinder = QPixmap('Cylinder.png')
         self.cylinder2 = self.cylinder.scaled(280, 150, QtCore.Qt.KeepAspectRatio) # Logo
         self.cylinderlabel = QLabel(self.frame)
         self.cylinderlabel.setPixmap(self.cylinder2)
         self.cylinderlabel.setStyleSheet("background-color: transparent;")
         self.cylinderlabel.setGeometry(800,395,200,200)
-
         self.cylinderStart = QPixmap('start.png')
         self.cylinder2Start = self.pixmap.scaled(280, 150, QtCore.Qt.KeepAspectRatio) # Logo
         self.cylLabelStart = QLabel(self.frame)
@@ -876,19 +681,17 @@ class Ui_MainWindow(QMainWindow):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("Vulcan Labs", "Vulcan Labs"))
-        # self.groupBox_2.setTitle(_translate("MainWindow", "Mode Select"))
         self.comboBox.setItemText(0, _translate("MainWindow", "Mode Selection"))
         self.comboBox.setItemText(1, _translate("MainWindow", "Motion Limiting"))
         self.comboBox.setItemText(2, _translate("MainWindow", "Pressure Limiting"))
-        # self.groupBox_3.setTitle(_translate("MainWindow", "Parameter Input"))
         self.initLayerHeightUnitCombobox.setItemText(0, _translate("MainWindow", "mm"))
         self.initLayerHeightUnitCombobox.setItemText(1, _translate("MainWindow", "μm"))
         self.label_9.setText(_translate("MainWindow", "Initial Layer"))
         self.label_91.setText(_translate("MainWindow", "Height"))
-        self.compactionDepthUnitComboBox.setItemText(0, _translate("MainWindow", "mm"))
-        self.compactionDepthUnitComboBox.setItemText(1, _translate("MainWindow", "μm"))
-        self.label_10.setText(_translate("MainWindow", "Compaction"))
-        self.label_101.setText(_translate("MainWindow", "Depth"))
+        self.compactedLayerHeightComboBox.setItemText(0, _translate("MainWindow", "mm"))
+        self.compactedLayerHeightComboBox.setItemText(1, _translate("MainWindow", "μm"))
+        self.label_10.setText(_translate("MainWindow", "Compacted"))
+        self.label_101.setText(_translate("MainWindow", "Layer Height"))
         self.label_11.setText(_translate("MainWindow", "Number"))
         self.label_111.setText(_translate("MainWindow", "Of Layers"))
         self.label_12.setText(_translate("MainWindow", "Target"))
@@ -908,7 +711,7 @@ class Ui_MainWindow(QMainWindow):
         self.groupBox_6.setTitle(_translate("MainWindow", ""))
         self.pushButton_3.setText(_translate("MainWindow", "Pause"))
         self.pushButton_4.setText(_translate("MainWindow", "Run"))
-        self.pushButton_7.setText(_translate("MainWindow", "Resume"))
+        # self.pushButton_7.setText(_translate("MainWindow", "Resume"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.widget), _translate("MainWindow", "Control"))
         self.label_21.setText(_translate("MainWindow", "Load Cell Reading:"))
         self.label_tab2_pressure.setText(_translate("MainWindow", "Current Pressure:"))
@@ -917,43 +720,11 @@ class Ui_MainWindow(QMainWindow):
         self.label_tab2_force_units.setText(_translate("MainWindow", " N"))
         self.label_tab2_load_units.setText(_translate("MainWindow", " kg"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "System"))
-        # item = self.tableWidget.verticalHeaderItem(0)
-        # item.setText(_translate("MainWindow", "Log 3"))
-        # item = self.tableWidget.verticalHeaderItem(1)
-        # item.setText(_translate("MainWindow", "Log 2"))
-        # item = self.tableWidget.verticalHeaderItem(2)
-        # item.setText(_translate("MainWindow", "New Row"))
-        # item = self.tableWidget.verticalHeaderItem(3)
-        # item.setText(_translate("MainWindow", "Log 4"))
-        # item = self.tableWidget.verticalHeaderItem(4)
-        # item.setText(_translate("MainWindow", "New Row"))
-        # item = self.tableWidget.verticalHeaderItem(5)
-        # item.setText(_translate("MainWindow", "New Row"))
-        # item = self.tableWidget.verticalHeaderItem(6)
-        # item.setText(_translate("MainWindow", "New Row"))
-        # item = self.tableWidget.verticalHeaderItem(7)
-        # item.setText(_translate("MainWindow", "Log 8"))
-        # item = self.tableWidget.verticalHeaderItem(8)
-        # item.setText(_translate("MainWindow", "Log 6"))
-        # item = self.tableWidget.horizontalHeaderItem(0)
-        # item.setText(_translate("MainWindow", "Col 1"))
-        # item = self.tableWidget.horizontalHeaderItem(1)
-        # item.setText(_translate("MainWindow", "Col 2"))
-        # item = self.tableWidget.horizontalHeaderItem(2)
-        # item.setText(_translate("MainWindow", "Col 3"))
-        # item = self.tableWidget.horizontalHeaderItem(3)
-        # item.setText(_translate("MainWindow", "Col 4"))
-        # item = self.tableWidget.horizontalHeaderItem(4)
-        # item.setText(_translate("MainWindow", "Col 5"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Data"))
         self.groupBox_7.setTitle(_translate("MainWindow", "Communication"))
         self.connectionLabel.setText(_translate("MainWindow", "Connection: "+str(motor.connectionStatus)))
         self.ipLabel.setText(_translate("MainWindow", "System IP: "+self.IpAdd))
         self.deviceIpLabel.setText(_translate("MainWindow", "Connected Device IP:"+str(motor.SERVER_HOST)))
-        # self.configGroupbox.setTitle(_translate("MainWindow", "General"))
-        # self.sysTimeLabel.setText(_translate("MainWindow", "System Time:"+str(time.time_ns())))
-        # self.sysDateLabel.setText(_translate("MainWindow", "System Date:"+str(time.time())))
-        # self.sysRuntimeLabel.setText(_translate("MainWindow", "System Runtime:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "Configuration"))
         self.groupBox.setTitle(_translate("MainWindow", "System State"))
         self.Modelabel.setText(_translate("MainWindow", "Mode: "))
@@ -961,17 +732,13 @@ class Ui_MainWindow(QMainWindow):
         self.targetPressureLabel.setText(_translate("MainWindow", "Target Pressure: "))
         self.initLayerHeightLabel.setText(_translate("MainWindow", "Initial Layer Height: "))
         self.layerCountLabel.setText(_translate("MainWindow", "Layer: "))
-        self.desCompDepthLabel.setText(_translate("MainWindow", "Desired Compaction: "))
+        self.compactedLayerHeightLabel.setText(_translate("MainWindow", "Compacted Layer Height: "))
         self.currentPressureLabel.setText(_translate("MainWindow", "Current Pressure: "))
         self.currentLayerHeightLabel.setText(_translate("MainWindow", "Current Layer Height: "))
-        # self.label_8.setText(_translate("MainWindow", "Current Position: "+str(self.curPos)))
-        # self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), _translate("MainWindow", "Plots"))
-        self.refreshButton.setText(_translate("MainWindow", "Refresh"))
+        # self.refreshButton.setText(_translate("MainWindow", "Refresh"))
         self.clearButton.setText(_translate("MainWindow", "Clear"))
         self.exportButton.setText(_translate("MainWindow", "Export"))
-        self.labelMassInput.setText(_translate("MainWindow", "Mass [kg]"))
-        # self.warningLabel.setText(_translate("MainWindow", ";;;"))
-
+        # self.labelMassInput.setText(_translate("MainWindow", "Mass [kg]"))
 
         # -- ROUTING -- #
 
@@ -988,12 +755,12 @@ class Ui_MainWindow(QMainWindow):
         # Update desired parameters
         self.targetPressureInput.textChanged.connect(self.updateDesiredParam)
         self.initLayerHeightInput.textChanged.connect(self.updateDesiredParam)
-        self.compactionDepthInput.textChanged.connect(self.updateDesiredParam)
+        self.compactedLayerHeightInput.textChanged.connect(self.updateDesiredParam)
         self.layerCountInput.textChanged.connect(self.updateDesiredParam)
-        self.lineEditMassInput.textChanged.connect(self.updateDesiredParam)
+        # self.lineEditMassInput.textChanged.connect(self.updateDesiredParam)
         self.comboBox.currentIndexChanged.connect(self.updateDesiredParam)
         self.initLayerHeightUnitCombobox.currentIndexChanged.connect(self.updateDesiredParam)
-        self.compactionDepthUnitComboBox.currentIndexChanged.connect(self.updateDesiredParam)
+        self.compactedLayerHeightComboBox.currentIndexChanged.connect(self.updateDesiredParam)
         self.targetPressureUnitCombobox.currentIndexChanged.connect(self.updateDesiredParam)
         self.comboBox_5.currentIndexChanged.connect(self.updateDesiredParam)
         self.targetPressureUnitCombobox.currentIndexChanged.connect(self.updateDesiredParam)
@@ -1002,7 +769,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
         # self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
         self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
-        self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
+        # self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
         self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
         # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
@@ -1015,7 +782,7 @@ class Ui_MainWindow(QMainWindow):
     def kbLayer(self):
         kb.show()
 
-    def kbDepth(self):
+    def kbCompacted(self):
         kb2.show()
 
     def kbPressure(self):
@@ -1030,12 +797,19 @@ class Ui_MainWindow(QMainWindow):
     def kbWeight(self):
         kb6.show()
 
+    def kbMassNext(self):
+        kb7.show()
+
+    def printAbsPos(self):
+        # print(f'abs pos: {motor.absolutePosition}')
+        self.warningLabel.setText(str(motor.absolutePosition))
+
     def checkKeyboard(self):
         if kb.okCheck == 1:
             self.initLayerHeightInput.setText(kb.inputString)
             kb.okCheck = 0
         elif kb2.okCheck == 1:
-            self.compactionDepthInput.setText(kb2.inputString)
+            self.compactedLayerHeightInput.setText(kb2.inputString)
             kb2.okCheck = 0
         elif kb3.okCheck == 1:
             self.targetPressureInput.setText(kb3.inputString)
@@ -1043,12 +817,13 @@ class Ui_MainWindow(QMainWindow):
         elif kb4.okCheck == 1:
             self.layerCountInput.setText(kb4.inputString)
             kb4.okCheck = 0
-        elif kb5.okCheck == 1:
-            print("made it here")
-            self.lineEditMassInput.setText(kb5.inputString)
-            kb5.okCheck = 0
+        # elif kb5.okCheck == 1:
+            # self.lineEditMassInput.setText(kb5.inputString)
+            # kb5.okCheck = 0
         elif kb6.okCheck == 1:
             self.dialog.inputWeight.setText(kb6.inputString)
+        elif kb7.okCheck == 1:
+            self.nL.input.setText(kb7.inputString)
 
     def extractPiston(self):
         self.msg = QMessageBox()
@@ -1057,13 +832,34 @@ class Ui_MainWindow(QMainWindow):
         self.msg.setText("Sliding plate must be removed before proceeding with extraction. \n\nSelect Ok when plate is removed.")
         self.msg.setIcon(QMessageBox.Question)
         self.msg.setStandardButtons(QMessageBox.Close|QMessageBox.Ok)
-        # self.# msg.setDefaultButton(QMessageBox.Cancel)
-        # self.msg.setEscapeButton(QMessageBox.Close)
         self.msg.buttonClicked.connect(self.buttonClick)
-        # msg.Ok.clicked.connect(motor.cleanUp)
-        # msg.Cancel.clicked.connect(self.close)
 
         x = self.msg.exec_()
+
+    def newLayer(self):
+        if motor.massInput == True:
+            self.nL = newLayer()
+            self.nL.show()
+            motor.massInput = False
+        else:
+            pass
+            
+
+    def sendMassData(self):
+        self.mass = self.nL.input.text()
+        motor.mass = self.mass
+        motor.massIn = True
+        print("0000: ",self.mass)
+        motor.motionRun()
+        
+    def massDialog(self):
+        text = QtGui.QInputDialog.getText(self, 'Powder', 'Enter mass of layer:')    
+        # QInputDialog. self.kbMmassNext()
+        QInputDialog.QLineEdit.setText("87878787")
+        # if text[1]:
+        #     massOfLayer = text[0]
+        #     self.mass = massOfLayer
+        #     motor.mass = self.mass
 
     def buttonClick(self,button):
         print(button,button.text())
@@ -1081,11 +877,6 @@ class Ui_MainWindow(QMainWindow):
         return cylinderPosition
 
     def updateCylinder(self):
-        # start = int(490 - 0.1*(self.initLayerHeight[0]))
-        # end = int(490 - 0.1*(self.initLayerHeight[0] - 10))
-        # pos = initLayerHeight*0.001
-        # pos = self.mm2cylinder(random.randint(0,30))
-        # pos = self.mm2cylinder(motor.absolutePosition)
         pos = self.mm2cylinder(motor.absolutePosition)
         # pos = self.mm2cylinder(30)
         self.cylLabelStart.setGeometry(793,520-pos,200,100)
@@ -1099,23 +890,22 @@ class Ui_MainWindow(QMainWindow):
 
     def runMotor(self):
         self.updateCylinder()
-        print(self.modeSelected)
 
         if self.modeSelected == 1: #motion limiting
             motor.initLayerHeight = self.initLayerHeight
-            motor.compactionDepth = self.compactionDepth
+            motor.compactedLayerHeight = self.compactedLayerHeight
             motor.numberOfLayers = self.numberOfLayers
             motor.mass = self.mass
+            motor.modeSelected = self.modeSelected
 
         elif self.modeSelected == 2: #pressure limiting
+            motor.modeSelected = self.modeSelected
             motor.targetPressure = self.targetPressure
             motor.numberOfLayers = self.numberOfLayers
             motor.mass = self.mass
 
-
-        print(f'ilh: {motor.initLayerHeight}, compaction: {motor.compactionDepth}, targPress: {motor.targetPressure}, #ofLayers: {motor.numberOfLayers}, mass: {motor.mass}')
-
-
+        print(f'mode selected: {motor.modeSelected},ilh: {motor.initLayerHeight}, compaction: {motor.compactedLayerHeight}, targPress: {motor.targetPressure}, #ofLayers: {motor.numberOfLayers}, mass: {motor.mass}')
+        motor.run()
 
     def disableWidget(self,currentIndex):
         print(currentIndex)
@@ -1123,7 +913,7 @@ class Ui_MainWindow(QMainWindow):
         if currentIndex == 0:
             """no mode selected"""
             self.initLayerHeightInput.setEnabled(False)
-            self.compactionDepthInput.setEnabled(False)
+            self.compactedLayerHeightInput.setEnabled(False)
             self.label_9.setEnabled(False)
             self.label_91.setEnabled(False)
             self.label_10.setEnabled(False)
@@ -1133,9 +923,9 @@ class Ui_MainWindow(QMainWindow):
             self.targetPressureInput.setEnabled(False)
             self.initLayerHeightUnitCombobox.setEnabled(False)
             self.editLayerHeightButton.setEnabled(False)
-            self.compactionDepthButton.setEnabled(False)
+            self.compactedLayerHeightButton.setEnabled(False)
             self.targetPressureButton.setEnabled(False)
-            self.compactionDepthUnitComboBox.setEnabled(False)
+            self.compactedLayerHeightComboBox.setEnabled(False)
             self.targetPressureUnitCombobox.setEnabled(False)
             self.pushButton.setEnabled(False)
             self.pushButton_2.setEnabled(True)
@@ -1143,11 +933,11 @@ class Ui_MainWindow(QMainWindow):
             self.pushButton_4.setEnabled(False)
             self.pushButton_5.setEnabled(False)
             self.pushButton_6.setEnabled(False)
-            self.pushButton_7.setEnabled(False)
+            # self.pushButton_7.setEnabled(False)
         elif currentIndex == 1:
             """motion widgets enabled, pressure widgets disabled"""
             self.initLayerHeightInput.setEnabled(True)
-            self.compactionDepthInput.setEnabled(True)
+            self.compactedLayerHeightInput.setEnabled(True)
             self.label_9.setEnabled(True)
             self.label_91.setEnabled(True)
             self.label_10.setEnabled(True)
@@ -1156,10 +946,10 @@ class Ui_MainWindow(QMainWindow):
             self.label_121.setEnabled(False)
             self.targetPressureInput.setEnabled(False)
             self.initLayerHeightUnitCombobox.setEnabled(True)
-            self.compactionDepthUnitComboBox.setEnabled(True)
+            self.compactedLayerHeightComboBox.setEnabled(True)
             self.targetPressureUnitCombobox.setEnabled(False)
             self.editLayerHeightButton.setEnabled(True)
-            self.compactionDepthButton.setEnabled(True)
+            self.compactedLayerHeightButton.setEnabled(True)
             self.targetPressureButton.setEnabled(False)
             self.pushButton.setEnabled(True)
             self.pushButton_2.setEnabled(True)
@@ -1167,11 +957,11 @@ class Ui_MainWindow(QMainWindow):
             self.pushButton_4.setEnabled(True)
             self.pushButton_5.setEnabled(True)
             self.pushButton_6.setEnabled(True)
-            self.pushButton_7.setEnabled(True)
+            # self.pushButton_7.setEnabled(True)
         elif currentIndex == 2:
             '''reverse'''
             self.initLayerHeightInput.setEnabled(False)
-            self.compactionDepthInput.setEnabled(False)
+            self.compactedLayerHeightInput.setEnabled(False)
             self.label_9.setEnabled(False)
             self.label_91.setEnabled(False)
             self.label_10.setEnabled(False)
@@ -1180,10 +970,10 @@ class Ui_MainWindow(QMainWindow):
             self.label_121.setEnabled(True)
             self.targetPressureInput.setEnabled(True)
             self.initLayerHeightUnitCombobox.setEnabled(False)
-            self.compactionDepthUnitComboBox.setEnabled(False)
+            self.compactedLayerHeightComboBox.setEnabled(False)
             self.targetPressureUnitCombobox.setEnabled(True)
             self.editLayerHeightButton.setEnabled(False)
-            self.compactionDepthButton.setEnabled(False)
+            self.compactedLayerHeightButton.setEnabled(False)
             self.targetPressureButton.setEnabled(True)
             self.pushButton.setEnabled(True)
             self.pushButton_2.setEnabled(True)
@@ -1191,10 +981,9 @@ class Ui_MainWindow(QMainWindow):
             self.pushButton_4.setEnabled(True)
             self.pushButton_5.setEnabled(True)
             self.pushButton_6.setEnabled(True)
-            self.pushButton_7.setEnabled(True)
+            # self.pushButton_7.setEnabled(True)
 
     def keyboardPopUp(self):
-        # kb = VirtualKeyboard(self.frame)
         kb.show()
 
     def checkHomed(self):
@@ -1208,7 +997,7 @@ class Ui_MainWindow(QMainWindow):
             self.pushButton_4.setEnabled(True)
             self.pushButton_5.setEnabled(True)
             self.pushButton_6.setEnabled(True)
-            self.pushButton_7.setEnabled(True)
+            # self.pushButton_7.setEnabled(True)
         elif homed == 0:
             self.warningLabel.setText("CAUTION: Home Device")
             self.pushButton.setEnabled(False)
@@ -1217,7 +1006,7 @@ class Ui_MainWindow(QMainWindow):
             self.pushButton_4.setEnabled(False)
             self.pushButton_5.setEnabled(False)
             self.pushButton_6.setEnabled(False)
-            self.pushButton_7.setEnabled(False)
+            # self.pushButton_7.setEnabled(False)
 
     def tare(self):
         cellInstance.zeroCell()
@@ -1250,14 +1039,11 @@ class Ui_MainWindow(QMainWindow):
 
     def updateMode(self):
         mode = self.comboBox.currentIndex()
-        print(mode)
         if mode == 1:
             self.modeSelected = 1
-            # self.initLayerHeightLabel.setText("Motion Limiting")
             self.ModeLineEdit.setText("Motion")
         elif mode == 2:
             self.modeSelected = 2
-            # self.initLayerHeightLabel.setText("Pressure Limiting")
             self.ModeLineEdit.setText("Pressure")
         else:
             self.modeSelected = 0
@@ -1289,7 +1075,6 @@ class Ui_MainWindow(QMainWindow):
         DB.insert_value('pressure', pressure_reading)
         self.lcdNumber3.display(force_reading_N)
         DB.insert_value('force', force_reading_N)
-        # self.label_7.setText("Current Pressure: "+str(pressure_reading)+" "+"kPa")
         self.update()
 
     def Calibration(self):
@@ -1317,40 +1102,27 @@ class Ui_MainWindow(QMainWindow):
         self.time_x = []
 
     def update_plot_data(self):
-        # self.time_x = datetime.now()
         self.time_x.append(time.time() - self.StartingTime)   # Add a new value 1 higher than the last.
-        # self.testVal_y.append(random.uniform(-10, 10))
-        # print(self.testValue_y,self.force_reading_raw)
         self.force_vals.append(self.force_reading_N)
+        self.force_vals_fixed = signal.medfilt(self.force_vals,33)
         self.pressure_vals.append(self.pressure_reading)
+        self.pressure_vals_fixed = signal.medfilt(self.pressure_vals,33)
         self.weight_vals.append(self.force_reading_kg)
         self.position_vals.append(motor.absolutePosition)
         self.currentPressureLineEdit.setText(str(np.round(self.pressure_reading,2)))
 
         if self.plotForceCheckbox.isChecked():
-            # print(self.force_vals)
-            self.forcePlot.setData(self.time_x, self.force_vals)
+            self.forcePlot.setData(self.time_x, self.force_vals_fixed)
         else:
             self.forcePlot.clear()
         if self.plotPressureCheckbox.isChecked():
-            self.pressurePlot.setData(self.time_x, self.pressure_vals)
+            self.pressurePlot.setData(self.time_x, self.pressure_vals_fixed)
         else:
             self.pressurePlot.clear()
         if self.plotPositionCheckBox.isChecked():
-            self.positionPlot.setData(self.time_x, self.weight_vals)
+            self.positionPlot.setData(self.time_x, self.position_vals)
         else:
             self.positionPlot.clear()
-
-        # row = self.dataTable.rowCount()
-        # self.dataTable.insertRow(row)
-        # self.dataTable.setItem(row, 0, QtGui.QTableWidgetItem(str(round(time.monotonic()-self.startTime,4))))    # Needs to be replaced with time from SCUTTLE
-        # self.dataTable.setItem(row, 1, QtGui.QTableWidgetItem(str(round(self.time_x[-1:][0],4))))
-        # self.testDataTable.setItem(row, 2, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
-        # self.testDataTable.setItem(row, 3, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
-        # self.testDataTable.setItem(row, 4, QtGui.QTableWidgetItem(str(round(self.error_y[-1:][0],4))))
-        # self.testDataTable.setItem(row, 5, QtGui.QTableWidgetItem(str(round(self.targetSpeed_y[-1:][0],4))))
-        # self.testDataTable.setItem(row, 6, QtGui.QTableWidgetItem(str(round(self.actualSpeed_y[-1:][0],4))))
-        # self.testDataTable.setItem(row, 7, QtGui.QTableWidgetItem(str(round(self.duty_y[-1:][0],4))))
 
     def updateSystemState(self,index):
         self.systemState = int(index)
@@ -1363,8 +1135,6 @@ class Ui_MainWindow(QMainWindow):
             5: "Processing",
             6: "Homed"
         }
-        # self.label.setText("Mode: "+ str(indices[self.systemState]))
-        # print(index)
 
     def updateDesiredParam(self):
         
@@ -1374,11 +1144,11 @@ class Ui_MainWindow(QMainWindow):
         self.initLayerHeightUnitLabel.setText(self.initLayerHeightUnitCombobox.currentText())
         self.initLayerHeight = [float(self.initLayerHeightVal),self.initLayerHeightUnit]
 
-        self.desCompLineEdit.setText(self.compactionDepthInput.text())
-        self.compactionDepthVal = self.compactionDepthInput.text()
-        self.compactionDepthUnit = self.compactionDepthUnitComboBox.currentIndex()
-        self.compactionDepth = [float(self.compactionDepthVal),self.compactionDepthUnit]
-        self.desCompUnitLabel.setText(self.compactionDepthUnitComboBox.currentText())
+        self.compactedLayerHeightLineEdit.setText(self.compactedLayerHeightInput.text())
+        self.compactedLayerHeightVal = self.compactedLayerHeightInput.text()
+        self.compactedLayerHeightUnit = self.compactedLayerHeightComboBox.currentIndex()
+        self.compactedLayerHeight = [float(self.compactedLayerHeightVal),self.compactedLayerHeightUnit]
+        self.compactedLayerHeightUnitLabel.setText(self.compactedLayerHeightComboBox.currentText())
 
         self.targetPressureLineEdit.setText(self.targetPressureInput.text())
         self.targetPressureLabelUnit.setText(self.targetPressureUnitCombobox.currentText())
@@ -1389,29 +1159,63 @@ class Ui_MainWindow(QMainWindow):
         self.layerCountLineEdit.setText("  __ / "+str(self.layerCountInput.text()))
         self.numberOfLayers = int(self.layerCountInput.text())
         
-        self.mass = float(self.lineEditMassInput.text())
+        # self.mass = float(self.lineEditMassInput.text())
 
-        if self.compactionDepthUnit == 0:
-            runStroke = self.compactionDepth[0]*0.001
+        if self.compactedLayerHeightUnit == 0:
+            runStroke = self.compactedLayerHeight[0]*0.001
             totalStroke = runStroke*self.numberOfLayers
-        if self.compactionDepthUnit == 1:
-            runStroke = (self.compactionDepth[0]*0.00001)
+        if self.compactedLayerHeightUnit == 1:
+            runStroke = (self.compactedLayerHeight[0]*0.00001)
             totalStroke = runStroke*self.numberOfLayers
-        print(totalStroke)
         if totalStroke > 0.03:
-            self.warningLabel.setText("WARNING: Reached max stroke length. Lower 'Initial Layer Height', 'Compaction Depth', or 'Layer Count'.")
+            self.warningLabel.setText("WARNING: Reached max stroke length. Lower 'Initial Layer Height', 'Compacted Layer Height', or 'Layer Count'.")
             self.pushButton_4.setEnabled(False)
         else:
             self.pushButton_4.setEnabled(True)
             self.warningLabel.setText("")
 
-        
-        # self.desPressureLabel.setText(f"Desired Pressure: {self.targetPressureInput.text()} {self.targetPressureUnitCombobox.currentText()}")
-
     def exportData(self):
         d = {'Time':self.time_x,'Force [N]':self.force_vals,'Pressure [kPa]':self.pressure_vals,'Position [mm]':self.position_vals}
         df = pd.DataFrame(d)
         df.to_csv('/media/pi/VULCANLABS/log.csv', index=False)
+
+class newLayer(QWidget):
+    def __init__(self):
+        super().__init__()
+        mainWin.kbMassNext()
+        self.resize(300,200)
+        self.cancel_button = QPushButton('Cancel')
+        # self.next_button = QPushButton('Next')
+        self.input = QLineEdit()
+        self.submit_button = QPushButton('Submit')
+        # self.finish_button = QPushButton('Finish')
+        self.dialogText = QLabel('\n\n New Layer Parameters:\n\n\n\n1. Place powder in cylinder\n\n2. Record mass of additional powder below:\n\n')
+        # self.warningText = QLabel('\n\nWarning: Continuing will pause the program')
+        self.setWindowTitle('Layering')
+        self.setStyleSheet('background-color: #fff; color: #202020; font-size: 16px; QPushButton { background-color: #fff }')
+
+        # #Initializes layout
+        self.setLayout(QFormLayout())
+        self.layout().addRow(self.dialogText)
+        self.layout().addRow(self.input)
+        buttons = QWidget()
+        buttons.setLayout(QHBoxLayout())
+        buttons.layout().addWidget(self.cancel_button)
+        buttons.layout().addWidget(self.submit_button)
+        self.layout().addRow('', buttons)
+        # self.layout().addRow('',self.warningText)
+
+        # #Routes front end to back end
+        # self.input.setText("8998989898")
+        # mainWin.mass = self.input.text()
+        # a = self.input.text()
+        # b = self.input.value()
+        # print("A",a)
+        # print("B",b)
+        # self.next_button.clicked.connect(self.getInputWindow)
+        self.submit_button.clicked.connect(mainWin.sendMassData)
+        self.submit_button.clicked.connect(self.close)
+        self.cancel_button.clicked.connect(self.close)
 
 class sqlDatabase:
     def __init__(self):
@@ -1447,7 +1251,6 @@ class sqlDatabase:
 
     def getTable(self,name='default',order='0'):
         self.c.execute("SELECT * FROM testtable")
-        # print(self.c.fetchall())
         self.graph_data(name,order)
         return self.c.fetchall()
 
@@ -1475,8 +1278,6 @@ class sqlDatabase:
         mainWin.graphWidget.setBackground('#fff')
         pen = pg.mkPen(color=(255,100,100), width=8)
         self.plotter = mainWin.graphWidget.plot(times,vals,pen=pen)
-        # plt.plot_date(times,vals,'-')
-        # plt.show()
 
 class WorkerThread(QThread):
     def __init__(self, parent=None):
@@ -1485,117 +1286,7 @@ class WorkerThread(QThread):
     def run(self):
         time.sleep(3)
         self.emit(SIGNAL('threadDone()'))
-
-# class newCalibrationWindow(QWidget):
-#     def __init__(self):
-#         super().__init__()
-#         self.setWindowTitle('Calibration')
-#         self.resize(500,300)
-#         self.state = 0
-#         self.setLayout(QFormLayout())
-#         self.cal_buttons = QWidget()
-#         self.cal_buttons.setLayout(QHBoxLayout())
-#         self._initialized = 0
-#         self.WorkerThread = WorkerThread()
-#         self.connect(self.WorkerThread, SIGNAL("threadDone()"), self.threadDone, Qt.DirectConnection)
-
-#         self.startWindow()
-        
-    # def startWindow(self):
-    #     self.dialog = QLabel('Calibration requires an object of known weight to be placed on the scale')
-    #     self.next_button = QPushButton('Next')
-    #     self.cancel_button = QPushButton('Cancel')
-    #     self.submit_button = QPushButton('Submit')
-    #     self.layout().addRow(self.dialog)
-    #     self.cal_buttons.layout().addWidget(self.cancel_button)
-    #     self.cal_buttons.layout().addWidget(self.next_button)
-    #     self.layout().addRow('', self.cal_buttons)
-
-    #     self.next_button.clicked.connect(self.getInputWindow)
-    #     self.next_button.clicked.connect(self.startCalibration)
-    #     self.next_button.clicked.connect(self.collectingDataWindow)
-    #     # self.next_button.clicked.connect(self.startCalibration)
-    #     self.cancel_button.clicked.connect(self.close)
-
-    # def startCalibrationB(self):
-    #     # i = self.initialized()
-    #     # i = 0
-    #     self.working = 1
-    #     #start calibration
-    #     for i in reversed(range(self.layout().count())):        #Clears components from first window
-    #         self.layout().itemAt(i).widget().deleteLater()
-        
-    #     self.dialogText = QLabel('Do not touch scale. Initializing')
-    #     self.layout().addRow('',self.dialogText)
-    #     self.show()
-
-    #     self.WorkerThread.start()
-    #     self.dialogText.setText('starting')
-        
-    #     #fn to perform calibration
-    #     # Ui_MainWindow.setWorker(mainWin, self.calibration_fake)
-    #     # worker.signals.result.connect(self.print_output)
-    #     # worker.signals.finished.connect(self.thread_complete)
-    #     # worker.signals.progress.connect(self.progress_fn)
-
-    #     # if self.working == 1:
-    #     #     print(1)
-    #     # else:
-    #     #     print('alksdjhfalksjdfhakljh')
-                
-    #     # self.dialog = QLabel('wordssss')
-    #     # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
-    #     # self.inputWeight = QLineEdit()
-    #     # self.layout().addRow('',self.dialogText)
-    #     # self.layout().addRow('',self.inputWeight)
-
-
-    #     # if self.initialized == 1:
-    #     #     self.getInputWindow()
-
-    # def threadDone(self):
-    #     self.dialogText.setText('finished')
-
-    # def getInputWindow(self):
-    #     self.close()
-    #     # self.knownGrams = 0
-    #     # for i in reversed(range(self.layout().count())):        #Clears components from first window
-    #     #     self.layout().itemAt(i).widget().deleteLater()
-    #     # self.dialogText = QLabel('Place object of known weight on scale and enter weight [g]: ')
-    #     # self.dialog = QLabel('wordssss')
-    #     # # self.cancel_button = QPushButton('Cancel')
-    #     # # self.submit_button = QPushButton('Submit')
-    #     # self.inputWeight = QLineEdit()
-    #     # # buttons = QWidget()
-    #     # # buttons.setLayout(QHBoxLayout())
-    #     # # buttons.layout().addWidget(self.cancel_button)
-    #     # # buttons.layout().addWidget(self.submit_button)
-    #     # self.layout().addRow('',self.dialogText)
-    #     # self.layout().addRow('',self.inputWeight)
-    #     # self.layout().addRow('',buttons)
-    #     # self.layout().resize(300,200)
-    #     self.show()
-
-
-    #     # self.inputWeight.textChanged.connect(self.setKnownGrams)
-    #     # self.submit_button.clicked.connect(self.sendKnownInput)
-    #     # self.cancel_button.clicked.connect(self.close)
-
-    # def setKnownGrams(self,lineEdit):
-    #     self.knownGrams = self.inputWeight.text()
-
-    # def getUserInput(self):
-    #     print('user input started')
-
-    # def calibration_fake(self, *args, **kwargs):
-    #     print('Initializing...')
-    #     time.sleep(3)
-    #     self.working = 0
-    #     print(self.working)
-    #     time.sleep(1)
-    #     result = 'complete'
-    #     return self.working
-        
+ 
 class loadingScreen(QWidget):
     def __init__(self):
         super().__init__()
@@ -1610,7 +1301,6 @@ class removePlatePopUp(QWidget):
         super().__init__()
         self.ok_button = QPushButton('Ok')
         self.cancel_button = QPushButton('Cancel')
-        # self.cal_button = QPushButton('Calibrate')
         self.dialog = QLabel("Remove Sliding Plate before proceeding with extraction.\n\n Select Ok when plate is removed.")
         self.setWindowTitle('WARNING')
 
@@ -1621,7 +1311,6 @@ class removePlatePopUp(QWidget):
         buttons.layout().addWidget(self.ok_button)
         buttons.layout().addWidget(self.cancel_button)
         self.layout().addRow('', buttons)
-        # self.show()
 
         #Routes front end to back end
         self.cancel_button.clicked.connect(self.close)
@@ -1641,12 +1330,10 @@ class calibrationWarning(QWidget):
         buttons = QWidget()
         buttons.setLayout(QHBoxLayout())
         buttons.layout().addWidget(self.ok_button)
-        # buttons.layout().addWidget(self.cal_button)
         self.layout().addRow('', buttons)
 
         #Routes front end to back end
         self.ok_button.clicked.connect(self.close)
-        # self.ok_button.clicked.connect(self.close)
         self.cal_button.clicked.connect(Ui_MainWindow.Calibration)
 
 #Class handling calibration pop up boxes
@@ -1677,15 +1364,8 @@ class calibrationDialogWindow(QWidget): # this one
 
         self.next_button.clicked.connect(self.getInputWindow)
         self.next_button.clicked.connect(mainWin.kbWeight)
-        # self.next_button.clicked.connect(self.startCalibration)
-        # self.next_button.clicked.connect(self.collectingDataWindow)
         self.cancel_button.clicked.connect(self.close)
-
-    # def raisePiston(self):
-    #     motor.cleanUp()
-    #     if motor.top == False:
             
-
     def collectingDataWindow(self):
         self.close()
         self.setWindowTitle('Calibration 3')
@@ -1706,7 +1386,6 @@ class calibrationDialogWindow(QWidget): # this one
 
     #Second window in calibration branch
     def getInputWindow(self):
-        # self.close()
         for i in reversed(range(self.layout().count())):        #Clears components from first window
             self.layout().itemAt(i).widget().deleteLater()
         self.dialogText = QLabel('Raising...')
@@ -1722,9 +1401,6 @@ class calibrationDialogWindow(QWidget): # this one
             self.dialogText.setText("running..")
             time.sleep(1)
             self.dialogText.setText("running...")
-        # self.close()
-
-        # self.setWindowTitle('Calibration')
         self.knownGrams = 0
         for i in reversed(range(self.layout().count())):        #Clears components from first window
             self.layout().itemAt(i).widget().deleteLater()
@@ -1737,9 +1413,7 @@ class calibrationDialogWindow(QWidget): # this one
         self.layout().addRow('',self.dialogText)
         self.layout().addRow('',self.inputWeight)
         self.layout().addRow('',buttons)
-        # self.layout().resize(300,200)
         self.show()
-
 
         self.inputWeight.textChanged.connect(self.setKnownGrams)
         self.submit_button.clicked.connect(self.sendKnownInput)
@@ -1758,8 +1432,6 @@ class calibrationDialogWindow(QWidget): # this one
         for i in reversed(range(self.layout().count())):
             self.layout().itemAt(i).widget().deleteLater()
         print(f'user inputted value: {self.knownGrams}')
-        # while LoadCell.calibrated == 0:
-        #     self.dialogText = QLabel('Calibrating...')
         self.dialogText = QLabel('Calibration Complete.')
         buttons = QWidget()
         buttons.setLayout(QHBoxLayout())
@@ -1805,8 +1477,7 @@ class FakeLoadCell():
             loadingScreen.dialog.setText('loading..')
             time.sleep(1)
             loadingScreen.dialog.setText('loading...')
-        
-        # self.reading = self.cell.get_raw_data_mean()
+
         self.next_button.clicked.connect(self.getInputWindow)
         self.next_button.clicked.connect(self.startCalibration)
         self.next_button.clicked.connect(self.collectingDataWindow)
@@ -1923,6 +1594,7 @@ if __name__ == '__main__':
     kb4 = VirtualKeyboard4()
     kb5 = VirtualKeyboard5()
     kb6 = VirtualKeyboard6()
+    kb7 = VirtualKeyboard7()
     mainWin = Ui_MainWindow()
     ld = loadingScreen()
     styleFile=os.path.join(os.path.split(__file__)[0],"styleVulcan.stylesheet")
