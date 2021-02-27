@@ -29,8 +29,10 @@ from matplotlib import style
 
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
-import RPi.GPIO as GPIO #import I/O interface             #
-from hx711 import HX711 #import HX711 class               #
+
+#import RPi.GPIO as GPIO #import I/O interface
+#from hx711 import HX711 #import HX711 class
+
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
@@ -41,7 +43,7 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
         QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
         QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
 
-from vulcanControl import Motor
+# from vulcanControl import Motor
 from key import VirtualKeyboard
 from key import VirtualKeyboard2
 from key import VirtualKeyboard3
@@ -57,6 +59,7 @@ class Ui_MainWindow(QMainWindow):
         self.setupGlobalVars()
         self.setupUi()
         pg.setConfigOptions(antialias=True)
+        self.threadpool = QThreadPool()
 
     def setupGlobalVars(self):
         self.modeSelected = 0                                   # 0:motion 1:pressure
@@ -271,25 +274,25 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton = QPushButton(self.widget)
         self.pushButton.setGeometry(QtCore.QRect(690, 110, 320, 80)) # pos and size
         self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(motor.stopRun)
+        # self.pushButton.clicked.connect(motor.stopRun)
 
         #Inits Home button
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(860, 230, 140, 50)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
-        self.pushButton_2.clicked.connect(motor.Home)
+        # self.pushButton_2.clicked.connect(motor.Home)
 
         #Inits Down button
         self.pushButton_5 = QPushButton(self.widget)
         self.pushButton_5.setGeometry(QtCore.QRect(690, 290, 140, 50)) # pos and size
         self.pushButton_5.setObjectName("pushButton_5")
-        self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
+        # self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
 
         #Inits Up button
         self.pushButton_6 = QPushButton(self.widget)
         self.pushButton_6.setGeometry(QtCore.QRect(690, 230, 140, 50)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
-        self.pushButton_6.clicked.connect(lambda x: motor.jogUp(self.comboBox_5.currentIndex()))
+        # self.pushButton_6.clicked.connect(lambda x: motor.jogUp(self.comboBox_5.currentIndex()))
 
         #Inits Jogging box area
         self.groupBox_4 = QGroupBox(self.widget)
@@ -324,7 +327,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_4.setGeometry(QtCore.QRect(690, 40, 320, 50)) # pos and size
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_4.clicked.connect(self.runStartTimer)
-        self.pushButton_4.clicked.connect(self.runMotor)
+        # self.pushButton_4.clicked.connect(self.runMotor)
 
         #Inits resume button
         # self.pushButton_7 = QPushButton(self.widget)
@@ -426,7 +429,7 @@ class Ui_MainWindow(QMainWindow):
         self.extractButton.setGeometry(700, 230, 140, 50)
         self.extractButton.setText("Extract")
         self.extractButton.clicked.connect(self.extractPiston)
-        self.extractButton.clicked.connect(motor.cleanUp)
+        # self.extractButton.clicked.connect(motor.cleanUp)
         self.extractButton.raise_()
 
         # TAB 3 #
@@ -531,13 +534,13 @@ class Ui_MainWindow(QMainWindow):
         self.startTime = time.monotonic()
         self.timer = QtCore.QTimer()
         self.timer.setInterval(50)
-        self.timer.timeout.connect(self.update_plot_data)
-        self.timer.timeout.connect(self.checkKeyboard)
-        self.timer.timeout.connect(self.checkHomed)
-        self.timer.timeout.connect(self.updateCylinder)
-        self.timer.timeout.connect(self.printAbsPos)
-        self.timer.timeout.connect(self.newLayer)
-        self.timer.timeout.connect(self.runCompletePopUpper)
+        # self.timer.timeout.connect(self.update_plot_data)
+        # self.timer.timeout.connect(self.checkKeyboard)
+        # self.timer.timeout.connect(self.checkHomed)
+        # self.timer.timeout.connect(self.updateCylinder)
+        # self.timer.timeout.connect(self.printAbsPos)
+        # self.timer.timeout.connect(self.newLayer)
+        # self.timer.timeout.connect(self.runCompletePopUpper)
         self.timer.start()
 
 
@@ -728,9 +731,9 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "System"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Data"))
         self.groupBox_7.setTitle(_translate("MainWindow", "Communication"))
-        self.connectionLabel.setText(_translate("MainWindow", "Connection: "+str(motor.connectionStatus)))
+        # self.connectionLabel.setText(_translate("MainWindow", "Connection: "+str(motor.connectionStatus)))
         self.ipLabel.setText(_translate("MainWindow", "System IP: "+self.IpAdd))
-        self.deviceIpLabel.setText(_translate("MainWindow", "Connected Device IP:"+str(motor.SERVER_HOST)))
+        # self.deviceIpLabel.setText(_translate("MainWindow", "Connected Device IP:"+str(motor.SERVER_HOST)))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "Configuration"))
         self.groupBox.setTitle(_translate("MainWindow", "System State"))
         self.Modelabel.setText(_translate("MainWindow", "Mode: "))
@@ -773,14 +776,13 @@ class Ui_MainWindow(QMainWindow):
 
         # System state changes
         self.pushButton_4.clicked.connect(lambda x: self.updateSystemState(2)) #running
-        # self.pushButton_4.clicked.connect(lambda x: self.setWorker(self.execute_this_fn)) #running
         self.pushButton_3.clicked.connect(lambda X: self.updateSystemState(3)) #Paused
         # self.pushButton_7.clicked.connect(lambda X: self.updateSystemState(2)) #running
         self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
         # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
-        self.checkCalibration()
-        self.checkMotorConnection()
+        # self.checkCalibration()
+        # self.checkMotorConnection()
         self.checkHomed()
         self.updateMode()
         self.disableWidget(self.comboBox.currentIndex())
@@ -1015,8 +1017,8 @@ class Ui_MainWindow(QMainWindow):
         kb.show()
 
     def checkHomed(self):
-        homed = motor.homed
-        # homed = 1
+        # homed = motor.homed
+        homed = 1
         if homed == 1:
             self.warningLabel.setText("")
             self.pushButton.setEnabled(True)
@@ -1077,33 +1079,37 @@ class Ui_MainWindow(QMainWindow):
             self.modeSelected = 0
             self.ModeLineEdit.setText("  - - - - -")
 
-    def UpdateForceReadingValue(self):
+    def UpdateForceReadingValue(self,progress_callback):
         """Updates the LCD Force Reading Value"""
-        # force_reading_raw = random.random()
-        force_reading_raw = cellInstance.cell.get_weight_mean(4)    #5 recomended for accuracy
-        self.force_reading_raw = force_reading_raw
-        if force_reading_raw < 0:
-            force_reading_raw = 0
-        force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
-        self.force_reading_kg = force_reading_kg
-        # pressure = MQtt()
-        # pressure.publish(force_reading_kg,"force")
-        force_reading_N = round(force_reading_kg*9.81,3)
-        self.force_reading_N = force_reading_N
-        pistonDiameter = 19.05 #mm
-        r = pistonDiameter/2 #mm
-        r_m = r/1000    # [m]
-        Area = math.pi*math.pow(r_m,2)
-        pressure_reading = round((force_reading_N/Area)/1000,3)  #Kpa
-        self.pressure_reading = pressure_reading
+        while True:
+            # print("updating force...")
+            force_reading_raw = random.random()
+            # force_reading_raw = cellInstance.cell.get_weight_mean(4)    #5 recomended for accuracy
+            self.force_reading_raw = force_reading_raw
+            if force_reading_raw < 0:
+                force_reading_raw = 0
+            force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
+            self.force_reading_kg = force_reading_kg
+            # pressure = MQtt()
+            # pressure.publish(force_reading_kg,"force")
+            force_reading_N = round(force_reading_kg*9.81,3)
+            self.force_reading_N = force_reading_N
+            pistonDiameter = 19.05 #mm
+            r = pistonDiameter/2 #mm
+            r_m = r/1000    # [m]
+            Area = math.pi*math.pow(r_m,2)
+            pressure_reading = round((force_reading_N/Area)/1000,3)  #Kpa
+            self.pressure_reading = pressure_reading
 
-        self.lcdNumber.display(force_reading_kg)
-        DB.insert_value('weight', force_reading_kg)
-        self.lcdNumber2.display(pressure_reading)
-        DB.insert_value('pressure', pressure_reading)
-        self.lcdNumber3.display(force_reading_N)
-        DB.insert_value('force', force_reading_N)
-        self.update()
+            self.lcdNumber.display(force_reading_kg)
+            # DB.insert_value('weight', force_reading_kg)
+            self.lcdNumber2.display(pressure_reading)
+            # DB.insert_value('pressure', pressure_reading)
+            self.lcdNumber3.display(force_reading_N)
+            # DB.insert_value('force', force_reading_N)
+            self.update()
+            time.sleep(0.1)
+        return "updated force"
 
     def Calibration(self):
         self.dialog = calibrationDialogWindow()
@@ -1129,30 +1135,34 @@ class Ui_MainWindow(QMainWindow):
         self.weight_vals = []
         self.time_x = []
 
-    def update_plot_data(self):
-        self.time_x.append(time.time() - self.StartingTime)   # Add a new value 1 higher than the last.
-        self.force_vals.append(self.force_reading_N)
-        self.force_vals_fixed = signal.medfilt(self.force_vals,33)
-        self.pressure_vals.append(self.pressure_reading)
-        self.pressure_vals_fixed = signal.medfilt(self.pressure_vals,33)
-        self.init_density_vals.append(motor.initialDensity)
-        self.final_density_vals.append(motor.finalDensity)
-        self.weight_vals.append(self.force_reading_kg)
-        self.position_vals.append(motor.absolutePosition)
-        self.currentPressureLineEdit.setText(str(np.round(self.pressure_reading,2)))
+    def update_plot_data(self, progress_callback):
+        while True:
+            print("plotting")
+            self.time_x.append(time.time() - self.StartingTime)   # Add a new value 1 higher than the last.
+            self.force_vals.append(self.force_reading_N)
+            self.force_vals_fixed = signal.medfilt(self.force_vals,33)
+            self.pressure_vals.append(self.pressure_reading)
+            self.pressure_vals_fixed = signal.medfilt(self.pressure_vals,33)
+            self.init_density_vals.append(0)#motor.initialDensity)
+            self.final_density_vals.append(0)#motor.finalDensity)
+            self.weight_vals.append(self.force_reading_kg)
+            self.position_vals.append(0)#motor.absolutePosition)
+            self.currentPressureLineEdit.setText(str(np.round(self.pressure_reading,2)))
 
-        if self.plotForceCheckbox.isChecked():
-            self.forcePlot.setData(self.time_x, self.force_vals_fixed)
-        else:
-            self.forcePlot.clear()
-        if self.plotPressureCheckbox.isChecked():
-            self.pressurePlot.setData(self.time_x, self.pressure_vals_fixed)
-        else:
-            self.pressurePlot.clear()
-        if self.plotPositionCheckBox.isChecked():
-            self.positionPlot.setData(self.time_x, self.position_vals)
-        else:
-            self.positionPlot.clear()
+            if self.plotForceCheckbox.isChecked():
+                self.forcePlot.setData(self.time_x, self.force_vals_fixed)
+            else:
+                self.forcePlot.clear()
+            if self.plotPressureCheckbox.isChecked():
+                self.pressurePlot.setData(self.time_x, self.pressure_vals_fixed)
+            else:
+                self.pressurePlot.clear()
+            if self.plotPositionCheckBox.isChecked():
+                self.positionPlot.setData(self.time_x, self.position_vals)
+            else:
+                self.positionPlot.clear()
+            time.sleep(0.1)
+        return "--"
 
     def updateSystemState(self,index):
         self.systemState = int(index)
@@ -1208,6 +1218,50 @@ class Ui_MainWindow(QMainWindow):
         d = {'Time':self.time_x,'Force [N]':self.force_vals,'Pressure [kPa]':self.pressure_vals,'Position [mm]':self.position_vals,'Initial Density [g/mm^3]':self.init_density_vals,'Final Density [g/mm^3]':self.final_density_vals}
         df = pd.DataFrame(d)
         df.to_csv('/media/pi/VULCANLABS/log.csv', index=False)
+
+    def print_output(self, s):
+        print(s)
+
+    def thread_complete(self):
+        print("thread complete")
+
+    def progress_fn(self, n):
+        print("%d%% done" % n)
+
+    # TEST FUNCTIONS FOR WORKER THREAD
+    def test_fn_print_nums(self, progress_callback):
+        a = np.random.random()
+        print(a)
+        return "--"
+
+    def longer_test_fn(self, progress_callback):
+        for n in range(0,5):
+            time.sleep(1)
+            progress_callback.emit(n*100/4)
+        return "--"
+
+    # def update_random_value(self, progress_callback):
+        # self.
+
+    def setWorker(self, fn):
+        worker = Worker(fn)
+        worker.signals.result.connect(self.print_output)
+        worker.signals.finished.connect(self.thread_complete)
+        worker.signals.progress.connect(self.progress_fn)
+
+        self.threadpool.start(worker)
+
+    def start_test_fn(self):
+        self.setWorker(self.test_fn_print_nums)
+
+    def start_long_test_fn(self):
+        self.setWorker(self.longer_test_fn)
+
+    def start_force_reading(self):
+        self.setWorker(self.UpdateForceReadingValue)
+
+    def start_plotting(self):
+        self.setWorker(self.update_plot_data)
 
 class newLayer(QWidget):
     def __init__(self):
@@ -1309,13 +1363,56 @@ class sqlDatabase:
         pen = pg.mkPen(color=(255,100,100), width=8)
         self.plotter = mainWin.graphWidget.plot(times,vals,pen=pen)
 
-class WorkerThread(QThread):
-    def __init__(self, parent=None):
-        super(WorkerThread, self).__init__(parent)
+class WorkerSignals(QObject):
+    '''
+    Defines signals that can be used from running worker thread
+    finished
+        No data
+    error
+        'tuple' (exectpye, value, traceback.format_exec() )
+    result
+        'object' data returned from processing, anything
+    progress
+        'int' indicating % progress
+    '''
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal(object)
+    progress = pyqtSignal(int)
 
+class Worker(QRunnable):
+    '''
+    Worker thread
+    Inherits from QRunnable to handle worker thread setup and signals
+    :param callback: The callback function to run on this worker thread with args and kwargs
+    :type callback: function
+    :param args: Arguments to pass to callback
+    :pram kwargs: Keywords to pass to callback
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+        self.kwargs['progress_callback'] = self.signals.progress
+
+    @pyqtSlot()
     def run(self):
-        time.sleep(3)
-        self.emit(SIGNAL('threadDone()'))
+        '''Inits the function passed in with passed args and kwargs'''
+        try:
+            result = self.fn(*self.args, **self.kwargs)
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)
+        finally:
+            self.signals.finished.emit()
  
 class loadingScreen(QWidget):
     def __init__(self):
@@ -1613,8 +1710,8 @@ class LoadCell():
         print("Calibration is succesful")
 
 if __name__ == '__main__':
-    motor = Motor()
-    cellInstance = LoadCell()
+    # motor = Motor()
+    # cellInstance = LoadCell()
     DB = sqlDatabase()
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
@@ -1631,10 +1728,14 @@ if __name__ == '__main__':
     styleSheetStr = open(styleFile,"r").read()
     mainWin.setStyleSheet(styleSheetStr)
     mainWin.show()
+    mainWin.start_long_test_fn()
+    mainWin.start_plotting()
+    mainWin.start_test_fn()
+    mainWin.start_force_reading()
 
     fps = 3
     timer = QtCore.QTimer()
-    timer.timeout.connect(mainWin.UpdateGUI)
+    # timer.timeout.connect(mainWin.UpdateGUI)
     timer.setInterval(int(1000/fps))
     timer.start()
 
