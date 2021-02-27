@@ -3,7 +3,7 @@
 
 import math
 import time
-import thread
+# import thread
 import timeit
 import random
 import sys
@@ -97,7 +97,7 @@ class Ui_MainWindow(QMainWindow):
         self.frame.setFrameShape(QFrame.StyledPanel)
         self.frame.setFrameShadow(QFrame.Raised)
         self.frame.setObjectName("frame")
-        # self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.closeWindowButton = QPushButton(self.frame)
         self.b = QtGui.QPushButton("Exit", self, clicked=self.close)
         self.b.setGeometry(940,10,60,30)

@@ -124,6 +124,7 @@ class Motor:
         self.runCompleted = False #Set to true when run is complete, is reset in GUI
         self.cumulativeMass = 0 #addng mass each layer
         self.flushPosition = 0 #mm value at flush position after moving up 30 from bottom
+        self.trigger = 0
         self.initialDensity = 0
         self.finalDensity = 0
         self.density = 0
@@ -330,7 +331,7 @@ class Motor:
                 elif displacementChoice == 1:
                     displacement = 5
                 elif displacementChoice == 2:
-                    displacement = 10
+                    displacement = 30.16
                 elif displacementChoice > 2:
                     displacement = displacementChoice
             elif anyRun == 1:
@@ -566,31 +567,30 @@ class Motor:
                 self.initialDensity = self.density
                 print("density: ",self.density)
                 self.jogUp(delta,1)
-                print("done")
-                self.calculateDensity()
-                self.finalDensity = self.density
-                print("density: ",self.density)
-                self.massIn = False
-                self.layerNumber += 1
-                print("layer num: ",self.layerNumber)
-                self.jogDownLayerHeight()
-                print("abs: ",self.absolutePosition)
-                if self.layerNumber == self.numberOfLayers:
-                    self.layerNumber = 0
-                    self.runCompleted = True
-                    print("hello")
-                    pass
-                # elif self.layerNumber == self.numberOfLayers:
-                #     self.runCompleted = True
-                else:
-                    self.newLayerMotionRun()
-            else:
-                print(";;;;;;;;;;;;;;;;;;;;;;;;;;;;;")
-                # self.runCompleted = True
-                print("run complete")
-            
-        """ if check layer count """
-        # self.newLayerMotionRun()
+                self.trigger = 1
+
+    def motionRun2(self):
+        print("done")
+        self.calculateDensity()
+        self.finalDensity = self.density
+        print("density: ",self.density)
+        self.massIn = False
+        self.layerNumber += 1
+        print("layer num: ",self.layerNumber)
+        self.jogDownLayerHeight()
+        print("abs: ",self.absolutePosition)
+        if self.layerNumber == self.numberOfLayers:
+            self.layerNumber = 0
+            self.runCompleted = True
+            print("hello")
+            pass
+        # elif self.layerNumber == self.numberOfLayers:
+        #     self.runCompleted = True
+        else:
+            self.newLayerMotionRun()
+            print(";;;;;;;;;;;;;;;;;;;;;;;;;;;;;")
+            # self.runCompleted = True
+            print("run complete")
 
     def newLayerMotionRun(self):
         self.massInput = True
