@@ -166,10 +166,10 @@ class Motor:
 
     ###function to read if the shaft is moving /// update self.moving
     def _moving(self):
-        x = self.readHoldingRegs(0x4A,1)
-        if x[0] == 0 :
+        temp = self.readHoldingRegs(0x4A,1)
+        if temp[0] == 0 :
             self.moving = False
-        elif x[0] == 1:
+        elif temp[0] == 1:
             self.moving = True
         return
 
@@ -179,7 +179,7 @@ class Motor:
         dec = literal_eval(hex)
         return dec
 
-    ###function will be called as much as posible to check the status of both flags and check that they have not been trigger during motion
+    ###checks the status of the switches and update flag
     def _updateFlag(self):
 
         self.topSwitch.updateSwitch()
@@ -194,11 +194,10 @@ class Motor:
             self.homeFlag = True
         else:
             self.homeFlag = False
+        # print("flag checked")
 
-        return
-
+    ##converting the user input to micron o leaving in mm depending on drop down choice [0] = mm [1] = mm/1000
     def _micron2mm(self):
-        
         if self.initLayerHeight[1] == 0:
             self.initLayerHeightConverted = self.initLayerHeight[0]
         elif self.initLayerHeight[1] == 1:
@@ -315,13 +314,49 @@ class Motor:
         targetRevolutions = displacment_mm/self.leadTravel
         steps = int(targetRevolutions * self.stepPerRevolution)
         return steps
-
+    
+    ###convert step to linear motion 
     def steps2displacement(self,steps):
         revs = steps/self.stepPerRevolution
         displacement = revs * self.leadTravel
         return displacement
 
-    def jogUp(self,displacementChoice, anyRun = 0):
+
+
+
+
+    ###This function takes STEPS,  writes to register on motor to make it move
+    def jogUp(self,steps2Jog):
+        self.writeHoldingRegs(0x46,4,steps2Jog)
+        return
+
+    ##takes user jog input and command motion for jog up button // only mm!!!! // anydistance == 0 for only button and == 1 when user input is ready
+    def buttonUp(self,userChoice_mm,anyDistance = 0):
+        if anyDistance == 0 :
+            if userChoice_mm == 0:
+                distance2move = 1
+            elif userChoice_mm == 1:
+                distance2move = 5
+            elif userChoice_mm == 2:
+                distance2move = 10
+        elif anyDistance == 1:
+            distance2move = userChoice_mm 
+
+        if self.homed == True:
+            steps2jog = self.displacement2steps(distance2move)
+            self.setProfiles("jogging")
+            self.home = False
+            if self.topFlag == False:
+                self.jogUp(steps2jog)
+        elif self.homed == False:
+            print("please home")
+
+                
+
+
+
+    ##function to jogUp 
+    def jogUpOld(self,displacementChoice, anyRun = 0):
 
         if self.running == False or self.running == True:
             if anyRun == 0:
@@ -331,7 +366,7 @@ class Motor:
                 elif displacementChoice == 1:
                     displacement = 5
                 elif displacementChoice == 2:
-                    displacement = 30.16
+                    displacement = 10 # 30.16 for flush from home
                 elif displacementChoice > 2:
                     displacement = displacementChoice
             elif anyRun == 1:
@@ -490,6 +525,11 @@ class Motor:
             return
         else:
             print("cannot perform function while running")
+
+    def updatePosition(self):
+        pos = self.readHoldingRegs(0x57,4)
+        self.position_reading = self.steps2displacement(pos[0])
+        return self.position_reading
 
     def setProfiles(self,motion = "homing"):
         if motion == "homing":

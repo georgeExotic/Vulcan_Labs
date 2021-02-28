@@ -1,5 +1,5 @@
 
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import math
 import time
@@ -30,20 +30,16 @@ from matplotlib import style
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 
-#import RPi.GPIO as GPIO #import I/O interface
-#from hx711 import HX711 #import HX711 class
+import RPi.GPIO as GPIO #import I/O interface
+from hx711 import HX711 #import HX711 class
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import QPoint, QRect, QSize, Qt, QObject, pyqtSignal, pyqtSlot, QThreadPool, QRunnable, QThread
-from PyQt5.QtWidgets import (QSizePolicy,
-        QWidget, QFrame, QRadioButton, QCheckBox)
-from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
-        QDialogButtonBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLayout, 
-        QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,
-        QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox)
+from PyQt5.QtWidgets import QSizePolicy, QWidget, QFrame, QRadioButton, QCheckBox
+from PyQt5.QtWidgets import QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLayout, QLabel, QLineEdit, QMenu, QMenuBar, QPushButton, QSpinBox, QTextEdit,QVBoxLayout, QStatusBar, QTabWidget, QLCDNumber, QTableWidget, QTableWidgetItem, QTableView, QMainWindow, QMessageBox
 
-# from vulcanControl import Motor
+from vulcanControl import Motor
 from key import VirtualKeyboard
 from key import VirtualKeyboard2
 from key import VirtualKeyboard3
@@ -76,7 +72,8 @@ class Ui_MainWindow(QMainWindow):
         self.pressure_reading = 0
         self.position_reading = 0
         self.testValue_y = []
-
+        self.waitForHomeFlagStatus = False
+        self.waitForTopFlagStatus = False
         self.desPos = 0
         self.desPress = 0
         self.curPos = 0
@@ -100,7 +97,7 @@ class Ui_MainWindow(QMainWindow):
         self.frame.setFrameShape(QFrame.StyledPanel)
         self.frame.setFrameShadow(QFrame.Raised)
         self.frame.setObjectName("frame")
-        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        # self.setWindowFlags(QtCore.Qt.FramelessWindowHint) #window border
         self.closeWindowButton = QPushButton(self.frame)
         self.b = QtGui.QPushButton("Exit", self, clicked=self.close)
         self.b.setGeometry(940,10,60,30)
@@ -274,25 +271,27 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton = QPushButton(self.widget)
         self.pushButton.setGeometry(QtCore.QRect(690, 110, 320, 80)) # pos and size
         self.pushButton.setObjectName("pushButton")
-        # self.pushButton.clicked.connect(motor.stopRun)
+        self.pushButton.clicked.connect(motor.stopRun)
 
         #Inits Home button
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(860, 230, 140, 50)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
-        # self.pushButton_2.clicked.connect(motor.Home)
+        self.pushButton_2.clicked.connect(motor.Home)
 
         #Inits Down button
         self.pushButton_5 = QPushButton(self.widget)
         self.pushButton_5.setGeometry(QtCore.QRect(690, 290, 140, 50)) # pos and size
         self.pushButton_5.setObjectName("pushButton_5")
-        # self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
+        self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
+        self.pushButton_5.clicked.connect(self.start_homeFlagCheck)
 
         #Inits Up button
         self.pushButton_6 = QPushButton(self.widget)
         self.pushButton_6.setGeometry(QtCore.QRect(690, 230, 140, 50)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
-        # self.pushButton_6.clicked.connect(lambda x: motor.jogUp(self.comboBox_5.currentIndex()))
+        self.pushButton_6.clicked.connect(lambda x: motor.buttonUp(self.comboBox_5.currentIndex()))
+        self.pushButton_6.clicked.connect(self.start_topFlagCheck)
 
         #Inits Jogging box area
         self.groupBox_4 = QGroupBox(self.widget)
@@ -327,7 +326,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_4.setGeometry(QtCore.QRect(690, 40, 320, 50)) # pos and size
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_4.clicked.connect(self.runStartTimer)
-        # self.pushButton_4.clicked.connect(self.runMotor)
+        self.pushButton_4.clicked.connect(self.runMotor)
 
         #Inits resume button
         # self.pushButton_7 = QPushButton(self.widget)
@@ -429,7 +428,7 @@ class Ui_MainWindow(QMainWindow):
         self.extractButton.setGeometry(700, 230, 140, 50)
         self.extractButton.setText("Extract")
         self.extractButton.clicked.connect(self.extractPiston)
-        # self.extractButton.clicked.connect(motor.cleanUp)
+        self.extractButton.clicked.connect(motor.cleanUp)
         self.extractButton.raise_()
 
         # TAB 3 #
@@ -731,9 +730,9 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "System"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Data"))
         self.groupBox_7.setTitle(_translate("MainWindow", "Communication"))
-        # self.connectionLabel.setText(_translate("MainWindow", "Connection: "+str(motor.connectionStatus)))
+        self.connectionLabel.setText(_translate("MainWindow", "Connection: "+str(motor.connectionStatus)))
         self.ipLabel.setText(_translate("MainWindow", "System IP: "+self.IpAdd))
-        # self.deviceIpLabel.setText(_translate("MainWindow", "Connected Device IP:"+str(motor.SERVER_HOST)))
+        self.deviceIpLabel.setText(_translate("MainWindow", "Connected Device IP:"+str(motor.SERVER_HOST)))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "Configuration"))
         self.groupBox.setTitle(_translate("MainWindow", "System State"))
         self.Modelabel.setText(_translate("MainWindow", "Mode: "))
@@ -781,8 +780,8 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.clicked.connect(lambda x: self.updateSystemState(4))   #Stopped
         # 0:idle 1:Starting 2:Running 3:Paused 4:Stopped 5:Processing
 
-        # self.checkCalibration()
-        # self.checkMotorConnection()
+        self.checkCalibration()
+        self.checkMotorConnection()
         self.checkHomed()
         self.updateMode()
         self.disableWidget(self.comboBox.currentIndex())
@@ -906,11 +905,12 @@ class Ui_MainWindow(QMainWindow):
         cylinderPosition = math.floor(mm*3.66)
         return cylinderPosition
 
-    def updateCylinder(self):
-        pos = self.mm2cylinder(motor.absolutePosition)
+    def updateCylinder(self,position):
+        pos = self.mm2cylinder(position)
         # pos = self.mm2cylinder(30)
         self.cylLabelStart.setGeometry(793,520-pos,200,100)
         # self.cylLabelEnd.setGeometry(793,520,200,100)
+        return
     
     def checkMotorConnection(self):
         if motor.connectionStatus == 0:
@@ -919,7 +919,7 @@ class Ui_MainWindow(QMainWindow):
             self.MotorLineEdit.setText("Connected")
 
     def runMotor(self):
-        self.updateCylinder()
+        # self.updateCylinder()
 
         if self.modeSelected == 1: #motion limiting
             motor.initLayerHeight = self.initLayerHeight
@@ -1017,8 +1017,8 @@ class Ui_MainWindow(QMainWindow):
         kb.show()
 
     def checkHomed(self):
-        # homed = motor.homed
-        homed = 1
+        homed = motor.homed
+        # homed = 1
         if homed == 1:
             self.warningLabel.setText("")
             self.pushButton.setEnabled(True)
@@ -1079,12 +1079,72 @@ class Ui_MainWindow(QMainWindow):
             self.modeSelected = 0
             self.ModeLineEdit.setText("  - - - - -")
 
+    def getMotorPosition(self,progress_callback):
+        while True:
+            print("reading position...")
+            self.position_reading = motor.updatePosition()
+            self.updateCylinder(self.position_reading)
+            time.sleep(0.1)
+
+    def checkFlags(self,progress_callback):
+        while True:
+            # print("checking flag...")
+            motor._updateFlag()
+            time.sleep(0.01)
+        return
+
+    def waitForTopFlag(self,progress_callback):
+        if self.waitForTopFlagStatus == False:
+            running = 1
+            print("thread for jog up created...")
+            self.waitForTopFlagStatus = True
+            while running == 1:
+                t0 = time.time()
+                if (time.time() - t0) <= 1000: #seconds
+                    if motor.topFlag == True:
+                        motor.setEnable(0)
+                        motor.setEnable(1)
+                        running = 0
+                    else:
+                        pass
+                else:
+                    if motor.topFlag == True or motor.moving == False:
+                        motor.setEnable(0)
+                        motor.setEnable(1)
+                        print("second flag reached after: ",(time.time()-t0))
+                        running = 0
+                    else:
+                        pass
+            self.waitForTopFlagStatus = False
+            print("thread for job up ended.")
+        else:
+            pass
+
+    def waitForHomeFlag(self,progress_callback):
+        running = 1
+        while running == 1:
+            t0 = time.time()
+            if (time.time() - t0) <= 1000: #seconds
+                if motor.homeFlag == True:
+                    motor.setEnable(0)
+                    motor.setEnable(1)
+                    running = 0
+                else:
+                    pass
+            else:
+                if motor.homeFlag == True or motor.moving == False:
+                    motor.setEnable(0)
+                    motor.setEnable(1)
+                    running = 0
+                else:
+                    pass
+
     def UpdateForceReadingValue(self,progress_callback):
         """Updates the LCD Force Reading Value"""
         while True:
             # print("updating force...")
-            force_reading_raw = random.random()
-            # force_reading_raw = cellInstance.cell.get_weight_mean(4)    #5 recomended for accuracy
+            # force_reading_raw = random.random()
+            force_reading_raw = cellInstance.cell.get_weight_mean(4)    #5 recomended for accuracy
             self.force_reading_raw = force_reading_raw
             if force_reading_raw < 0:
                 force_reading_raw = 0
@@ -1107,7 +1167,6 @@ class Ui_MainWindow(QMainWindow):
             # DB.insert_value('pressure', pressure_reading)
             self.lcdNumber3.display(force_reading_N)
             # DB.insert_value('force', force_reading_N)
-            self.update()
             time.sleep(0.1)
         return "updated force"
 
@@ -1125,6 +1184,7 @@ class Ui_MainWindow(QMainWindow):
         self.dialog2 = calibrationWarning()
         self.dialog2.raise_()
         self.dialog2.show()
+        self.dialog2.activateWindow()
 
     def UpdateGUI(self):
         self.UpdateForceReadingValue()
@@ -1137,16 +1197,16 @@ class Ui_MainWindow(QMainWindow):
 
     def update_plot_data(self, progress_callback):
         while True:
-            print("plotting")
+            # print("plotting")
             self.time_x.append(time.time() - self.StartingTime)   # Add a new value 1 higher than the last.
             self.force_vals.append(self.force_reading_N)
             self.force_vals_fixed = signal.medfilt(self.force_vals,33)
             self.pressure_vals.append(self.pressure_reading)
             self.pressure_vals_fixed = signal.medfilt(self.pressure_vals,33)
-            self.init_density_vals.append(0)#motor.initialDensity)
-            self.final_density_vals.append(0)#motor.finalDensity)
+            self.init_density_vals.append(motor.initialDensity)
+            self.final_density_vals.append(motor.finalDensity)
             self.weight_vals.append(self.force_reading_kg)
-            self.position_vals.append(0)#motor.absolutePosition)
+            self.position_vals.append(self.position_reading)
             self.currentPressureLineEdit.setText(str(np.round(self.pressure_reading,2)))
 
             if self.plotForceCheckbox.isChecked():
@@ -1262,6 +1322,18 @@ class Ui_MainWindow(QMainWindow):
 
     def start_plotting(self):
         self.setWorker(self.update_plot_data)
+
+    def start_position_reading(self):
+        self.setWorker(self.getMotorPosition)
+
+    def start_flag_check(self):
+        self.setWorker(self.checkFlags)
+
+    def start_topFlagCheck(self):
+        self.setWorker(self.waitForTopFlag)
+
+    def start_homeFlagCheck(self):
+        self.setWorker(self.waitForHomeFlag)
 
 class newLayer(QWidget):
     def __init__(self):
@@ -1501,6 +1573,7 @@ class calibrationDialogWindow(QWidget): # this one
         self.dialogText = QLabel('Initializing...')
         self.layout().addRow('',self.dialogText)
         self.show()
+        self.activateWindow()
         while cellInstance.initializing == 1:
             self.dialogText = QLabel('Initializing.')
             time.sleep(1)
@@ -1710,8 +1783,8 @@ class LoadCell():
         print("Calibration is succesful")
 
 if __name__ == '__main__':
-    # motor = Motor()
-    # cellInstance = LoadCell()
+    motor = Motor()
+    cellInstance = LoadCell()
     DB = sqlDatabase()
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
@@ -1728,10 +1801,13 @@ if __name__ == '__main__':
     styleSheetStr = open(styleFile,"r").read()
     mainWin.setStyleSheet(styleSheetStr)
     mainWin.show()
-    mainWin.start_long_test_fn()
+    # mainWin.start_long_test_fn()
     mainWin.start_plotting()
-    mainWin.start_test_fn()
+    # mainWin.start_test_fn()
+    # mainWin.start_long_test_fn()
     mainWin.start_force_reading()
+    mainWin.start_position_reading()
+    mainWin.start_flag_check()
 
     fps = 3
     timer = QtCore.QTimer()
