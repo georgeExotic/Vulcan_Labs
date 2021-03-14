@@ -277,7 +277,9 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_2 = QPushButton(self.widget)
         self.pushButton_2.setGeometry(QtCore.QRect(860, 230, 140, 50)) # pos and size
         self.pushButton_2.setObjectName("pushButton_2")
-        self.pushButton_2.clicked.connect(motor.Home)
+        # self.pushButton_2.clicked.connect(motor.Home)
+        self.pushButton_2.clicked.connect(self.start_homeFlagCheck)
+        self.pushButton_2.clicked.connect(motor.tempHome)
 
         #Inits Down button
         self.pushButton_5 = QPushButton(self.widget)
@@ -290,8 +292,8 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_6 = QPushButton(self.widget)
         self.pushButton_6.setGeometry(QtCore.QRect(690, 230, 140, 50)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
-        self.pushButton_6.clicked.connect(lambda x: motor.buttonUp(self.comboBox_5.currentIndex()))
         self.pushButton_6.clicked.connect(self.start_topFlagCheck)
+        self.pushButton_6.clicked.connect(lambda x: motor.buttonUp(self.comboBox_5.currentIndex()))
 
         #Inits Jogging box area
         self.groupBox_4 = QGroupBox(self.widget)
@@ -938,7 +940,7 @@ class Ui_MainWindow(QMainWindow):
         motor.run()
 
     def disableWidget(self,currentIndex):
-        print(currentIndex)
+        print(f'current index: {currentIndex}')
 
         if currentIndex == 0:
             """no mode selected"""
@@ -1083,38 +1085,50 @@ class Ui_MainWindow(QMainWindow):
         while True:
             print("reading position...")
             self.position_reading = motor.updatePosition()
-            self.updateCylinder(self.position_reading)
+            print(f'position reading: {self.position_reading}')
+            # self.updateCylinder(self.position_reading)
             time.sleep(0.1)
 
     def checkFlags(self,progress_callback):
         while True:
             # print("checking flag...")
             motor._updateFlag()
-            time.sleep(0.01)
+            time.sleep(0.1)
         return
 
     def waitForTopFlag(self,progress_callback):
         if self.waitForTopFlagStatus == False:
+            # print(f'wait for top flag status: {self.waitForTopFlagStatus}')
+            # print(f'motor.topFlag = {motor.topFlag}')
             running = 1
             print("thread for jog up created...")
             self.waitForTopFlagStatus = True
             while running == 1:
                 t0 = time.time()
+                # print(f"running status: {running}")
+                # print(time.time() - t0)
                 if (time.time() - t0) <= 1000: #seconds
+                    # print("condition 1 met")
                     if motor.topFlag == True:
+                        # print("condition A met")
                         motor.setEnable(0)
                         motor.setEnable(1)
                         running = 0
                     else:
+                        # print('condition c met')
                         pass
                 else:
+                    # print("condition 2 met")
                     if motor.topFlag == True or motor.moving == False:
+                        # print("condition B met")
                         motor.setEnable(0)
                         motor.setEnable(1)
                         print("second flag reached after: ",(time.time()-t0))
                         running = 0
                     else:
+                        # print('condition d met')
                         pass
+                    time.sleep(0.01)
             self.waitForTopFlagStatus = False
             print("thread for job up ended.")
         else:
@@ -1122,6 +1136,7 @@ class Ui_MainWindow(QMainWindow):
 
     def waitForHomeFlag(self,progress_callback):
         running = 1
+        print("waiting for home flag...")
         while running == 1:
             t0 = time.time()
             if (time.time() - t0) <= 1000: #seconds
@@ -1129,6 +1144,10 @@ class Ui_MainWindow(QMainWindow):
                     motor.setEnable(0)
                     motor.setEnable(1)
                     running = 0
+                    motor.homed = True
+                    # self.position_reading = 0
+                    motor.writeHoldingRegs(0x57,4,0)
+                    print("home condition met")
                 else:
                     pass
             else:
@@ -1136,8 +1155,13 @@ class Ui_MainWindow(QMainWindow):
                     motor.setEnable(0)
                     motor.setEnable(1)
                     running = 0
+                    motor.homed = True
+                    motor.writeHoldingRegs(0x57,4,0)
+                    # self.position_reading = 0
+                    print("home condition 2 met")
                 else:
                     pass
+            time.sleep(0.01)
 
     def UpdateForceReadingValue(self,progress_callback):
         """Updates the LCD Force Reading Value"""
@@ -1280,7 +1304,7 @@ class Ui_MainWindow(QMainWindow):
         df.to_csv('/media/pi/VULCANLABS/log.csv', index=False)
 
     def print_output(self, s):
-        print(s)
+        print(f'output: {s}')
 
     def thread_complete(self):
         print("thread complete")
@@ -1802,11 +1826,11 @@ if __name__ == '__main__':
     mainWin.setStyleSheet(styleSheetStr)
     mainWin.show()
     # mainWin.start_long_test_fn()
-    mainWin.start_plotting()
+    # mainWin.start_plotting()
     # mainWin.start_test_fn()
     # mainWin.start_long_test_fn()
-    mainWin.start_force_reading()
-    mainWin.start_position_reading()
+    # mainWin.start_force_reading()
+    # mainWin.start_position_reading()
     mainWin.start_flag_check()
 
     fps = 3

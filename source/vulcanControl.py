@@ -166,7 +166,7 @@ class Motor:
 
     ###function to read if the shaft is moving /// update self.moving
     def _moving(self):
-        temp = self.readHoldingRegs(0x4A,1)
+        temp = self.readHoldingRegs(0x4A,2)
         if temp[0] == 0 :
             self.moving = False
         elif temp[0] == 1:
@@ -187,10 +187,12 @@ class Motor:
 
         if self.topSwitch.flag == 1:
             self.topFlag = True
+            print("top")
         else:
             self.topFlag = False
 
         if self.homeSwitch.flag == 1:
+            # print("bottom")
             self.homeFlag = True
         else:
             self.homeFlag = False
@@ -211,14 +213,27 @@ class Motor:
 
     ###function to read from register of LMD57 modbus register map
     def readHoldingRegs(self,startingAddressHex,regSize = 1):                             #startingAddressHex [address of register in HEX] regSize [size of regiter]
-        startingAddressDEC = self._hex2dec(startingAddressHex)                             #hex --> dec
+        print(f'inputs to readHoldingRegs: startingAddressHex = {startingAddressHex}, regSize = {regSize}')
+        startingAddressDEC = self._hex2dec(startingAddressHex)                            #hex --> dec
+        print(startingAddressDEC)
         if regSize > 2:                                                                   #for registers with 4 byte (32bit) data
             reg2read = 2                                                                  #2 registers to read because is a 4 byte, each register is 2 byte
             reg = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)    #read 2 modbus registers //// reg is a list [lsb,msb]
-            ans = utils.word_list_to_long(reg,False)                                    #from list[lsb,msb] to a value /// done with big endian        
+            print(f'reg={reg}')
+            if reg == None:
+                pass
+                print(f"ERROR: register at address[{startingAddressDEC}] == None")
+                ans = 1
+            else:
+                # try:
+                ans = utils.word_list_to_long(reg,False)
+                # except:
+                    # print("try except")
+                print(f'ans1={ans}')                                      #from list[lsb,msb] to a value /// done with big endian        
         else:                                                                             # for 2 bytes or 1 byte register 
             reg2read = 1                                                                  #1 register to read
             ans = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)    #read 1 register from the address (remenber 1 address = 2 bytes(16bits))
+            print(f'ans2={ans}')
         return ans
 
     ###function to write to any register of LMD57 modbus register map
@@ -234,7 +249,7 @@ class Motor:
 
 
     #function to slew axis in steps/seconds in speficied direction +/- (yes +/-!) 0 to +/- 5000000
-    def slewMotor(self, slew = 50000, slewDir = "cw"):
+    def slewMotor(self, slew = 12800, slewDir = "cw"):
         #in the future translata that to mm/sec or something
         #inclomplete waiting for ccw motion
         if slewDir == "cw":
@@ -346,6 +361,7 @@ class Motor:
             steps2jog = self.displacement2steps(distance2move)
             self.setProfiles("jogging")
             self.home = False
+            print(f'topflag: {self.topFlag}')
             if self.topFlag == False:
                 self.jogUp(steps2jog)
         elif self.homed == False:
@@ -381,14 +397,14 @@ class Motor:
 
                 steps2Jog = self.displacement2steps(displacement)
                 self.setProfiles("jogging")
-                self._updateFlag()
+                # self._updateFlag()
 
                 if self.topFlag == False:
                     self.writeHoldingRegs(0x46,4,steps2Jog) #already started moving
                     self._moving()
                     self.home = False
                     while self.topFlag == False and self.moving == True:
-                        self._updateFlag()
+                        # self._updateFlag()
                         self._moving()
                     if self.topFlag == True:
                         # self.writeHoldingRegs(0x1C,1,0)
@@ -414,6 +430,7 @@ class Motor:
 
     def jogDown(self,displacementChoice,anyRun = 0):
         print(self.running)
+
         if self.running == False or self.running == True:
             self.setProfiles("jogging")
             initialStepPosition = self.readHoldingRegs(0x57,4)
@@ -433,7 +450,7 @@ class Motor:
 
             steps2Jog = self.displacement2steps(displacement)
 
-            self._updateFlag()
+            # self._updateFlag()
 
             if self.homeFlag == True:
 
@@ -448,7 +465,7 @@ class Motor:
                 self._moving()
 
                 while self.homeFlag == False and self.moving == True:
-                    self._updateFlag()
+                    # self._updateFlag()
                     self._moving()
                     self.home = False
 
@@ -501,7 +518,6 @@ class Motor:
                 while self.home == False:
                     self.homeSwitch.updateSwitch()
                     if self.homeSwitch.flag == 1:
-                        print("made it here")
                         # self.writeHoldingRegs(0x1C,1,0)
                         self.setEnable(0)
                         self.absolutePosition = 0
@@ -526,10 +542,25 @@ class Motor:
         else:
             print("cannot perform function while running")
 
+    def tempHome(self):
+        if self.home == True or self.running == True or self.homeFlag == True:
+            print("already homed")
+        else:
+            self.setProfiles("homing")
+            steps2Jog = self.displacement2steps(40)
+            self.writeHoldingRegs(0x57,4,steps2Jog)
+            self.writeHoldingRegs(0x43,4,0)
+
+
     def updatePosition(self):
-        pos = self.readHoldingRegs(0x57,4)
-        self.position_reading = self.steps2displacement(pos[0])
-        return self.position_reading
+        try:
+            pos = self.readHoldingRegs(0x57,4)
+            position_reading = self.steps2displacement(pos[0])
+        except:
+            print("ERROR while reading position")
+            position_reading = 0
+
+        return position_reading
 
     def setProfiles(self,motion = "homing"):
         if motion == "homing":
@@ -720,6 +751,17 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
+
+    #testing slew
+    start_time = time.time()
+    seconds = 2
+    while True:
+        current_time = time.time()
+        elapsed_time = current_time - start_time
+        c.slewMotor(slew=12800,slewDir="cw")
+        if elapsed_time > seconds:
+            c.slewMotor(slew=0)
+            break
     # c.Home()
     # time.sleep(3)
     # c.jogDown(2)
