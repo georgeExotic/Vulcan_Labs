@@ -1,6 +1,6 @@
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
-# import paho.mqtt.client as paho
+# i mport paho.mqtt.client as paho
 from ast import literal_eval #from hex to dec
 import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
 import time
@@ -240,7 +240,7 @@ class Motor:
     def writeHoldingRegs(self,startingAddressHEX,regSize,valueDEC):                         #startingAddressHex [address of register in HEX] regSize [size of regiter] ValueDEC [value in decimal to write]
         startingAddressDEC = self._hex2dec(startingAddressHEX)                               #hex --> dec
         if regSize > 2:                                                                     #for registers with 4 byte (32bit) data
-            valueDEC = utils.long_list_to_word([valueDEC],False)                            #val2write is the decimal value to be written to the register
+            # valueDEC = utils.long_list_to_word([valueDEC],False)                            #val2write is the decimal value to be written to the register
             self._motor.write_multiple_registers(startingAddressDEC,valueDEC)               #write to starting register the value as a list of word [valueDEC]
                                                                                             #into to write function takes list of vals
         else:                                                                               #if 2 or 1 bytes then just send that value as a list  
@@ -249,16 +249,18 @@ class Motor:
 
 
     #function to slew axis in steps/seconds in speficied direction +/- (yes +/-!) 0 to +/- 5000000
-    def slewMotor(self, slew = 12800, slewDir = "cw"):
+    def slewMotor(self, slew = 12800):
         #in the future translata that to mm/sec or something
         #inclomplete waiting for ccw motion
-        if slewDir == "cw":
-            print("turning cw by = ", slew, "step/sec")
-            self.writeHoldingRegs(0x78,4,slew)
-        #need to finish#
-        elif slewDir == "ccw":
-            print("ccw")
-        return
+        print("slew = ", slew)
+        complement = utils.get_2comp(slew,32)
+        word = utils.long_list_to_word([complement],False)
+        print("complement = ",complement,"word = ",word,"\n")
+        time.sleep(3)
+
+
+        self.writeHoldingRegs(0x78,4,word)
+
 
 
     ###function to set the hMT technology from schneider motor
@@ -754,13 +756,13 @@ if __name__ == "__main__":
 
     #testing slew
     start_time = time.time()
-    seconds = 2
+    seconds = 1
     while True:
         current_time = time.time()
         elapsed_time = current_time - start_time
-        c.slewMotor(slew=12800,slewDir="cw")
+        c.slewMotor(-10000)
         if elapsed_time > seconds:
-            c.slewMotor(slew=0)
+            c.slewMotor(0)
             break
     # c.Home()
     # time.sleep(3)
