@@ -1832,6 +1832,7 @@ if __name__ == '__main__':
     # mainWin.start_force_reading()
     # mainWin.start_position_reading()
     mainWin.start_flag_check()
+    #test
 
     fps = 3
     timer = QtCore.QTimer()
