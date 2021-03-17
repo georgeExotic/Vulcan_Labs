@@ -1,9 +1,8 @@
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
-# i mport paho.mqtt.client as paho
+# import paho.mqtt.client as paho
 from ast import literal_eval #from hex to dec
 import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
-import time
 
 import time
 import math
@@ -35,16 +34,17 @@ class limitSwitch:
         self.flag = GPIO.input(self.limitPin)
 
 class Motor:
+    #Initialization of LMD57
     def __init__(self):
-        #Initialization of LMD57
+        
         #device information
         self.SERVER_HOST = "192.168.33.1"
         self.SERVER_PORT = 502
         self.deviceID = "LMDCE571C"
         self.softwareVersion = "2.4.0.6"
         self.manufactureName = "SCHNEIDER ELECTRIC MOTOR USA"
-        self.connectionStatus = 0
         #connection to modbus TCP steps
+        self.connectionStatus = 0
         self._connectModbusClient()
         self._checkConnection()
 
@@ -72,32 +72,30 @@ class Motor:
 
 
         ###hmt### motor behaivor
-        self.Hmt = 2                                    #default 2 = variable current mode --> current will vary as needed to postion the load with the maximun current set by the run current command 
-        self.setHmt()
+        self.Hmt = 2                                    
 
 
         ###Performance settings###
-        #holding current
         self.holdingCurrent = 100                        #0x29#0 - 100
-        #control Bound
         self.controlBound = 0                           #0x91#best torque performance
-        #microsteeping
         self.microStep = 256                            #0x48
 
-        self.setPerformanceFeatures()
-        self.setEnable(1)
+
 
         ###hardware Settings
         self.strokeLength = 30 # mm
         self.pistonDiameter = 19.05 #mm
         self.pistonRadius = self.pistonDiameter/2
         self.leadTravel = 4 #mm per rev
-        self.stepPerRevolution = 200 * self.microStep       #200*256 = 51200 steps per rev        
+        self.stepPerRevolution = 200 * self.microStep       #200*256 = 51200 steps per rev
 
 
         ###Flags
-        self.home = False # at bottom
-        self.top = False #is at the top
+        self.topLimit = False # Top switch
+        self.homeLimit = False # Home switch
+
+
+
         self.homed = False  # has been homed Default False
         self.moving = False #shaft moving
         self.homeFlag = False
@@ -106,11 +104,11 @@ class Motor:
         ###Homing
         self.absolutePosition = 0
 
-        ###run
 
-        ###user input params for motion profile###
-        self.initLayerHeight = 0    #initial Layer Height 
-        self.compactedLayerHeight = 0   #final Layer Height 
+        ##Parameters##
+
+        self.initLayerHeight = 0    #initial Layer Height
+        self.compactedLayerHeight = 0   #final Layer Height
         self.mass = 0       #keep track of mass of power
         self.modeSelected = 0   #motion mode 1 pressure mode 2
         self.layerDensity = 0   #keep track of density
@@ -118,7 +116,7 @@ class Motor:
         self.totalCycleStroke = 0   #to check that our total motion does not exceed our available stroke lenght
         self.numberOfLayers = 0     #user input number of layers
         self.layerNumber = 0    #keep track of layers
-        self.running = False    # 
+        self.running = False    #
         self.massInput = False  #for guy to know when to ask for mass to the user
         self.massIn = False     # to know if user have input mass succesfully
         self.runCompleted = False #Set to true when run is complete, is reset in GUI
@@ -132,12 +130,14 @@ class Motor:
         self.height = 0
 
 
-
         ###init home limit switch###
         self.homeSwitch = limitSwitch(6)
         self.topSwitch = limitSwitch(5)
 
 
+        self.setHmt()
+        self.setPerformanceFeatures()
+        self.setEnable(1)
         print("Congratulations Motor Initialization Complete!")
 
     ###function to connect to LMD57 using modbus TCP
@@ -146,7 +146,6 @@ class Motor:
         self._motor = ModbusClient()
         self._motor.host(self.SERVER_HOST)
         self._motor.port(self.SERVER_PORT)
-        #open TCP server
         self._motor.open()
         if self._motor.is_open():
             print("connected to " + self.SERVER_HOST + ":" + str(self.SERVER_PORT))
@@ -163,8 +162,25 @@ class Motor:
         self.connectionStatus = 1
         return "connected!"
 
+    ###function to convert any hex number into decimal
+    def _hex2dec(self,hex):
+        hex = str(hex)
+        dec = int(literal_eval(hex))
+        return dec
 
-    ###function to read if the shaft is moving /// update self.moving
+    ##converting the user input to micron o leaving in mm depending on drop down choice [0] = mm [1] = mm/1000
+    def _micron2mm(self):
+        if self.initLayerHeight[1] == 0:
+            self.initLayerHeightConverted = self.initLayerHeight[0]
+        elif self.initLayerHeight[1] == 1:
+            self.initLayerHeightConverted = self.initLayerHeight[0]/1000
+
+        if self.compactedLayerHeight[1] == 0:
+            self.compactedLayerHeightConverted = self.compactedLayerHeight[0]
+        elif self.initLayerHeight[1] == 1:
+            self.compactedLayerHeightConverted = self.compactedLayerHeight[0]/1000
+
+    ###function to read if the shaft is moving 
     def _moving(self):
         temp = self.readHoldingRegs(0x4A,2)
         if temp[0] == 0 :
@@ -173,95 +189,65 @@ class Motor:
             self.moving = True
         return
 
-    ###function to convert any hex number into decimal
-    def _hex2dec(self,hex):
-        hex = str(hex)
-        dec = literal_eval(hex)
-        return dec
 
     ###checks the status of the switches and update flag
-    def _updateFlag(self):
-
+    def _checkLimits(self):
         self.topSwitch.updateSwitch()
         self.homeSwitch.updateSwitch()
 
-        if self.topSwitch.flag == 1:
-            self.topFlag = True
-            print("top")
+        if self.topSwitch.flag:
+            self.topLimit = True
         else:
-            self.topFlag = False
+            self.topLimit = False
 
-        if self.homeSwitch.flag == 1:
-            # print("bottom")
-            self.homeFlag = True
+        if self.homeSwitch.flag:
+            self.homeLimit = True
         else:
-            self.homeFlag = False
-        # print("flag checked")
+            self.homeLimit= False
 
-    ##converting the user input to micron o leaving in mm depending on drop down choice [0] = mm [1] = mm/1000
-    def _micron2mm(self):
-        if self.initLayerHeight[1] == 0:
-            self.initLayerHeightConverted = self.initLayerHeight[0]
-        elif self.initLayerHeight[1] == 1:
-            self.initLayerHeightConverted = self.initLayerHeight[0]/1000
-        
-        if self.compactedLayerHeight[1] == 0:
-            self.compactedLayerHeightConverted = self.compactedLayerHeight[0]
-        elif self.initLayerHeight[1] == 1:
-            self.compactedLayerHeightConverted = self.compactedLayerHeight[0]/1000
-            
+        return
+
+
 
     ###function to read from register of LMD57 modbus register map
-    def readHoldingRegs(self,startingAddressHex,regSize = 1):                             #startingAddressHex [address of register in HEX] regSize [size of regiter]
-        print(f'inputs to readHoldingRegs: startingAddressHex = {startingAddressHex}, regSize = {regSize}')
-        startingAddressDEC = self._hex2dec(startingAddressHex)                            #hex --> dec
-        print(startingAddressDEC)
-        if regSize > 2:                                                                   #for registers with 4 byte (32bit) data
-            reg2read = 2                                                                  #2 registers to read because is a 4 byte, each register is 2 byte
-            reg = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)    #read 2 modbus registers //// reg is a list [lsb,msb]
-            print(f'reg={reg}')
-            if reg == None:
-                pass
-                print(f"ERROR: register at address[{startingAddressDEC}] == None")
-                ans = 1
-            else:
-                # try:
+    def readHoldingRegs(self,startingAddressHex,regSize = 1):                             
+        startingAddressDEC = self._hex2dec(startingAddressHex)                            
+        reading = " "
+        if regSize > 1 : 
+            regSize = 2 #registers are 2 or 1 bytes
+            reg = self._motor.read_holding_registers(startingAddressDEC,regSize)
+            if reg is not None:
                 ans = utils.word_list_to_long(reg,False)
-                # except:
-                    # print("try except")
-                print(f'ans1={ans}')                                      #from list[lsb,msb] to a value /// done with big endian        
-        else:                                                                             # for 2 bytes or 1 byte register 
-            reg2read = 1                                                                  #1 register to read
-            ans = self._motor.read_holding_registers(int(startingAddressDEC),reg2read)    #read 1 register from the address (remenber 1 address = 2 bytes(16bits))
-            print(f'ans2={ans}')
-        return ans
+                complement = utils.get_list_2comp(ans,32)
+                reading = complement[0]
+            else: 
+                print("Motor Reading NONE as output")
+                pass                
+        else:                                                                            
+            regSize = 1                                                                  
+            reg = self._motor.read_holding_registers(startingAddressDEC,regSize)
+            if reg is not None:
+                reading = reg[0]
+            else:
+                print("Motor Reading NONE as output")
+        return reading
 
     ###function to write to any register of LMD57 modbus register map
-    def writeHoldingRegs(self,startingAddressHEX,regSize,valueDEC):                         #startingAddressHex [address of register in HEX] regSize [size of regiter] ValueDEC [value in decimal to write]
-        startingAddressDEC = self._hex2dec(startingAddressHEX)                               #hex --> dec
-        if regSize > 2:                                                                     #for registers with 4 byte (32bit) data
-            # valueDEC = utils.long_list_to_word([valueDEC],False)                            #val2write is the decimal value to be written to the register
-            self._motor.write_multiple_registers(startingAddressDEC,valueDEC)               #write to starting register the value as a list of word [valueDEC]
-                                                                                            #into to write function takes list of vals
-        else:                                                                               #if 2 or 1 bytes then just send that value as a list  
-             self._motor.write_multiple_registers(startingAddressDEC,[valueDEC])            #writting [value DEC] to the starting address
+    def writeHoldingRegs(self,startingAddressHEX,regSize,value):                         
+        startingAddressDEC = self._hex2dec(startingAddressHEX)                           
+        if regSize > 2:                                                                  
+            complement = utils.get_2comp(value, 32)
+            word = utils.long_list_to_word([complement],False)
+            self._motor.write_multiple_registers(startingAddressDEC,word)                                                                                      
+        else:                                                                           
+             self._motor.write_multiple_registers(startingAddressDEC,[value])   
         return
 
 
     #function to slew axis in steps/seconds in speficied direction +/- (yes +/-!) 0 to +/- 5000000
-    def slewMotor(self, slew = 12800):
-        #in the future translata that to mm/sec or something
-        #inclomplete waiting for ccw motion
-        print("slew = ", slew)
-        complement = utils.get_2comp(slew,32)
-        word = utils.long_list_to_word([complement],False)
-        print("complement = ",complement,"word = ",word,"\n")
-        time.sleep(3)
-
-
-        self.writeHoldingRegs(0x78,4,word)
-
-
+    def slewMotor(self, slew):
+        self.writeHoldingRegs(0x78,4,slew)
+        return
 
     ###function to set the hMT technology from schneider motor
     def setHmt(self, hmt = 2, direction = "cw"):
@@ -277,7 +263,7 @@ class Motor:
         self.torquePercentage = 100      #0xA6
         self.torqueDirection = 1         #0xA5 1CW 0CCW
 
-        #set up shaft rotation direction ## need to change it to up and down 
+        #set up shaft rotation direction ## need to change it to up and down
         if direction == "cw":
             self.torqueDirection = 1
         else:
@@ -300,7 +286,7 @@ class Motor:
 
             self.writeHoldingRegs(0xA3, 4,self.torqueSpeed)     #set torque speed
             self.writeHoldingRegs(0xA6, 1,self.torquePercentage)     #set torque percent
-            self.writeHoldingRegs(0xA5, 1,self.torqueDirection)     #set torque direction 
+            self.writeHoldingRegs(0xA5, 1,self.torqueDirection)     #set torque direction
 
             # print("Torque mode is activated ... hmt mode = ", self.readHoldingRegs(0x8E,1))
             # print("torque speed is = ", self.readHoldingRegs(0xA3,4))
@@ -331,8 +317,8 @@ class Motor:
         targetRevolutions = displacment_mm/self.leadTravel
         steps = int(targetRevolutions * self.stepPerRevolution)
         return steps
-    
-    ###convert step to linear motion 
+
+    ###convert step to linear motion
     def steps2displacement(self,steps):
         revs = steps/self.stepPerRevolution
         displacement = revs * self.leadTravel
@@ -357,7 +343,7 @@ class Motor:
             elif userChoice_mm == 2:
                 distance2move = 10
         elif anyDistance == 1:
-            distance2move = userChoice_mm 
+            distance2move = userChoice_mm
 
         if self.homed == True:
             steps2jog = self.displacement2steps(distance2move)
@@ -369,11 +355,11 @@ class Motor:
         elif self.homed == False:
             print("please home")
 
-                
 
 
 
-    ##function to jogUp 
+
+    ##function to jogUp
     def jogUpOld(self,displacementChoice, anyRun = 0):
 
         if self.running == False or self.running == True:
@@ -399,14 +385,14 @@ class Motor:
 
                 steps2Jog = self.displacement2steps(displacement)
                 self.setProfiles("jogging")
-                # self._updateFlag()
+                # self._checkLimits()
 
                 if self.topFlag == False:
                     self.writeHoldingRegs(0x46,4,steps2Jog) #already started moving
                     self._moving()
                     self.home = False
                     while self.topFlag == False and self.moving == True:
-                        # self._updateFlag()
+                        # self._checkLimits()
                         self._moving()
                     if self.topFlag == True:
                         # self.writeHoldingRegs(0x1C,1,0)
@@ -452,7 +438,7 @@ class Motor:
 
             steps2Jog = self.displacement2steps(displacement)
 
-            # self._updateFlag()
+            # self._checkLimits()
 
             if self.homeFlag == True:
 
@@ -467,7 +453,7 @@ class Motor:
                 self._moving()
 
                 while self.homeFlag == False and self.moving == True:
-                    # self._updateFlag()
+                    # self._checkLimits()
                     self._moving()
                     self.home = False
 
@@ -479,7 +465,7 @@ class Motor:
                         self.writeHoldingRegs(0x57,4,self.absolutePosition)
                         self.home = True
 
-                #if we havent home then substract to have an accurate absolute postion 
+                #if we havent home then substract to have an accurate absolute postion
                 if homeCheck == 0:
 
                     finalStepPosition = initialStepPosition[0] - steps2Jog
@@ -599,7 +585,7 @@ class Motor:
         return
 
     def run(self):
-        
+
         self.cumulativeMass = 0
         self.density = 0
         self.volume = 0
@@ -607,12 +593,12 @@ class Motor:
         self.totalCycleStroke = self.initLayerHeightConverted * self.numberOfLayers
 
         if self.totalCycleStroke <= self.strokeLength:
-    
+
             print("its gonna home, are you ready for it Miao?")
             self.Home()
-            
+
             if self.home == True:
-                self.jogUp(30.16,1) # jog to flush poition 
+                self.jogUp(30.16,1) # jog to flush poition
                 self.flushPosition = self.absolutePosition
                 self.jogDownLayerHeight()
                 self.running = True
@@ -628,13 +614,13 @@ class Motor:
                 print("havent done this one! Come later")
 
         elif self.totalCycleStroke > self.totalCycleStroke:
-            print("you cant do that, you dont enough stroke")       
+            print("you cant do that, you dont enough stroke")
 
     def motionRun(self):
         if self.massIn == True:
             self.cumulativeMass += self.mass
             if self.layerNumber < self.numberOfLayers:
-                self._micron2mm()  
+                self._micron2mm()
                 delta = self.initLayerHeightConverted - self.compactedLayerHeightConverted
                 self.calculateDensity()
                 self.initialDensity = self.density
@@ -672,7 +658,7 @@ class Motor:
         if self.massIn == True:
             self.cumulativeMass += self.mass
             if self.layerNumber < self.numberOfLayers:
-                self._micron2mm()  
+                self._micron2mm()
                 self.calculateDensity()
                 self.initialDensity = self.density
                 print("density: ",self.density)
@@ -695,7 +681,7 @@ class Motor:
                 print(";;;;;;;;;;;;;;;;;;;;;;;;;;;;;")
                 # self.runCompleted = True
                 print("run complete")
-            
+
         """ if check layer count """
         # self.newLayerMotionRun()
 
@@ -703,13 +689,13 @@ class Motor:
         self.jogDown(self.initLayerHeightConverted,1) #jog down for a layer height
 
     def calculateDensity(self):
-        
+
         ###density = m / v
-        # volume = pi * (pistonDiameter/2)^2 * h 
+        # volume = pi * (pistonDiameter/2)^2 * h
         # h = finalabsolute - initial absolute
         #
-        
-        
+
+
         self.volume = 3.1415927 * (self.pistonRadius)**2 * (self.flushPosition - self.absolutePosition)
         self.density = self.cumulativeMass / self.volume
 
@@ -723,7 +709,7 @@ class Motor:
         while _moving()
         """
         print("22222222222: ",self.mass)
-    
+
 
     def stopRun(self):
 
@@ -753,30 +739,16 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
-
-    #testing slew
-    start_time = time.time()
-    seconds = 1
-    while True:
-        current_time = time.time()
-        elapsed_time = current_time - start_time
-        c.slewMotor(-10000)
-        if elapsed_time > seconds:
-            c.slewMotor(0)
-            break
-    # c.Home()
-    # time.sleep(3)
-    # c.jogDown(2)
-    # c.jogUp(2)
-    # time.sleep(2)
-    # c.jogUp(2)
-    # time.sleep(5)
-    # c.jogUp(2)
-    # c.cleanUp()
-    # time.sleep(2)
-    # c.writeHoldingRegs(0x1C,1,0)
-    # time.sleep(2)
-    # print(c.readHoldingRegs)
-    # print(c.readHoldingRegs(0x57,4))
-    # time.sleep(3)
-    # print(c.readHoldingRegs(0x57,4))
+    
+    
+    
+    # start_time = time.time()
+    # seconds = 1
+    # while True:
+    #     current_time = time.time()
+    #     elapsed_time = current_time - start_time
+    #     print(c.readHoldingRegs(0x57,2))
+    #     if elapsed_time > seconds:
+    #         c.slewMotor(0)
+    #         break
+   
