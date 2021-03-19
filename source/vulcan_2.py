@@ -271,7 +271,9 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton = QPushButton(self.widget)
         self.pushButton.setGeometry(QtCore.QRect(690, 110, 320, 80)) # pos and size
         self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(motor.stopRun)
+        # self.pushButton.clicked.connect(motor.stopRun)
+        self.pushButton.clicked.connect(motor.testStop)
+        self.pushButton.clicked.connect(self.start_testStopThread)
 
         #Inits Home button
         self.pushButton_2 = QPushButton(self.widget)
@@ -279,21 +281,21 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_2.setObjectName("pushButton_2")
         # self.pushButton_2.clicked.connect(motor.Home)
         self.pushButton_2.clicked.connect(self.start_homeFlagCheck)
-        self.pushButton_2.clicked.connect(motor.tempHome)
+        self.pushButton_2.clicked.connect(motor.home)
 
         #Inits Down button
         self.pushButton_5 = QPushButton(self.widget)
         self.pushButton_5.setGeometry(QtCore.QRect(690, 290, 140, 50)) # pos and size
         self.pushButton_5.setObjectName("pushButton_5")
-        self.pushButton_5.clicked.connect(lambda x: motor.jogDown(self.comboBox_5.currentIndex()))
         self.pushButton_5.clicked.connect(self.start_homeFlagCheck)
+        self.pushButton_5.clicked.connect(lambda x: motor.jog(-1*(self.comboBox_5.currentIndex())))
 
         #Inits Up button
         self.pushButton_6 = QPushButton(self.widget)
         self.pushButton_6.setGeometry(QtCore.QRect(690, 230, 140, 50)) # pos and size
         self.pushButton_6.setObjectName("pushButton_6")
         self.pushButton_6.clicked.connect(self.start_topFlagCheck)
-        self.pushButton_6.clicked.connect(lambda x: motor.buttonUp(self.comboBox_5.currentIndex()))
+        self.pushButton_6.clicked.connect(lambda x: motor.jog(self.comboBox_5.currentIndex()))
 
         #Inits Jogging box area
         self.groupBox_4 = QGroupBox(self.widget)
@@ -532,9 +534,9 @@ class Ui_MainWindow(QMainWindow):
         self.positionPlot = self.graphWidget.plot(self.time_x, self.position_vals, name = 'Position', pen=grayPen)
         self.weightPlot = self.graphWidget.plot(self.time_x, self.weight_vals, name = 'Weight', pen=bluePen)
 
-        self.startTime = time.monotonic()
-        self.timer = QtCore.QTimer()
-        self.timer.setInterval(50)
+        # self.startTime = time.monotonic()
+        # self.timer = QtCore.QTimer()
+        # self.timer.setInterval(50)
         # self.timer.timeout.connect(self.update_plot_data)
         # self.timer.timeout.connect(self.checkKeyboard)
         # self.timer.timeout.connect(self.checkHomed)
@@ -542,7 +544,7 @@ class Ui_MainWindow(QMainWindow):
         # self.timer.timeout.connect(self.printAbsPos)
         # self.timer.timeout.connect(self.newLayer)
         # self.timer.timeout.connect(self.runCompletePopUpper)
-        self.timer.start()
+        # self.timer.start()
 
 
 
@@ -857,7 +859,6 @@ class Ui_MainWindow(QMainWindow):
     def runCompletePopUpper(self):
         # print(motor.runCompleted)
         if motor.runCompleted == True:
-            print("I AM HERERE")
             self.runCompletePopUp()
             motor.runCompleted = False
         else:
@@ -1031,7 +1032,7 @@ class Ui_MainWindow(QMainWindow):
             self.pushButton_6.setEnabled(True)
             # self.pushButton_7.setEnabled(True)
         elif homed == 0:
-            self.warningLabel.setText("CAUTION: Home Device")
+            self.warningLabel.setText("Home device before proceeding.")
             self.pushButton.setEnabled(False)
             self.pushButton_2.setEnabled(True)
             self.pushButton_3.setEnabled(False)
@@ -1082,51 +1083,40 @@ class Ui_MainWindow(QMainWindow):
             self.ModeLineEdit.setText("  - - - - -")
 
     def getMotorPosition(self,progress_callback):
-        while True:
-            print("reading position...")
+        while  motor.homed:
+            print(f'elapsed time: {time.time() - self.StartingTime}')
             self.position_reading = motor.updatePosition()
-            print(f'position reading: {self.position_reading}')
+            print(f'position reading: {self.position_reading}\n')
             # self.updateCylinder(self.position_reading)
             time.sleep(0.1)
 
     def checkFlags(self,progress_callback):
         while True:
             # print("checking flag...")
-            motor._updateFlag()
+            motor._checkLimits()
             time.sleep(0.1)
         return
 
     def waitForTopFlag(self,progress_callback):
         if self.waitForTopFlagStatus == False:
-            # print(f'wait for top flag status: {self.waitForTopFlagStatus}')
-            # print(f'motor.topFlag = {motor.topFlag}')
             running = 1
             print("thread for jog up created...")
             self.waitForTopFlagStatus = True
+            t0 = time.time()
             while running == 1:
-                t0 = time.time()
-                # print(f"running status: {running}")
-                # print(time.time() - t0)
-                if (time.time() - t0) <= 1000: #seconds
-                    # print("condition 1 met")
-                    if motor.topFlag == True:
-                        # print("condition A met")
-                        motor.setEnable(0)
-                        motor.setEnable(1)
+                if (time.time() - t0) <= 3: # 3 seconds
+                    if motor.topLimit == True:
+                        print(motor.topLimit)
+                        motor._stop()
                         running = 0
                     else:
-                        # print('condition c met')
                         pass
                 else:
-                    # print("condition 2 met")
-                    if motor.topFlag == True or motor.moving == False:
-                        # print("condition B met")
-                        motor.setEnable(0)
-                        motor.setEnable(1)
-                        print("second flag reached after: ",(time.time()-t0))
+                    if motor.topLimit == True: # or motor.moving == False:
+                        # motor._stop()
+                        print("jorge")
                         running = 0
                     else:
-                        # print('condition d met')
                         pass
                     time.sleep(0.01)
             self.waitForTopFlagStatus = False
@@ -1135,38 +1125,47 @@ class Ui_MainWindow(QMainWindow):
             pass
 
     def waitForHomeFlag(self,progress_callback):
-        running = 1
-        print("waiting for home flag...")
-        while running == 1:
-            t0 = time.time()
-            if (time.time() - t0) <= 1000: #seconds
-                if motor.homeFlag == True:
-                    motor.setEnable(0)
-                    motor.setEnable(1)
-                    running = 0
-                    motor.homed = True
-                    # self.position_reading = 0
-                    motor.writeHoldingRegs(0x57,4,0)
-                    print("home condition met")
+        if motor.homeLimit == False:    
+            running = 1
+            print("waiting for home flag...")
+            while running == 1:
+                t0 = time.time()
+                if (time.time() - t0) <= 3: #seconds
+                    if motor.homeLimit == True:
+                        motor._stop()
+                        motor.homed = True
+                        # self.position_reading = 0
+                        # motor._writeHoldingRegs(0x57,4,0)
+                        print("home condition met")
+                        running = 0
+                    else:
+                        pass
                 else:
-                    pass
-            else:
-                if motor.homeFlag == True or motor.moving == False:
-                    motor.setEnable(0)
-                    motor.setEnable(1)
-                    running = 0
-                    motor.homed = True
-                    motor.writeHoldingRegs(0x57,4,0)
-                    # self.position_reading = 0
-                    print("home condition 2 met")
-                else:
-                    pass
-            time.sleep(0.01)
+                    if motor.homeLimit == True or motor.moving == False:
+                        motor._stop()
+                        motor.homed = True
+                        print("home condition 2 met")
+                        # motor._writeHoldingRegs(0x57,4,0)
+                        running = 0
+                    else:
+                        pass
+        else:
+            motor._stop()
+            print("already homed")
+            motor.homed = True
+        time.sleep(0.01)
+
+    def stopThread(self,progress_callback):
+        print("3.. ")
+        time.sleep(0.5)
+        print("1.. ")
+        motor._stop()
+        print("stopped")
+        return
 
     def UpdateForceReadingValue(self,progress_callback):
         """Updates the LCD Force Reading Value"""
         while True:
-            # print("updating force...")
             # force_reading_raw = random.random()
             force_reading_raw = cellInstance.cell.get_weight_mean(4)    #5 recomended for accuracy
             self.force_reading_raw = force_reading_raw
@@ -1358,6 +1357,9 @@ class Ui_MainWindow(QMainWindow):
 
     def start_homeFlagCheck(self):
         self.setWorker(self.waitForHomeFlag)
+
+    def start_testStopThread(self):
+        self.setWorker(self.stopThread)
 
 class newLayer(QWidget):
     def __init__(self):
@@ -1619,7 +1621,7 @@ class calibrationDialogWindow(QWidget): # this one
         self.show()
         time.sleep(0.2)
         motor.cleanUp()
-        while motor.topFlag == False:
+        while motor.topLimit == False:
             self.dialogText.setText("running.")
             time.sleep(1)
             self.dialogText.setText("running..")
@@ -1834,10 +1836,10 @@ if __name__ == '__main__':
     mainWin.start_flag_check()
     #test
 
-    fps = 3
-    timer = QtCore.QTimer()
+    # fps = 3
+    # timer = QtCore.QTimer()
     # timer.timeout.connect(mainWin.UpdateGUI)
-    timer.setInterval(int(1000/fps))
-    timer.start()
+    # timer.setInterval(int(1000/fps))
+    # timer.start()
 
     sys.exit(app.exec_())
