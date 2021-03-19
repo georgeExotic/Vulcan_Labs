@@ -4,7 +4,7 @@
 import math
 import time
 # import thread
-import timeit
+import timeit #test
 import random
 import sys
 import serial 
