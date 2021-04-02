@@ -1,33 +1,29 @@
-##code to figure out how to send negative commands to the SLEW register
-##for a negative velocity --> "CCW"
+import json
+import os
 
+import RPi.GPIO as GPIO  # import GPIO
+from hx711 import HX711  # import the class HX711
 
-from pyModbusTCP.client import ModbusClient
-from pyModbusTCP import utils
+class 
 
-def slewMotor(slew):
-    print("input int = ",slew)
+# some JSON:
+x =  '{ "name":"John", "age":30, "city":"New York"}'
 
-    complement = utils.get_2comp(slew,32)       
-    word = utils.long_list_to_word([complement])
+# parse x:
+y = json.loads(x)
 
-    # long = utils.word_list_to_long(complement)
+# the result is a Python dictionary:
+print(y)
 
-    # complement2 = utils.get_list_2comp(long)
+# a Python object (dict):
+x1 = {
+  "name": "John",
+  "age": 30,
+  "city": "New York"
+}
 
-    # word2 = utils.long_list_to_word(complement2)
-    
-    # print(complement)
-    print("2's complement = ", complement , "word", word , "\n")
-    # print("2's complement = ", complement2, "word2 = ",word2, "\n")
+# convert into JSON:
+y1 = json.dumps(x1)
 
-slewMotor(-5000)
-slewMotor(5000)
-
-# [500,0] --> [500] word list to long
-# [500] --> [500,0] long list to word
-
-# get list 2 complement 
-
-                        #val2write is the decimal value to be written to the register
-            # self._motor.write_multiple_registers(startingAddressDEC,valueDEC) 
+# the result is a JSON string:
+print(y1)

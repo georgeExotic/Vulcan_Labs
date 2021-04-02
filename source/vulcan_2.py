@@ -4,7 +4,7 @@
 import math
 import time
 # import thread
-import timeit #tes
+import timeit
 import random
 import sys
 import serial 
@@ -789,6 +789,8 @@ class Ui_MainWindow(QMainWindow):
         self.checkHomed()
         self.updateMode()
         self.disableWidget(self.comboBox.currentIndex())
+        # print(f'connection status: {motor._checkConnection()}')
+
 
     def kbLayer(self):
         kb.show()
@@ -864,7 +866,6 @@ class Ui_MainWindow(QMainWindow):
         else:
             pass
             
-
     def sendMassData(self):
         self.mass = self.nL.input.text()
         motor.mass = int(self.mass)
@@ -891,7 +892,6 @@ class Ui_MainWindow(QMainWindow):
             self.msg2.close()
         else:
             print('nothing matched')
-
 
     def buttonClick(self,button):
         print(button,button.text())
@@ -1083,12 +1083,14 @@ class Ui_MainWindow(QMainWindow):
             self.ModeLineEdit.setText("  - - - - -")
 
     def getMotorPosition(self,progress_callback):
-        while  motor.homed:
+        print("here!")
+        while True:
             print(f'elapsed time: {time.time() - self.StartingTime}')
             self.position_reading = motor.updatePosition()
             print(f'position reading: {self.position_reading}\n')
             # self.updateCylinder(self.position_reading)
-            time.sleep(0.1)
+            print(f'connection status: {motor._checkConnection()}')
+            time.sleep(0.5)
 
     def checkFlags(self,progress_callback):
         while True:
@@ -1134,8 +1136,13 @@ class Ui_MainWindow(QMainWindow):
                     if motor.homeLimit == True:
                         motor._stop()
                         motor.homed = True
+                        offsetValue = motor.updatePosition()
+                        print(f'offset: {offsetValue}')
                         # self.position_reading = 0
-                        # motor._writeHoldingRegs(0x57,4,0)
+                        try:
+                            motor._writeHoldingRegs(0x57,4,0)
+                        except:
+                            Print("ERROR while overwriting absolute value")
                         print("home condition met")
                         running = 0
                     else:
@@ -1144,8 +1151,13 @@ class Ui_MainWindow(QMainWindow):
                     if motor.homeLimit == True or motor.moving == False:
                         motor._stop()
                         motor.homed = True
+                        offsetValue = motor.updatePosition()
+                        print(f'offset: {offsetValue}')
                         print("home condition 2 met")
-                        # motor._writeHoldingRegs(0x57,4,0)
+                        try:
+                            motor._writeHoldingRegs(0x57,4,0)
+                        except:
+                            Print("ERROR while overwriting absolute value")
                         running = 0
                     else:
                         pass
@@ -1167,14 +1179,12 @@ class Ui_MainWindow(QMainWindow):
         """Updates the LCD Force Reading Value"""
         while True:
             # force_reading_raw = random.random()
-            force_reading_raw = cellInstance.cell.get_weight_mean(4)    #5 recomended for accuracy
+            force_reading_raw = cellInstance.cell.get_weight_mean(5)    #5 recomended for accuracy
             self.force_reading_raw = force_reading_raw
             if force_reading_raw < 0:
                 force_reading_raw = 0
             force_reading_kg = round(force_reading_raw,3)            #(grams to kg)
             self.force_reading_kg = force_reading_kg
-            # pressure = MQtt()
-            # pressure.publish(force_reading_kg,"force")
             force_reading_N = round(force_reading_kg*9.81,3)
             self.force_reading_N = force_reading_N
             pistonDiameter = 19.05 #mm
@@ -1184,13 +1194,14 @@ class Ui_MainWindow(QMainWindow):
             pressure_reading = round((force_reading_N/Area)/1000,3)  #Kpa
             self.pressure_reading = pressure_reading
 
-            self.lcdNumber.display(force_reading_kg)
+            # self.lcdNumber.display(force_reading_kg) # Had to remove LCD update as Qobjects cannot be called in threads
             # DB.insert_value('weight', force_reading_kg)
-            self.lcdNumber2.display(pressure_reading)
+            # self.lcdNumber2.display(pressure_reading)
             # DB.insert_value('pressure', pressure_reading)
-            self.lcdNumber3.display(force_reading_N)
+            # self.lcdNumber3.display(force_reading_N)
             # DB.insert_value('force', force_reading_N)
-            time.sleep(0.1)
+            time.sleep(0.5)
+            print(f'pressure_reading: {pressure_reading}')
         return "updated force"
 
     def Calibration(self):
@@ -1811,7 +1822,7 @@ class LoadCell():
 if __name__ == '__main__':
     motor = Motor()
     cellInstance = LoadCell()
-    DB = sqlDatabase()
+    # DB = sqlDatabase()
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
     kb = VirtualKeyboard()
@@ -1827,14 +1838,11 @@ if __name__ == '__main__':
     styleSheetStr = open(styleFile,"r").read()
     mainWin.setStyleSheet(styleSheetStr)
     mainWin.show()
-    # mainWin.start_long_test_fn()
     # mainWin.start_plotting()
-    # mainWin.start_test_fn()
-    # mainWin.start_long_test_fn()
     # mainWin.start_force_reading()
-    # mainWin.start_position_reading()
+    mainWin.start_position_reading()
     mainWin.start_flag_check()
-    #test
+    # print(f'connection status: {motor._checkConnection()}')
 
     # fps = 3
     # timer = QtCore.QTimer()

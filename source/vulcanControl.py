@@ -3,6 +3,8 @@ from pyModbusTCP import utils
 # import paho.mqtt.client as paho
 from ast import literal_eval #from hex to dec
 import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
+from hx711 import HX711 #import HX711 class
+
 
 import time
 import math
@@ -32,6 +34,12 @@ class limitSwitch:
         self.updateSwitch()
     def updateSwitch(self):
         self.flag = GPIO.input(self.limitPin)
+
+class loadCell:
+    def __init__(self):
+        self.pd_sck_pin = 20 
+        self.dout_pin = 21
+        
 
 class Motor:
     #Initialization of LMD57
@@ -102,9 +110,6 @@ class Motor:
         ###Hardware Flags
         self.moving = False
 
-
-        self.homed = False  # has been homed Default False
-
         ###Position
         self.absolutePosition = 0
 
@@ -167,8 +172,9 @@ class Motor:
             if not self._motor.open():
                 self.connectionStatus = 0
                 return "unable to connect" #print("unable to connect to motor")
+                self._connectModbusClient()
         self.connectionStatus = 1
-        return "connected!"
+        return self.connectionStatus
 
     def _hex2dec(self,hex):
         hex = str(hex)
@@ -220,35 +226,43 @@ class Motor:
     def _readHoldingRegs(self,startingAddressHex,regSize = 1):
         startingAddressDEC = self._hex2dec(startingAddressHex)
         reading = " "
-        if regSize > 1 :
-            regSize = 2 #registers are 2 or 1 bytes
-            reg = self._motor.read_holding_registers(startingAddressDEC,regSize)
-            if reg is not None:
-                ans = utils.word_list_to_long(reg,False)
-                complement = utils.get_list_2comp(ans,32)
-                reading = complement[0]
+        try:
+            if regSize > 1 :
+                regSize = 2 #registers are 2 or 1 bytes
+                reg = self._motor.read_holding_registers(startingAddressDEC,regSize)
+                if reg is not None:
+                    ans = utils.word_list_to_long(reg,False)
+                    complement = utils.get_list_2comp(ans,32)
+                    reading = complement[0]
+                else:
+                    # print("Motor Reading NONE as output")12
+                    pass
             else:
-                # print("Motor Reading NONE as output")12
-                pass
-        else:
-            regSize = 1
-            reg = self._motor.read_holding_registers(startingAddressDEC,regSize)
-            if reg is not None:
-                reading = reg[0]
-            else:
-                # print("Motor Reading NONE as output")
-                pass
+                regSize = 1
+                reg = self._motor.read_holding_registers(startingAddressDEC,regSize)
+                if reg is not None:
+                    reading = reg[0]
+                else:
+                    # print("Motor Reading NONE as output")
+                    pass
+        except:
+            self._connectModbusClient()
+            print("ERROR - pt 2")
         return reading
 
     ###function to write to any register of LMD57 modbus register map
     def _writeHoldingRegs(self,startingAddressHEX,regSize,value):
         startingAddressDEC = self._hex2dec(startingAddressHEX)
-        if regSize > 2:
-            complement = utils.get_2comp(value, 32)
-            word = utils.long_list_to_word([complement],False)
-            self._motor.write_multiple_registers(startingAddressDEC,word)
-        else:
-             self._motor.write_multiple_registers(startingAddressDEC,[value])
+        try:
+            if regSize > 2:
+                complement = utils.get_2comp(value, 32)
+                word = utils.long_list_to_word([complement],False)
+                self._motor.write_multiple_registers(startingAddressDEC,word)
+            else:
+                self._motor.write_multiple_registers(startingAddressDEC,[value])
+        except:
+            self._connectModbusClient()
+            print("ERROR Modbus Reconnected.")
         return
 
     ###function to set the hMT technology from schneider motor
@@ -342,10 +356,10 @@ class Motor:
     def home(self):
         
         if self.running == False and self.homeLimit == False:
+            # self._writeHoldingRegs(0x57,4,0)
             print("motor.home running")
             self.setProfiles("homing")
             self.move(-40)  
-            self.homed = True    
         return
 
     def testStop(self):
@@ -356,11 +370,11 @@ class Motor:
 
     def updatePosition(self):
         try:
-            pos = self._readHoldingRegs(0x57,1)
-            position_reading = self.steps2displacement(pos[0])
+            pos = self._readHoldingRegs(0x57,4)
+            position_reading = pos
         except:
-            print("ERROR while reading position")
-            position_reading = 0
+            position_reading = 0.69
+        print(f'pos: {pos}')
 
         return position_reading
 
