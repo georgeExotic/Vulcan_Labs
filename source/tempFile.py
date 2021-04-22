@@ -71,7 +71,7 @@ class Ui_MainWindow(QMainWindow):
         self.homeLimit = False
         self.positionReading = None
 
-        self.readingPos = False
+        self.jogging = False
 
         self.start_worker_threadManager()
         print("running")
@@ -175,7 +175,9 @@ class Ui_MainWindow(QMainWindow):
         button8_frame2 = self.create_buttons("Down")
         button8_frame2.clicked.connect(self.jogDown)
         button9_frame2 = self.create_buttons("Home")
-        button10_frame2 = self.create_buttons("Extract")
+        button9_frame2.clicked.connect(self.home)
+        button10_frame2 = self.create_buttons("Stop")
+        button10_frame2.clicked.connect(self.stop)
 
         #-labels
         label1_frame2 = self.create_label("Label 1")
@@ -308,24 +310,28 @@ class Ui_MainWindow(QMainWindow):
             print("load cell already connected")
 
     def jogUp(self):
-        positionRead = False
-        while positionRead == False:
-            if self.readingPos == False:
-                self.motor.move(4)
-                time.sleep(0.01)
-                positionRead = True
-            else:
-                pass
+        self.jogging = True
+        self.motor.move(4)
+        time.sleep(0.01)
+        self.jogging = False
 
     def jogDown(self):
-        positionRead = False
-        while positionRead == False:
-            if self.readingPos == False:
-                self.motor.move(-4)
-                time.sleep(0.01)
-                positionRead = True
-            else:
-                pass
+        self.jogging = True
+        self.motor.move(-4)
+        time.sleep(0.01)
+        self.jogging = False
+
+    def stop(self):
+        self.jogging = True
+        self.motor._stop()
+        time.sleep(1)
+        self.jogging = False
+
+    def home(self):
+        self.jogging = True
+        self.motor.home()
+        time.sleep(0.1)
+        self.jogging = False
 
     # THREAD UTILITY FUNCTIONS
     
@@ -364,10 +370,11 @@ class Ui_MainWindow(QMainWindow):
 
     def thread_readPosition(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback):
         while True:
-            self.readingPos = True
-            position = self.motor.updatePosition()
-            positionReading_callback.emit(position)
-            self.readingPos = False
+            if self.jogging == False:
+                position = self.motor.updatePosition()
+                positionReading_callback.emit(position)
+            else:
+                pass
             time.sleep(0.1)
 
     def start_worker_readPosition(self):

@@ -547,6 +547,7 @@ class Motor:
 
 if __name__ == "__main__":
     c = Motor()
+    c.setProfiles("homing")
     c.move(10)
 
     # start_time = time.time()
