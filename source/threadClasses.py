@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget, QGridLayout
 from PyQt5.QtGui import QPixmap
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtCore import QThreadPool, QRunnable, QThread, pyqtSignal, pyqtSlot, QObject
+from PyQt5.QtCore import QThreadPool, QRunnable, QThread, pyqtSignal, pyqtSlot, QObject, QMutex
 from PyQt5.QtGui import QCursor
 
 class WorkerSignals(QObject):
@@ -20,7 +20,11 @@ class WorkerSignals(QObject):
     finished = pyqtSignal()
     error = pyqtSignal(tuple)
     result = pyqtSignal(object)
-    progress = pyqtSignal(int)
+    progress = pyqtSignal(float)
+    forceReading = pyqtSignal(float)
+    topLimit = pyqtSignal(bool)
+    homeLimit = pyqtSignal(bool)
+    positionReading = pyqtSignal(int)
 
 class Worker(QRunnable):
     '''
@@ -41,6 +45,10 @@ class Worker(QRunnable):
         self.signals = WorkerSignals()
 
         self.kwargs['progress_callback'] = self.signals.progress
+        self.kwargs['forceReading_callback'] = self.signals.forceReading
+        self.kwargs['topLimit_callback'] = self.signals.topLimit
+        self.kwargs['homeLimit_callback'] = self.signals.homeLimit
+        self.kwargs['positionReading_callback'] = self.signals.positionReading
 
     @pyqtSlot()
     def run(self):

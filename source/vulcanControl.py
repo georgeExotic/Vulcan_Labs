@@ -247,7 +247,7 @@ class Motor:
                     pass
         except:
             self._connectModbusClient()
-            print("ERROR - pt 2")
+            print("ERROR - readHoldingRegs")
         return reading
 
     ###function to write to any register of LMD57 modbus register map

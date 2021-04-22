@@ -1,3 +1,8 @@
+import os
+import pickle
+import RPi.GPIO as GPIO #import I/O interface
+from hx711 import HX711 #import HX711 class
+
 class LoadCell():
     def __init__(self):
         GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
@@ -13,6 +18,7 @@ class LoadCell():
             self.calibrated = 0
         self.reading = 0
         self.initializing = 0
+        self.force_reading = 0
  
     def userCalibrationPart1(self):
         self.cell = HX711(self.dout_pin,self.pd_sckPin)
@@ -68,6 +74,15 @@ class LoadCell():
                 self.calibrated = 1
         
         self.initializing = 0
+    
+    def readForce(self):
+        try:
+            force_reading_raw = self.cell.get_weight_mean(5)
+            force_reading_kg = round(force_reading_raw,3)
+        except:
+            force_reading_kg = 0
+            print('ERROR WHILE READING LOAD CELL')
+        return force_reading_kg
 
     def zeroCell(self):
         self.cell.zero()
