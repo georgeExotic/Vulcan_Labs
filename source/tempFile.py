@@ -141,7 +141,7 @@ class Ui_MainWindow(QMainWindow):
 
         # building widgets - frame 2
         #-title
-        title_frame2 = QLabel("testing grounds")
+        title_frame2 = QLabel("Testing")
         title_frame2.setAlignment(QtCore.Qt.AlignCenter)
         title_frame2.setWordWrap(True)
         title_frame2.setStyleSheet(
@@ -152,7 +152,7 @@ class Ui_MainWindow(QMainWindow):
         self.widgets["title_frame2"].append(title_frame2)
 
         #-button1
-        button1_frame2 = self.create_buttons("Button 1")
+        button1_frame2 = self.create_buttons("--")
         button1_frame2.clicked.connect(self.show_frame1)
         button2_frame2 = self.create_buttons("Connect Motor")
         button2_frame2.setFixedWidth(140)
@@ -180,7 +180,7 @@ class Ui_MainWindow(QMainWindow):
         button10_frame2.clicked.connect(self.stop)
 
         #-labels
-        label1_frame2 = self.create_label("Label 1")
+        label1_frame2 = self.create_label("--")
         label2_frame2 = self.create_label("Motor: Not Connected")
         label3_frame2 = self.create_label("Load Cell: Not Connected")
         label4_frame2 = self.create_label("Force: --")
@@ -189,8 +189,8 @@ class Ui_MainWindow(QMainWindow):
         label5_1_frame2 = self.create_label("Thread: --")
         label6_frame2 = self.create_label("Pos: --")
         label6_1_frame2 = self.create_label("Thread: --")
-        label7_frame2 = self.create_label("Label 7")
-        label8_frame2 = self.create_label("Label 8")
+        label7_frame2 = self.create_label("--")
+        label8_frame2 = self.create_label("--")
 
         # compile widgets - frame 2
         self.widgets["button1_frame2"].append(button1_frame2)
@@ -230,11 +230,11 @@ class Ui_MainWindow(QMainWindow):
         self.grid.addWidget(self.widgets["label2_frame2"][-1], 3, 5)
         self.grid.addWidget(self.widgets["label3_frame2"][-1], 4, 5)
         self.grid.addWidget(self.widgets["label4_frame2"][-1], 5, 5)
-        self.grid.addWidget(self.widgets["label4_1_frame2"][-1], 5, 1)
+        self.grid.addWidget(self.widgets["label4_1_frame2"][-1], 5, 2)
         self.grid.addWidget(self.widgets["label5_frame2"][-1], 6, 5)
-        self.grid.addWidget(self.widgets["label5_1_frame2"][-1], 6, 1)
+        self.grid.addWidget(self.widgets["label5_1_frame2"][-1], 6, 2)
         self.grid.addWidget(self.widgets["label6_frame2"][-1], 7, 5)
-        self.grid.addWidget(self.widgets["label6_1_frame2"][-1], 7, 1)
+        self.grid.addWidget(self.widgets["label6_1_frame2"][-1], 7, 2)
         self.grid.addWidget(self.widgets["label7_frame2"][-1], 8, 5)
         self.grid.addWidget(self.widgets["label8_frame2"][-1], 9, 5)
 
@@ -312,13 +312,13 @@ class Ui_MainWindow(QMainWindow):
     def jogUp(self):
         self.jogging = True
         self.motor.move(4)
-        time.sleep(0.01)
+        time.sleep(0.1)
         self.jogging = False
 
     def jogDown(self):
         self.jogging = True
         self.motor.move(-4)
-        time.sleep(0.01)
+        time.sleep(0.1)
         self.jogging = False
 
     def stop(self):
@@ -370,6 +370,7 @@ class Ui_MainWindow(QMainWindow):
 
     def thread_readPosition(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback):
         while True:
+            self.motor._checkConnection()
             if self.jogging == False:
                 position = self.motor.updatePosition()
                 positionReading_callback.emit(position)

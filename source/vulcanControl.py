@@ -156,9 +156,12 @@ class Motor:
     ###function to connect to LMD57 using modbus TCP
     def _connectModbusClient(self):
         #define mosbus server and host
-        self._motor = ModbusClient()
-        self._motor.host(self.SERVER_HOST)
-        self._motor.port(self.SERVER_PORT)
+        self._motor = ModbusClient(host = self.SERVER_HOST, port = self.SERVER_PORT, unit_id=1, auto_open=True, debug = True)
+        # self._motor.host(self.SERVER_HOST)
+        # self._motor.port(self.SERVER_PORT)
+        # self._motor.unit_id = 1
+        # self._motor.auto_open = True
+        # self._motor.debug = True
         self._motor.open()
         if self._motor.is_open():
             print("connected to " + self.SERVER_HOST + ":" + str(self.SERVER_PORT))
@@ -224,6 +227,7 @@ class Motor:
 
     ###function to read from register of LMD57 modbus register map
     def _readHoldingRegs(self,startingAddressHex,regSize = 1):
+        self._checkConnection()
         startingAddressDEC = self._hex2dec(startingAddressHex)
         reading = " "
         try:
@@ -235,15 +239,15 @@ class Motor:
                     complement = utils.get_list_2comp(ans,32)
                     reading = complement[0]
                 else:
-                    # print("Motor Reading NONE as output")12
-                    pass
+                    print(f"Motor Reading {reg} as output 1")
+                    reading = 0 # TEMP
             else:
                 regSize = 1
                 reg = self._motor.read_holding_registers(startingAddressDEC,regSize)
                 if reg is not None:
                     reading = reg[0]
                 else:
-                    # print("Motor Reading NONE as output")
+                    print(f"Motor Reading {reg} as output 2")
                     pass
         except:
             self._connectModbusClient()
@@ -252,6 +256,7 @@ class Motor:
 
     ###function to write to any register of LMD57 modbus register map
     def _writeHoldingRegs(self,startingAddressHEX,regSize,value):
+        self._checkConnection()
         startingAddressDEC = self._hex2dec(startingAddressHEX)
         try:
             if regSize > 2:
@@ -373,7 +378,7 @@ class Motor:
             pos = self._readHoldingRegs(0x57,4)
             position_reading = pos
         except:
-            position_reading = 0.69
+            position_reading = 69
         print(f'pos: {pos}')
 
         return position_reading
