@@ -7,6 +7,8 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import QThreadPool, QRunnable, QThread, pyqtSignal, pyqtSlot, QMutex
 from PyQt5.QtGui import QCursor
 
+from ui_main import ui_main
+
 from threadClasses import WorkerSignals, Worker
 # from LoadCell import LoadCell
 # from vulcanControl import Motor
@@ -20,44 +22,11 @@ class Ui_MainWindow(QMainWindow):
         self.motor = types.SimpleNamespace()
         self.cellInstance = types.SimpleNamespace()
         self.mutex = QMutex()
-        self.widgets = {
-            "title": [],
-            "button1_frame1": [],
-            "title_frame2": [],
-            "button1_frame2": [],
-            "button2_frame2": [],
-            "button3_frame2": [],
-            "button4_frame2": [],
-            "button5_frame2": [],
-            "button6_frame2": [],
-            "button7_frame2": [],
-            "button8_frame2": [],
-            "button9_frame2": [],
-            "button10_frame2": [],
-            "label1_frame2": [],
-            "label2_frame2": [],
-            "label3_frame2": [],
-            "label4_frame2": [],
-            "label4_1_frame2": [],
-            "label5_frame2": [],
-            "label5_1_frame2": [],
-            "label6_frame2": [],
-            "label6_1_frame2": [],
-            "label7_frame2": [],
-            "label8_frame2": [],
-        }
 
-        self.centralWidget = QWidget()
-        self.setCentralWidget(self.centralWidget)
-        self.grid = QGridLayout(self.centralWidget)
-        # self.centralWidget.setLayout(self.grid)
-
-        self.setWindowTitle("Test Program")
-        self.setFixedWidth(800)
-        self.setFixedHeight(480)
-        self.setStyleSheet("background: #161616;")
-
-        self.frame1()
+###
+        self.m_ui = ui_main()
+        self.m_ui.setupUi(self)
+###
 
         self.show()
 

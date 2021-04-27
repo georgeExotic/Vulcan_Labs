@@ -8,10 +8,10 @@ from PyQt5.QtCore import QThreadPool, QRunnable, QThread, pyqtSignal, pyqtSlot, 
 from PyQt5.QtGui import QCursor
 
 from threadClasses import WorkerSignals, Worker
-# from LoadCell import LoadCell
-# from vulcanControl import Motor
-# import RPi.GPIO as GPIO #import I/O interface
-# from hx711 import HX711 #import HX711 class
+from LoadCell import LoadCell
+from vulcanControl import Motor
+import RPi.GPIO as GPIO #import I/O interface
+from hx711 import HX711 #import HX711 class
 
 class Ui_MainWindow(QMainWindow):
     def __init__(self):
@@ -295,7 +295,7 @@ class Ui_MainWindow(QMainWindow):
 
     def createMotorInstance(self):
         if self.motorConnected == False:
-            # self.motor = Motor()
+            self.motor = Motor()
             self.motorConnected = True
             self.widgets["label2_frame2"][-1].setText("Motor: Connected")
         else:
@@ -303,7 +303,7 @@ class Ui_MainWindow(QMainWindow):
 
     def createCellInstance(self):
         if self.cellConnected == False:
-            # self.cellInstance = LoadCell()
+            self.cellInstance = LoadCell()
             self.cellConnected = True
             self.widgets["label3_frame2"][-1].setText("Load Cell: Connected")
         else:
