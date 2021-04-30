@@ -39,7 +39,7 @@ class Ui_MainWindow(QMainWindow):
         self.homeLimit = False
         self.positionReading = None
         self.force_threadStarted = 0
-        self.position_threadStarted = 1
+        self.position_threadStarted = 0
 
         self.jogging = False
 
