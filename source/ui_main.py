@@ -8,7 +8,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PyQt5.QtWidgets import QDialog
 
 class ui_main(object):
     def setupUi(self, MainWindow):
@@ -506,3 +506,55 @@ class ui_main(object):
             self.jogup_lineEdit.setReadOnly(False)
         else:
             self.jogup_lineEdit.setReadOnly(True)
+
+    def launchPowderPopup(self):
+        self.PowderDialogWindow = QDialog()
+        powderPopUp = Ui_powderDialog()
+        powderPopUp.setupUi(self.PowderDialogWindow)
+        self.PowderDialogWindow.show()
+        self.PowderDialogWindow.exec_()
+
+class Ui_powderDialog(object):
+    def setupUi(self, PowderDialog):
+        PowderDialog.setObjectName("PowderDialog")
+        PowderDialog.resize(630, 237)
+        # PowderDialog.setMinimumSize(QtCore.QSize(630, 237))
+        # sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+        # sizePolicy.setHorizontalStretch(0)
+        # sizePolicy.setVerticalStretch(0)
+        # sizePolicy.setHeightForWidth(Dialog.sizePolicy().hasHeightForWidth())
+        # PowderDialog.setSizePolicy(sizePolicy)
+        PowderDialog.setMaximumSize(QtCore.QSize(630, 16777215))
+        PowderDialog.setStyleSheet("background: rgb(195,195,195);")
+        self.verticalLayoutWidget = QtWidgets.QWidget(PowderDialog)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(29, 19, 570, 191))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.label.setStyleSheet("color: #333; margin: 20; font: 20px \"arial black\"")
+        self.label.setWordWrap(True)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        # self.pushButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.buttonBox = QtWidgets.QDialogButtonBox(self.verticalLayoutWidget)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        # self.buttonBox.setStyleSheet("*{border: 4px solid \'#333\'; border-radius: 10px; font: bold 30px \"Arial Black\"; color: \'white\'; padding: 5px 5px; margin: 0px 150px; background: #555} *:hover{background: \'#369\';} QDialogButtonBox::Ok {background: #fff;}")
+        self.buttonBox.setStyleSheet("QDialogButtonBox:QPushButton {color: '#F00';}")
+        self.buttonBox.setObjectName("buttonBox")
+        self.horizontalLayout.addWidget(self.buttonBox)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+
+        self.retranslateUi(PowderDialog)
+        self.buttonBox.accepted.connect(PowderDialog.accept)
+        self.buttonBox.rejected.connect(PowderDialog.reject)
+        QtCore.QMetaObject.connectSlotsByName(PowderDialog)
+
+    def retranslateUi(self, PowderDialog):
+        _translate = QtCore.QCoreApplication.translate
+        PowderDialog.setWindowTitle(_translate("PowderDialog", "PowderDialog"))
+        self.label.setText(_translate("PowderDialog", "Run has been paused to allow powder to be inserted. Once powder is in place select \'Ok\' to resume the run."))
+        # self.pushButton.setText(_translate("PowderDialog", "Continue"))

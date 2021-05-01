@@ -56,7 +56,9 @@ class Ui_MainWindow(QMainWindow):
         self.m_ui.home_button_page1.clicked.connect(self.home)
         self.m_ui.stopButton_page1.clicked.connect(self.stop)
         self.m_ui.stopButton_page2.clicked.connect(self.stop)
-        self.m_ui.runButton_page2.clicked.connect(self.startRun)
+        # self.m_ui.runButton_page2.clicked.connect(self.startRun)
+        self.m_ui.runButton_page2.clicked.connect(self.m_ui.launchPowderPopup)
+
 
 
     def clear_widgets(self):
@@ -143,21 +145,15 @@ class Ui_MainWindow(QMainWindow):
             print("load cell already connected")
 
     def jogUp(self):
-        # mutex = QMutex()
         self.jogging = True
-        # mutex.lock()
         self.motor.move(4)
         time.sleep(0.1)
-        # mutex.unlock()
         self.jogging = False
 
     def jogDown(self):
-        # mutex = QMutex()
         self.jogging = True
-        # mutex.lock()
         self.motor.move(-4)
         time.sleep(0.1)
-        # mutex.unlock()
         self.jogging = False
 
     def stop(self):
@@ -175,14 +171,48 @@ class Ui_MainWindow(QMainWindow):
     def startRun(self):
         try:
             layerBefore, lbUnit = float(self.m_ui.layerBefore_lineedit.text()), self.m_ui.layerBefore_comboBox.currentIndex()
-            layerAfter = float(self.m_ui.layerAfter_lineedit.text())
+            layerAfter, laUnit = float(self.m_ui.layerAfter_lineedit.text()), self.m_ui.layerAfter_comboBox.currentIndex()
             layerCount = int(self.m_ui.layerCount_lineedit.text())
+
             if type(layerBefore) == float and type(layerAfter) == float and type(layerCount) == int:
-                print(layerCount, layerBefore, lbUnit)
+                c1, c2, LB, LA, LC = self.checkRunInputs(layerBefore, lbUnit, layerAfter, laUnit, layerCount)
+                if c1 == True and c2 == True:
+                    print(f'sent run signal to motor with params LB:{LB}, LA:{LA}, LC:{LC}')
+                    # self.motor.run(LB, LA, LC)
+                    print("raising piston to top...")
+                    time.sleep(2)
+                    print('reached top')
+                    print('lowering piston to LA height...')
+                    time.sleep(1)
+                    print('ready for powder')
+                    self.powderPopup()
             else:
                 print('ERROR - Run Failed')
         except:
             print('ERROR - Invalid Values for Run Command')
+
+    def checkRunInputs(self, layerBefore, lbUnit, layerAfter, laUnit, layerCount):
+        LC = layerCount
+        if lbUnit == 1:
+            LB = layerBefore/1000
+        else:
+            LB = layerBefore
+        if laUnit == 1:
+            LA = layerAfter/1000
+        else:
+            LA = layerAfter
+        if LA > LB:
+            print('ERROR - Layer After must be smaller than Layer Before')
+            check_1 = False
+        else:
+            check_1 = True
+        if (LB * LC) > 30:
+            print('ERROR - Compaction Height Limit Reached')
+            check_2 = False
+        else:
+            check_2 = True
+        print(f'LB: {LB}, LA {LA}')
+        return check_1, check_2, LB, LA, LC
 
     # THREAD UTILITY FUNCTIONS
     
@@ -223,16 +253,11 @@ class Ui_MainWindow(QMainWindow):
     def thread_readPosition(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback):
         if self.position_threadStarted == 0:
             self.position_threadStarted = 1
-            # mutex = QMutex()
             while True:
-                # mutex.lock()
-                # time.sleep(0.01)
-                # self.motor._checkConnection()
                 if self.jogging == False:
                     position = self.motor.updatePosition()
                 else:
                     position = None
-                # mutex.unlock()
                 positionReading_callback.emit(position)
         else:
             print("position reading thread already started.")
