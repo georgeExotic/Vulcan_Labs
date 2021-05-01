@@ -47,7 +47,6 @@ class Ui_MainWindow(QMainWindow):
 
         # UI MODIFICATIONS
         self.m_ui.stackedWidget.setCurrentIndex(0)
-        # self.m_ui.layerBefore_comboBox.addItem('option 1')
 
         # BUTTON FUNCTION MAPPING
         self.m_ui.connectMotor_button.clicked.connect(self.createMotorInstance)
@@ -91,7 +90,6 @@ class Ui_MainWindow(QMainWindow):
     def forceReading_return(self, n):
         self.forceReading = n
         self.m_ui.loadReading_label.setText(f"{self.forceReading} g")
-        # self.widgets["label4_frame2"][-1].setText(f"Force: {self.forceReading} kg")
 
     def topLimit_return(self, b):
         self.topLimit = b
@@ -99,12 +97,10 @@ class Ui_MainWindow(QMainWindow):
     def homeLimit_return(self, b):
         self.homeLimit = b
         self.m_ui.flag_reading_label.setText(f'{self.topLimit}/{self.homeLimit}')
-        # self.widgets["label5_frame2"][-1].setText(f'Top: {self.topLimit} Home: {self.homeLimit}')
 
     def positionReading_return(self, n):
         self.positionReading = n
         self.m_ui.positionReading_label.setText(f"{self.positionReading}")
-        # self.widgets["label6_frame2"][-1].setText(f'Pos: {self.positionReading}')
 
     def longer_test_fn(self, progress_callback):
         for n in range(0,5):
@@ -147,15 +143,21 @@ class Ui_MainWindow(QMainWindow):
             print("load cell already connected")
 
     def jogUp(self):
+        # mutex = QMutex()
         self.jogging = True
+        # mutex.lock()
         self.motor.move(4)
         time.sleep(0.1)
+        # mutex.unlock()
         self.jogging = False
 
     def jogDown(self):
+        # mutex = QMutex()
         self.jogging = True
+        # mutex.lock()
         self.motor.move(-4)
         time.sleep(0.1)
+        # mutex.unlock()
         self.jogging = False
 
     def stop(self):
@@ -196,7 +198,6 @@ class Ui_MainWindow(QMainWindow):
 
     def start_worker_readForce(self):
         self.readForceStatus = True
-        # self.widgets["label4_1_frame2"][-1].setText("Thread: Active")
         self.setWorker(self.thread_readForce)
 
     def threadManager(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback):
@@ -217,26 +218,26 @@ class Ui_MainWindow(QMainWindow):
             time.sleep(0.1)
 
     def start_worker_checkFlags(self):
-        # self.widgets["label5_1_frame2"][-1].setText("Thread: Active")
-        # self.widgets["label5_frame2"][-1].setText(f'Top: {self.topLimit} Home: {self.homeLimit}')
         self.setWorker(self.thread_checkFlags)
 
     def thread_readPosition(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback):
         if self.position_threadStarted == 0:
             self.position_threadStarted = 1
+            # mutex = QMutex()
             while True:
-                self.motor._checkConnection()
+                # mutex.lock()
+                # time.sleep(0.01)
+                # self.motor._checkConnection()
                 if self.jogging == False:
                     position = self.motor.updatePosition()
-                    positionReading_callback.emit(position)
                 else:
-                    pass
-            time.sleep(0.1)
+                    position = None
+                # mutex.unlock()
+                positionReading_callback.emit(position)
         else:
             print("position reading thread already started.")
 
     def start_worker_readPosition(self):
-        # self.widgets["label6_1_frame2"][-1].setText("Thread: Active")
         self.setWorker(self.thread_readPosition)
 
     def waitForTopFlag(self):

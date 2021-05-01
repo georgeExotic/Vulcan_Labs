@@ -5,9 +5,9 @@ from ast import literal_eval #from hex to dec
 import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
 from hx711 import HX711 #import HX711 class
 
-
 import time
 import math
+import threading
 
 class MQtt():
     #settup MQTT
@@ -37,9 +37,8 @@ class limitSwitch:
 
 class loadCell:
     def __init__(self):
-        self.pd_sck_pin = 20 
+        self.pd_sck_pin = 20
         self.dout_pin = 21
-        
 
 class Motor:
     #Initialization of LMD57
@@ -55,6 +54,7 @@ class Motor:
         self.connectionStatus = 0
         self._connectModbusClient()
         self._checkConnection()
+        self.lock = threading.Lock()
 
         ###Velocities###
             #Jogging
@@ -174,8 +174,8 @@ class Motor:
         if not self._motor.is_open():
             if not self._motor.open():
                 self.connectionStatus = 0
-                return "unable to connect" #print("unable to connect to motor")
                 self._connectModbusClient()
+                return "unable to connect" #print("unable to connect to motor")
         self.connectionStatus = 1
         return self.connectionStatus
 
@@ -227,47 +227,49 @@ class Motor:
 
     ###function to read from register of LMD57 modbus register map
     def _readHoldingRegs(self,startingAddressHex,regSize = 1):
-        self._checkConnection()
-        startingAddressDEC = self._hex2dec(startingAddressHex)
-        reading = " "
-        try:
-            if regSize > 1 :
-                regSize = 2 #registers are 2 or 1 bytes
-                reg = self._motor.read_holding_registers(startingAddressDEC,regSize)
-                if reg is not None:
-                    ans = utils.word_list_to_long(reg,False)
-                    complement = utils.get_list_2comp(ans,32)
-                    reading = complement[0]
+        with self.lock:
+            self._checkConnection()
+            startingAddressDEC = self._hex2dec(startingAddressHex)
+            reading = " "
+            try:
+                if regSize > 1 :
+                    regSize = 2 #registers are 2 or 1 bytes
+                    reg = self._motor.read_holding_registers(startingAddressDEC,regSize)
+                    if reg is not None:
+                        ans = utils.word_list_to_long(reg,False)
+                        complement = utils.get_list_2comp(ans,32)
+                        reading = complement[0]
+                    else:
+                        print(f"Motor Reading {reg} as output 1")
+                        reading = 0 # TEMP
                 else:
-                    print(f"Motor Reading {reg} as output 1")
-                    reading = 0 # TEMP
-            else:
-                regSize = 1
-                reg = self._motor.read_holding_registers(startingAddressDEC,regSize)
-                if reg is not None:
-                    reading = reg[0]
-                else:
-                    print(f"Motor Reading {reg} as output 2")
-                    pass
-        except:
-            self._connectModbusClient()
-            print("ERROR - readHoldingRegs")
+                    regSize = 1
+                    reg = self._motor.read_holding_registers(startingAddressDEC,regSize)
+                    if reg is not None:
+                        reading = reg[0]
+                    else:
+                        print(f"Motor Reading {reg} as output 2")
+                        pass
+            except:
+                self._connectModbusClient()
+                print("ERROR - readHoldingRegs")
         return reading
 
     ###function to write to any register of LMD57 modbus register map
     def _writeHoldingRegs(self,startingAddressHEX,regSize,value):
-        self._checkConnection()
-        startingAddressDEC = self._hex2dec(startingAddressHEX)
-        try:
-            if regSize > 2:
-                complement = utils.get_2comp(value, 32)
-                word = utils.long_list_to_word([complement],False)
-                self._motor.write_multiple_registers(startingAddressDEC,word)
-            else:
-                self._motor.write_multiple_registers(startingAddressDEC,[value])
-        except:
-            self._connectModbusClient()
-            print("ERROR Modbus Reconnected.")
+        with self.lock:
+            self._checkConnection()
+            startingAddressDEC = self._hex2dec(startingAddressHEX)
+            try:
+                if regSize > 2:
+                    complement = utils.get_2comp(value, 32)
+                    word = utils.long_list_to_word([complement],False)
+                    self._motor.write_multiple_registers(startingAddressDEC,word)
+                else:
+                    self._motor.write_multiple_registers(startingAddressDEC,[value])
+            except:
+                self._connectModbusClient()
+                print("ERROR Modbus Reconnected.")
         return
 
     ###function to set the hMT technology from schneider motor
