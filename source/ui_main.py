@@ -539,10 +539,8 @@ class Ui_powderDialog(object):
         self.verticalLayout.addWidget(self.label)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        # self.pushButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.buttonBox = QtWidgets.QDialogButtonBox(self.verticalLayoutWidget)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
-        # self.buttonBox.setStyleSheet("*{border: 4px solid \'#333\'; border-radius: 10px; font: bold 30px \"Arial Black\"; color: \'white\'; padding: 5px 5px; margin: 0px 150px; background: #555} *:hover{background: \'#369\';} QDialogButtonBox::Ok {background: #fff;}")
         self.buttonBox.setStyleSheet("QDialogButtonBox:QPushButton {color: '#F00';}")
         self.buttonBox.setObjectName("buttonBox")
         self.horizontalLayout.addWidget(self.buttonBox)
@@ -556,5 +554,4 @@ class Ui_powderDialog(object):
     def retranslateUi(self, PowderDialog):
         _translate = QtCore.QCoreApplication.translate
         PowderDialog.setWindowTitle(_translate("PowderDialog", "PowderDialog"))
-        self.label.setText(_translate("PowderDialog", "Run has been paused to allow powder to be inserted. Once powder is in place select \'Ok\' to resume the run."))
-        # self.pushButton.setText(_translate("PowderDialog", "Continue"))
+        self.label.setText(_translate("PowderDialog", "Run has been paused to allow powder to be inserted. Once powder is in place select \'Ok\' to resume the run."))-

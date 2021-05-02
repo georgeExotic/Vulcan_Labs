@@ -401,35 +401,38 @@ class Motor:
 
     def run(self):
 
-        self.cumulativeMass = 0
-        self.density = 0
-        self.volume = 0
-        self._micron2mm()
-        self.totalCycleStroke = self.initLayerHeightConverted * self.numberOfLayers
+        
 
-        if self.totalCycleStroke <= self.strokeLength:
 
-            print("its gonna home, are you ready for it Miao?")
-            self.Home()
+        # self.cumulativeMass = 0
+        # self.density = 0
+        # self.volume = 0
+        # self._micron2mm()
+        # self.totalCycleStroke = self.initLayerHeightConverted * self.numberOfLayers
 
-            if self.home == True:
-                self.jogUp(30.16,1) # jog to flush poition
-                self.flushPosition = self.absolutePosition
-                self.jogDownLayerHeight()
-                self.running = True
+        # if self.totalCycleStroke <= self.strokeLength:
 
-            if self.modeSelected == 0:
-                print("no mode selected")
-            elif self.modeSelected == 1:
-                print("Motion Limiting")
-                self.newLayerMotionRun()
-            elif self.modeSelected == 2:
-                print("Pressure Limiting")
-                self.newLayerMotionRun()
-                print("havent done this one! Come later")
+        #     print("its gonna home, are you ready for it Miao?")
+        #     self.Home()
 
-        elif self.totalCycleStroke > self.totalCycleStroke:
-            print("you cant do that, you dont enough stroke")
+        #     if self.home == True:
+        #         self.jogUp(30.16,1) # jog to flush poition
+        #         self.flushPosition = self.absolutePosition
+        #         self.jogDownLayerHeight()
+        #         self.running = True
+
+        #     if self.modeSelected == 0:
+        #         print("no mode selected")
+        #     elif self.modeSelected == 1:
+        #         print("Motion Limiting")
+        #         self.newLayerMotionRun()
+        #     elif self.modeSelected == 2:
+        #         print("Pressure Limiting")
+        #         self.newLayerMotionRun()
+        #         print("havent done this one! Come later")
+
+        # elif self.totalCycleStroke > self.totalCycleStroke:
+        #     print("you cant do that, you dont enough stroke")
 
     def motionRun(self):
         if self.massIn == True:
