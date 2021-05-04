@@ -153,12 +153,14 @@ class Ui_MainWindow(QMainWindow):
 
     def jogUp(self):
         self.jogging = True
-        self.motor.move(4)
+        # self.start_worker_waitForTopFlag()
+        self.motor.move(40)
         time.sleep(0.1)
         self.jogging = False
 
     def jogDown(self):
         self.jogging = True
+        # self.start_worker_waitForHomeFlag()
         self.motor.move(-4)
         time.sleep(0.1)
         self.jogging = False
@@ -171,6 +173,7 @@ class Ui_MainWindow(QMainWindow):
 
     def home(self):
         self.jogging = True
+        self.start_worker_waitForHomeFlag()
         self.motor.home()
         time.sleep(0.1)
         self.jogging = False
@@ -290,8 +293,23 @@ class Ui_MainWindow(QMainWindow):
     def start_worker_readPosition(self):
         self.setWorker(self.thread_readPosition)
 
-    def waitForTopFlag(self):
-        pass
+    def thread_waitForTopFlag(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback, saveFile_callback):
+        while self.topLimit == False:
+            print("false")
+        self.motor._stop()
+        print("TRUE STOP NOW")
+
+    def start_worker_waitForTopFlag(self):
+        self.setWorker(self.thread_waitForTopFlag)
+
+    def thread_waitForHomeFlag(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback, saveFile_callback):
+        while self.homeLimit == False:
+            print("False")
+        self.motor._stop()
+        print("TRUE STOP NOW")
+
+    def start_worker_waitForHomeFlag(self):
+        self.setWorker(self.thread_waitForHomeFlag)
 
     def start_worker_saveFile(self):
         self.setWorker(self.thread_saveFile)

@@ -361,7 +361,6 @@ class Motor:
     #Zero out absolute position once hits homeLimit
     #stops with thread looking for homeLimit 
     def home(self):
-        
         if self.running == False and self.homeLimit == False:
             # self._writeHoldingRegs(0x57,4,0)
             print("motor.home running")
