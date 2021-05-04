@@ -25,6 +25,7 @@ class WorkerSignals(QObject):
     topLimit = pyqtSignal(bool)
     homeLimit = pyqtSignal(bool)
     positionReading = pyqtSignal(int)
+    saveFile = pyqtSignal(bool)
 
 class Worker(QRunnable):
     '''
@@ -49,6 +50,7 @@ class Worker(QRunnable):
         self.kwargs['topLimit_callback'] = self.signals.topLimit
         self.kwargs['homeLimit_callback'] = self.signals.homeLimit
         self.kwargs['positionReading_callback'] = self.signals.positionReading
+        self.kwargs['saveFile_callback'] = self.signals.saveFile
 
     @pyqtSlot()
     def run(self):

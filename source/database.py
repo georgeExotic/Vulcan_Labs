@@ -1,48 +1,43 @@
+import tkinter as tk
+import pandas as pd
 import sqlite3
 import datetime
+import csv
 
-# def init():
-#   conn = sqlite3.connect('data.db')
-#   createTable(conn)
-#   conn.close()
-
-# def create_table(conn):
-#   c = conn.cursor()
-#   c.execute('''CREATE TABLE IF NOT EXISTS answers (
-#       id INTEGER AUTOINCREMENT,
-#       questionsId INTEGER,
-#       answer INTEGER,
-#       createdAt TIMESTAMP
-#       )''')
-#   conn.commit()
-
-# def add_new_answer(questionId, answer):
-#   now = datetime.datetime.now().ctime()
-#   c = conn.cursor()
-#   c.execute('''INSERT INTO answers (questionId, answer, createdAt) VALUES (?, ?, ?)''',
-#       (questionId, answer, now))
-#   conn.commit()
+from tkinter import filedialog
 
 class sqlDatabase():
     def __init__(self):
-        self.conn = sqlite3.connect('data.db')
+        self.conn = sqlite3.connect(":memory:", isolation_level=None, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
         self.c = self.conn.cursor()
         try:
-            self.c.execute('''CREATE TABLE data(force FLOAT, position FLOAT)''')
+            self.c.execute("CREATE TABLE data (force FLOAT, position FLOAT, ts TIMESTAMP)")
         except:
             pass
 
-    def insert(self):
-        force = 3.333
-        position = 3434.099
-        self.c.execute('''INSERT INTO data VALUES(?,?)''', (force, position))
-        self.conn.commit()
+    def insert_data(self,force,position):
+        timestamp = datetime.datetime.now()
+        self.c.execute('''INSERT INTO data(force, position, ts) VALUES(?,?,?);''', (force, position, timestamp))
 
     def select(self):
         self.c.execute('''SELECT * FROM data''')
         results = self.c.fetchall()
-        print(results)
+        # print(f'{results} \n')
+
+    def export_data(self):
+        self.db_df = pd.read_sql_query("SELECT * FROM data", self.conn)
+        self.root = tk.Tk()
+        self.root.withdraw()
+        self.root.wm_attributes('-topmost', 1)
+        self.exportCSV()
+
+    def exportCSV(self):
+        self.export_file_path = filedialog.asksaveasfilename(parent=self.root,defaultextension='.csv')
+        self.file_path = True
+
+    def exportdb(self):
+        self.db_df.to_csv(self.export_file_path, index = False, header=True)
+
 
 sdb = sqlDatabase()
-sdb.insert()
 sdb.select()

@@ -1,8 +1,8 @@
 import sys
 import types
 import time
-from PyQt5.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget, QGridLayout, QMainWindow
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget, QGridLayout, QMainWindow, QInputDialog, QLineEdit, QFileDialog
+from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import QThreadPool, QRunnable, QThread, pyqtSignal, pyqtSlot, QMutex
 from PyQt5.QtGui import QCursor
@@ -12,6 +12,7 @@ from ui_main import ui_main
 from threadClasses import WorkerSignals, Worker
 from LoadCell import LoadCell
 from vulcanControl import Motor
+from database import sqlDatabase
 import RPi.GPIO as GPIO #import I/O interface
 from hx711 import HX711 #import HX711 class
 
@@ -22,7 +23,7 @@ class Ui_MainWindow(QMainWindow):
         self.motor = types.SimpleNamespace()
         self.cellInstance = types.SimpleNamespace()
         self.mutex = QMutex()
-
+        self.sdb = sqlDatabase()
 ###
         self.m_ui = ui_main()
         self.m_ui.setupUi(self)
@@ -40,10 +41,11 @@ class Ui_MainWindow(QMainWindow):
         self.positionReading = None
         self.force_threadStarted = 0
         self.position_threadStarted = 0
+        self.dataCollect = False
 
         self.jogging = False
 
-        self.start_worker_threadManager()
+        # self.start_worker_threadManager()
 
         # UI MODIFICATIONS
         self.m_ui.stackedWidget.setCurrentIndex(0)
@@ -58,8 +60,8 @@ class Ui_MainWindow(QMainWindow):
         self.m_ui.stopButton_page2.clicked.connect(self.stop)
         # self.m_ui.runButton_page2.clicked.connect(self.startRun)
         self.m_ui.runButton_page2.clicked.connect(self.m_ui.launchPowderPopup)
-
-
+        self.m_ui.exportDataButton.clicked.connect(self.exportData)
+        self.m_ui.startDataButton.clicked.connect(self.dataCollectToggle)
 
     def clear_widgets(self):
         widgets = self.widgets
@@ -92,6 +94,8 @@ class Ui_MainWindow(QMainWindow):
     def forceReading_return(self, n):
         self.forceReading = n
         self.m_ui.loadReading_label.setText(f"{self.forceReading} g")
+        if self.dataCollect == True:
+            self.sdb.insert_data(self.forceReading, self.positionReading)
 
     def topLimit_return(self, b):
         self.topLimit = b
@@ -103,6 +107,9 @@ class Ui_MainWindow(QMainWindow):
     def positionReading_return(self, n):
         self.positionReading = n
         self.m_ui.positionReading_label.setText(f"{self.positionReading}")
+
+    def saveFile_return(self, b):
+        print(b)
 
     def longer_test_fn(self, progress_callback):
         for n in range(0,5):
@@ -159,7 +166,7 @@ class Ui_MainWindow(QMainWindow):
     def stop(self):
         self.jogging = True
         self.motor._stop()
-        time.sleep(1)
+        time.sleep(0.1)
         self.jogging = False
 
     def home(self):
@@ -167,6 +174,18 @@ class Ui_MainWindow(QMainWindow):
         self.motor.home()
         time.sleep(0.1)
         self.jogging = False
+
+    def exportData(self):
+        self.sdb.export_data()
+        self.start_worker_saveFile()
+
+    def dataCollectToggle(self):
+        if self.dataCollect == True:
+            self.dataCollect = False
+            self.m_ui.startDataButton.setStyleSheet("*{border: 4px solid \'red\'; border-radius: 10px; font: bold 18px \"Arial Black\"; color: \'white\'; padding: 0px 0px; margin-left: 30; background: #555} *:hover{background: \'#369\';}")
+        else:
+            self.dataCollect = True
+            self.m_ui.startDataButton.setStyleSheet("*{border: 4px solid \'green\'; border-radius: 10px; font: bold 18px \"Arial Black\"; color: \'white\'; padding: 0px 0px; margin-left: 30; background: #555} *:hover{background: \'#369\';}")
 
     def startRun(self):
         try:
@@ -214,9 +233,15 @@ class Ui_MainWindow(QMainWindow):
         print(f'LB: {LB}, LA {LA}')
         return check_1, check_2, LB, LA, LC
 
+    def openFileNameDialog(self):
+        path = QFileDialog.getSaveFileName(self, 'Save file', '',
+                                        'CSV (*.csv*)')
+        if path != ('', ''):
+            print("File path : "+ path[0])
+
     # THREAD UTILITY FUNCTIONS
     
-    def thread_readForce(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback):
+    def thread_readForce(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback, saveFile_callback):
         if self.force_threadStarted == 0:
             self.force_threadStarted = 1
             while True:
@@ -230,7 +255,7 @@ class Ui_MainWindow(QMainWindow):
         self.readForceStatus = True
         self.setWorker(self.thread_readForce)
 
-    def threadManager(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback):
+    def threadManager(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback, saveFile_callback):
         while True:
             print(f'Active Thread Count: {self.threadpool.activeThreadCount()}')
             time.sleep(1)
@@ -238,7 +263,7 @@ class Ui_MainWindow(QMainWindow):
     def start_worker_threadManager(self):
         self.setWorker(self.threadManager)
 
-    def thread_checkFlags(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback):
+    def thread_checkFlags(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback, saveFile_callback):
         while True:
             self.motor._checkLimits()
             topLimit = self.motor.topLimit
@@ -250,7 +275,7 @@ class Ui_MainWindow(QMainWindow):
     def start_worker_checkFlags(self):
         self.setWorker(self.thread_checkFlags)
 
-    def thread_readPosition(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback):
+    def thread_readPosition(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback, saveFile_callback):
         if self.position_threadStarted == 0:
             self.position_threadStarted = 1
             while True:
@@ -267,6 +292,20 @@ class Ui_MainWindow(QMainWindow):
 
     def waitForTopFlag(self):
         pass
+
+    def start_worker_saveFile(self):
+        self.setWorker(self.thread_saveFile)
+
+    def thread_saveFile(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback, saveFile_callback):
+        print("save file thread started")
+        done = False
+        while done == False:
+            if self.sdb.file_path == True:
+                self.sdb.file_path = False
+                self.sdb.exportdb()
+                done = True
+            else:
+                pass
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

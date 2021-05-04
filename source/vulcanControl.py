@@ -156,7 +156,7 @@ class Motor:
     ###function to connect to LMD57 using modbus TCP
     def _connectModbusClient(self):
         #define mosbus server and host
-        self._motor = ModbusClient(host = self.SERVER_HOST, port = self.SERVER_PORT, unit_id=1, auto_open=True, debug = True)
+        self._motor = ModbusClient(host = self.SERVER_HOST, port = self.SERVER_PORT, unit_id=1, auto_open=True, debug = False)
         # self._motor.host(self.SERVER_HOST)
         # self._motor.port(self.SERVER_PORT)
         # self._motor.unit_id = 1
@@ -381,7 +381,7 @@ class Motor:
             position_reading = pos
         except:
             position_reading = 69
-        print(f'pos: {pos}')
+        # print(f'pos: {pos}')
 
         return position_reading
 
@@ -400,7 +400,7 @@ class Motor:
         return
 
     def run(self):
-
+        pass
         
 
 
