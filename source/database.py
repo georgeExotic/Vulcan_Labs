@@ -11,13 +11,13 @@ class sqlDatabase():
         self.conn = sqlite3.connect(":memory:", isolation_level=None, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
         self.c = self.conn.cursor()
         try:
-            self.c.execute("CREATE TABLE data (force FLOAT, position FLOAT, ts TIMESTAMP)")
+            self.c.execute("CREATE TABLE data (collection_num INT, force FLOAT, position FLOAT, timestamp TIMESTAMP)")
         except:
             pass
 
-    def insert_data(self,force,position):
+    def insert_data(self,collection_count,force,position):
         timestamp = datetime.datetime.now()
-        self.c.execute('''INSERT INTO data(force, position, ts) VALUES(?,?,?);''', (force, position, timestamp))
+        self.c.execute('''INSERT INTO data(collection_num, force, position, timestamp) VALUES(?,?,?,?);''', (collection_count, force, position, timestamp))
 
     def select(self):
         self.c.execute('''SELECT * FROM data''')

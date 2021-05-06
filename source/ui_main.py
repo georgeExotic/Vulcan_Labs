@@ -514,6 +514,13 @@ class ui_main(object):
         self.PowderDialogWindow.show()
         self.PowderDialogWindow.exec_()
 
+    def launchrunErrorPopup(self):
+        self.runErrorDialogWindow = QDialog()
+        runErrorDialog = Ui_runErrorDialog()
+        runErrorDialog.setupUi(self.runErrorDialogWindow)
+        self.runErrorDialogWindow.show()
+        self.runErrorDialogWindow.exec_()
+
 class Ui_powderDialog(object):
     def setupUi(self, PowderDialog):
         PowderDialog.setObjectName("PowderDialog")
@@ -555,3 +562,39 @@ class Ui_powderDialog(object):
         _translate = QtCore.QCoreApplication.translate
         PowderDialog.setWindowTitle(_translate("PowderDialog", "PowderDialog"))
         self.label.setText(_translate("PowderDialog", "Run has been paused to allow powder to be inserted. Once powder is in place select \'Ok\' to resume the run."))
+
+class Ui_runErrorDialog(object):
+    def setupUi(self, runErrorDialog):
+        runErrorDialog.setObjectName("runErrorDialog")
+        runErrorDialog.resize(630, 237)
+        runErrorDialog.setMaximumSize(QtCore.QSize(630, 16777215))
+        runErrorDialog.setStyleSheet("background: rgb(195,195,195);")
+        self.verticalLayoutWidget = QtWidgets.QWidget(runErrorDialog)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(29, 19, 570, 191))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.label.setStyleSheet("color: #333; margin: 20; font: 20px \"arial black\"")
+        self.label.setWordWrap(True)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.buttonBox = QtWidgets.QDialogButtonBox(self.verticalLayoutWidget)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStyleSheet("QDialogButtonBox:QPushButton {color: '#F00';}")
+        self.buttonBox.setObjectName("buttonBox")
+        self.horizontalLayout.addWidget(self.buttonBox)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+
+        self.retranslateUi(runErrorDialog)
+        self.buttonBox.accepted.connect(runErrorDialog.accept)
+        self.buttonBox.rejected.connect(runErrorDialog.reject)
+        QtCore.QMetaObject.connectSlotsByName(runErrorDialog)
+
+    def retranslateUi(self, runErrorDialog):
+        _translate = QtCore.QCoreApplication.translate
+        runErrorDialog.setWindowTitle(_translate("runErrorDialog", "runErrorDialog"))
+        self.label.setText(_translate("runErrorDialog", "ERROR - input parameters for run must be checked."))

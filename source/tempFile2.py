@@ -42,8 +42,11 @@ class Ui_MainWindow(QMainWindow):
         self.force_threadStarted = 0
         self.position_threadStarted = 0
         self.dataCollect = False
+        self.collection_count = 0
 
         self.jogging = False
+        self.jogUpParam = 0.1
+        self.jogDownParam = 0.1
 
         # self.start_worker_threadManager()
 
@@ -58,10 +61,13 @@ class Ui_MainWindow(QMainWindow):
         self.m_ui.home_button_page1.clicked.connect(self.home)
         self.m_ui.stopButton_page1.clicked.connect(self.stop)
         self.m_ui.stopButton_page2.clicked.connect(self.stop)
-        # self.m_ui.runButton_page2.clicked.connect(self.startRun)
-        self.m_ui.runButton_page2.clicked.connect(self.m_ui.launchPowderPopup)
+        self.m_ui.runButton_page2.clicked.connect(self.startRun)
         self.m_ui.exportDataButton.clicked.connect(self.exportData)
         self.m_ui.startDataButton.clicked.connect(self.dataCollectToggle)
+        self.m_ui.jogup_comboBox.currentIndexChanged.connect(self.jogParams)
+        self.m_ui.jogdown_comboBox.currentIndexChanged.connect(self.jogParams)
+        self.m_ui.jogup_lineEdit.textChanged.connect(self.jogParams)
+        self.m_ui.jogdown_lineedit.textChanged.connect(self.jogParams)
 
     def clear_widgets(self):
         widgets = self.widgets
@@ -95,7 +101,7 @@ class Ui_MainWindow(QMainWindow):
         self.forceReading = n
         self.m_ui.loadReading_label.setText(f"{self.forceReading} g")
         if self.dataCollect == True:
-            self.sdb.insert_data(self.forceReading, self.positionReading)
+            self.sdb.insert_data(self.collection_count, self.forceReading, self.positionReading)
 
     def topLimit_return(self, b):
         self.topLimit = b
@@ -154,14 +160,14 @@ class Ui_MainWindow(QMainWindow):
     def jogUp(self):
         self.jogging = True
         # self.start_worker_waitForTopFlag()
-        self.motor.move(40)
+        self.motor.move(self.jogUpParam)
         time.sleep(0.1)
         self.jogging = False
 
     def jogDown(self):
         self.jogging = True
         # self.start_worker_waitForHomeFlag()
-        self.motor.move(-4)
+        self.motor.move(-self.jogDownParam)
         time.sleep(0.1)
         self.jogging = False
 
@@ -178,6 +184,13 @@ class Ui_MainWindow(QMainWindow):
         time.sleep(0.1)
         self.jogging = False
 
+    def flush(self):
+        self.jogging = True
+        self.start_worker_waitForTopFlag()
+        self.motor.move(40)
+        time.sleep(0.1)
+        self.jogging = False
+
     def exportData(self):
         self.sdb.export_data()
         self.start_worker_saveFile()
@@ -188,6 +201,7 @@ class Ui_MainWindow(QMainWindow):
             self.m_ui.startDataButton.setStyleSheet("*{border: 4px solid \'red\'; border-radius: 10px; font: bold 18px \"Arial Black\"; color: \'white\'; padding: 0px 0px; margin-left: 30; background: #555} *:hover{background: \'#369\';}")
         else:
             self.dataCollect = True
+            self.collection_count += 1
             self.m_ui.startDataButton.setStyleSheet("*{border: 4px solid \'green\'; border-radius: 10px; font: bold 18px \"Arial Black\"; color: \'white\'; padding: 0px 0px; margin-left: 30; background: #555} *:hover{background: \'#369\';}")
 
     def startRun(self):
@@ -199,17 +213,20 @@ class Ui_MainWindow(QMainWindow):
             if type(layerBefore) == float and type(layerAfter) == float and type(layerCount) == int:
                 c1, c2, LB, LA, LC = self.checkRunInputs(layerBefore, lbUnit, layerAfter, laUnit, layerCount)
                 if c1 == True and c2 == True:
+
+                    ### ###
+                    
                     print(f'sent run signal to motor with params LB:{LB}, LA:{LA}, LC:{LC}')
-                    # self.motor.run(LB, LA, LC)
-                    print("raising piston to top...")
-                    time.sleep(2)
-                    print('reached top')
-                    print('lowering piston to LA height...')
-                    time.sleep(1)
-                    print('ready for powder')
-                    self.powderPopup()
+                    self.motor.run(LB, LA, LC)
+
+                    ### ###
+
+                else:
+                    print('ERROR - Run Failed')
+                    self.m_ui.launchrunErrorPopup()
             else:
                 print('ERROR - Run Failed')
+                self.m_ui.launchrunErrorPopup()
         except:
             print('ERROR - Invalid Values for Run Command')
 
@@ -241,6 +258,38 @@ class Ui_MainWindow(QMainWindow):
                                         'CSV (*.csv*)')
         if path != ('', ''):
             print("File path : "+ path[0])
+
+    def jogParams(self):
+        if self.m_ui.jogup_comboBox.currentIndex() == 0:
+            self.jogUpParam = 0.1
+        elif self.m_ui.jogup_comboBox.currentIndex() == 1:
+            self.jogUpParam = 0.5
+        elif self.m_ui.jogup_comboBox.currentIndex() == 2:
+            self.jogUpParam = 1
+        elif self.m_ui.jogup_comboBox.currentIndex() == 3:
+            self.jogUpParam = 5
+        elif self.m_ui.jogup_comboBox.currentIndex() == 4:
+            self.jogUpParam = 10
+        elif self.m_ui.jogup_comboBox.currentIndex() == 2:
+            try:
+                self.jogUpParam = self.m_ui.jogup_lineEdit.text()
+            except:
+                print("Jog up custom input is invalid")
+        if self.m_ui.jogdown_comboBox.currentIndex() == 0:
+            self.jogDownParam = 0.1
+        elif self.m_ui.jogdown_comboBox.currentIndex() == 1:
+            self.jogDownParam = 0.5
+        elif self.m_ui.jogdown_comboBox.currentIndex() == 2:
+            self.jogDownParam = 1
+        elif self.m_ui.jogdown_comboBox.currentIndex() == 3:
+            self.jogDownParam = 5
+        elif self.m_ui.jogdown_comboBox.currentIndex() == 4:
+            self.jogDownParam = 10
+        elif self.m_ui.jogdown_comboBox.currentIndex() == 2:
+            try:
+                self.jogDownParam = self.m_ui.jogdown_lineedit.text()
+            except:
+                print("Jog down custom input is invalid")
 
     # THREAD UTILITY FUNCTIONS
     

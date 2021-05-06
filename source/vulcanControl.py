@@ -326,7 +326,7 @@ class Motor:
         self._writeHoldingRegs(0x78,4,slew)
         return
 
-    ###move platform +/- mm
+    ###move platform +/- 
     def move(self,displacement):
         print('move function called')
         steps2move = self._mm2steps(displacement)
@@ -341,21 +341,6 @@ class Motor:
         self._writeHoldingRegs(0x46,4,1) # 1 step
         return
 
-    ## mm2jog is a -/+ int
-    def jog(self,mm2jog):
-        self.setProfiles("jogging")
-        if mm2jog >= 0 and self.topLimit == True:
-            print("jog up error")
-        elif mm2jog >= 0 and self.topLimit == False:
-            self.move(mm2jog)
-
-        if mm2jog < 0 and self.homeLimit == True:
-            print("Jog down error")
-        elif mm2jog < 0 and self.homeLimit == False:
-            self.move(mm2jog)
-        print("Jog completed")
-        return 
-
     ##home the platform 
     #check if machine is on the run cycle or on the homeFlag 
     #Zero out absolute position once hits homeLimit
@@ -368,70 +353,66 @@ class Motor:
             self.move(-40)  
         return
 
-    def testStop(self):
-        self.jog(5)
-        print("jogging up 5")
-        return
-
-
     def updatePosition(self):
         try:
             pos = self._readHoldingRegs(0x57,4)
-            position_reading = pos
+            position_reading = self._steps2mm(pos)
+            self.absolutePosition = position_reading
         except:
-            position_reading = 69
-        # print(f'pos: {pos}')
+            position_reading = 0
 
         return position_reading
 
-    def cleanUp(self):
-        self.jogUp(35)
-        self.top = True
-        return
+    def run(self, LB, LA, LC):
+        """
+        home piston 
+        (1) user notificaiton = let the uset know data collection is on / remove top cover
+            user agrees to that
+        wait 1 second
+        move to the flush position 
+            flush = True
+            home = False
+        set pos = 0
+        wait 2 seconds 
+        go down the "LAYER HEIGHT BEFORE COMPACTING" --- First motion (most important)
+        (2 ) user notification = let the user know to add powder --- user inputs (mass of powder) --- 
+            (2) user notificaiton to place the top thing 
+        wiat 2 seconds 
+        { REPEAT IF NEEDED:
+        move up by DELTA "LAYER HEIGHT BEFORE COMPACTING" - "LAYER HIEGHT AFTER COMPACTING 
+        if the motor stopped moving ----- move on the next layer 
+            check steps moved --> calculate density per layer 
+        if layer > 1 
+            (4) user notification layer # is ready -- add more poder and record mass
+        }                
+        """
+        ###First Layer
 
-    def countdown(self):
-        print("3...")
-        time.sleep(1)
-        print("2..")
-        time.sleep(1)
-        print("1..")
-        time.sleep(1)
-        return
+        # self.home()
+        self.move(-40)
+        # print("pop up (1)")
+        input("press enter when top removed ")
+        self.move(40)
+        # set pos to 0
+        input("ready to move down")
+        self.move(-LB)
+        # print("pop up (2) - add powder/top thing")
+        input("press enter when powder added and top is in place")
+        # time.sleep(2)
+        self.move(LB-LA)    #finished compression - calculate delta and density / store in database
+        LC -= 1             #substracting a layer from LC (first layer)
 
-    def run(self):
-        pass
-        
+        if LC > 0:
+            for _ in range(LC):
+                print("new layer")
+                self.newLayer(LB,LA)
 
 
-        # self.cumulativeMass = 0
-        # self.density = 0
-        # self.volume = 0
-        # self._micron2mm()
-        # self.totalCycleStroke = self.initLayerHeightConverted * self.numberOfLayers
-
-        # if self.totalCycleStroke <= self.strokeLength:
-
-        #     print("its gonna home, are you ready for it Miao?")
-        #     self.Home()
-
-        #     if self.home == True:
-        #         self.jogUp(30.16,1) # jog to flush poition
-        #         self.flushPosition = self.absolutePosition
-        #         self.jogDownLayerHeight()
-        #         self.running = True
-
-        #     if self.modeSelected == 0:
-        #         print("no mode selected")
-        #     elif self.modeSelected == 1:
-        #         print("Motion Limiting")
-        #         self.newLayerMotionRun()
-        #     elif self.modeSelected == 2:
-        #         print("Pressure Limiting")
-        #         self.newLayerMotionRun()
-        #         print("havent done this one! Come later")
-
-        # elif self.totalCycleStroke > self.totalCycleStroke:
-        #     print("you cant do that, you dont enough stroke")
+    def newLayer(self,LB,LA):
+        input("#####NEW LAYER####")
+        self.move(-LB)
+        input("press enter when powder is added and top is in place")
+        self.move(LB-LA)
 
     def motionRun(self):
         if self.massIn == True:
@@ -444,66 +425,6 @@ class Motor:
                 print("density: ",self.density)
                 self.jogUp(delta,1)
                 self.trigger = 1
-
-    def motionRun2(self):
-        print("done")
-        self.calculateDensity()
-        self.finalDensity = self.density
-        print("density: ",self.density)
-        self.massIn = False
-        self.layerNumber += 1
-        print("layer num: ",self.layerNumber)
-        self.jogDownLayerHeight()
-        print("abs: ",self.absolutePosition)
-        if self.layerNumber == self.numberOfLayers:
-            self.layerNumber = 0
-            self.runCompleted = True
-            print("hello")
-            pass
-        # elif self.layerNumber == self.numberOfLayers:
-        #     self.runCompleted = True
-        else:
-            self.newLayerMotionRun()
-            print(";;;;;;;;;;;;;;;;;;;;;;;;;;;;;")
-            # self.runCompleted = True
-            print("run complete")
-
-    def newLayerMotionRun(self):
-        self.massInput = True
-
-    def pressureRun(self):
-        if self.massIn == True:
-            self.cumulativeMass += self.mass
-            if self.layerNumber < self.numberOfLayers:
-                self._micron2mm()
-                self.calculateDensity()
-                self.initialDensity = self.density
-                print("density: ",self.density)
-                self.jogUp(30,1) #########
-                print("done")
-                self.calculateDensity()
-                self.finalDensity = self.density
-                print("density: ",self.density)
-                self.massIn = False
-                self.layerNumber += 1
-                print("layer num: ",self.layerNumber)
-                self.jogDownLayerHeight()
-                print("abs: ",self.absolutePosition)
-                if self.layerNumber == self.numberOfLayers:
-                    self.layerNumber = 0
-                    self.runCompleted = True
-                else:
-                    self.newLayerMotionRun()
-            else:
-                print(";;;;;;;;;;;;;;;;;;;;;;;;;;;;;")
-                # self.runCompleted = True
-                print("run complete")
-
-        """ if check layer count """
-        # self.newLayerMotionRun()
-
-    def jogDownLayerHeight(self):
-        self.jogDown(self.initLayerHeightConverted,1) #jog down for a layer height
 
     def calculateDensity(self):
 
@@ -526,18 +447,6 @@ class Motor:
         while _moving()
         """
         print("22222222222: ",self.mass)
-
-
-    def stopRun(self):
-
-        """
-        stop sending motion commands / cancel run
-        if run = 1
-            run , homing = 0
-        """
-        self._motor.write_multiple_registers(70,[0,0])
-        print("stopped")
-        pass
 
     def eStop(self):
         """
