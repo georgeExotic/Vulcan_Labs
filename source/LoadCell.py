@@ -6,19 +6,29 @@ from hx711 import HX711 #import HX711 class
 class LoadCell():
     def __init__(self):
         GPIO.setmode(GPIO.BCM)  #set GPIO pind mode to BCM
+        
         self.pd_sckPin=20
         self.dout_pin=21
         self.recorded_configFile_name = 'calibration.vlabs'
+
+        ##HX711 object 
         self.cell = HX711(self.dout_pin,self.pd_sckPin)
-        if os.path.isfile(self.recorded_configFile_name):
-            with open(self.recorded_configFile_name,'rb') as File:
-                self.cell = pickle.load(File)   #loading calibrated HX711 object
-                self.calibrated = 1
-        else:
-            self.calibrated = 0
+        ##Status
+        self.calibrated = 0
+
+        self.checkCalibration()
         self.reading = 0
         self.initializing = 0
         self.force_reading = 0
+
+
+
+    def checkCalibration(self):
+        ##checking for previous calibration 
+        if os.path.isfile('./' + self.recorded_configFile_name):
+            with open(self.recorded_configFile_name,'rb') as File:
+                self.cell = pickle.load(File)   #loading calibrated HX711 object
+                print(self.cell)
  
     def userCalibrationPart1(self):
         self.cell = HX711(self.dout_pin,self.pd_sckPin)
@@ -89,3 +99,5 @@ class LoadCell():
         self.tare = 1 
 
         print("Calibration is succesful")
+
+LC = LoadCell()

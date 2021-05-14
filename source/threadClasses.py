@@ -24,7 +24,7 @@ class WorkerSignals(QObject):
     forceReading = pyqtSignal(float)
     topLimit = pyqtSignal(bool)
     homeLimit = pyqtSignal(bool)
-    positionReading = pyqtSignal(int)
+    positionReading = pyqtSignal(float)
     saveFile = pyqtSignal(bool)
 
 class Worker(QRunnable):

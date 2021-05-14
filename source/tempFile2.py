@@ -68,6 +68,9 @@ class Ui_MainWindow(QMainWindow):
         self.m_ui.jogdown_comboBox.currentIndexChanged.connect(self.jogParams)
         self.m_ui.jogup_lineEdit.textChanged.connect(self.jogParams)
         self.m_ui.jogdown_lineedit.textChanged.connect(self.jogParams)
+        self.m_ui.btn_page_1.clicked.connect(self.tabCheck)
+        self.m_ui.btn_page_2.clicked.connect(self.tabCheck)
+        self.m_ui.btn_page_3.clicked.connect(self.tabCheck)
 
     def clear_widgets(self):
         widgets = self.widgets
@@ -112,6 +115,7 @@ class Ui_MainWindow(QMainWindow):
 
     def positionReading_return(self, n):
         self.positionReading = n
+        print("return",n)
         self.m_ui.positionReading_label.setText(f"{self.positionReading}")
 
     def saveFile_return(self, b):
@@ -161,34 +165,34 @@ class Ui_MainWindow(QMainWindow):
         self.jogging = True
         # self.start_worker_waitForTopFlag()
         self.motor.move(self.jogUpParam)
-        time.sleep(0.1)
+        # time.sleep(0.1)
         self.jogging = False
 
     def jogDown(self):
         self.jogging = True
         # self.start_worker_waitForHomeFlag()
         self.motor.move(-self.jogDownParam)
-        time.sleep(0.1)
+        # time.sleep(0.1)
         self.jogging = False
 
     def stop(self):
         self.jogging = True
         self.motor._stop()
-        time.sleep(0.1)
+        # time.sleep(0.1)
         self.jogging = False
 
     def home(self):
         self.jogging = True
         self.start_worker_waitForHomeFlag()
         self.motor.home()
-        time.sleep(0.1)
+        # time.sleep(0.1)
         self.jogging = False
 
     def flush(self):
         self.jogging = True
         self.start_worker_waitForTopFlag()
         self.motor.move(40)
-        time.sleep(0.1)
+        # time.sleep(0.1)
         self.jogging = False
 
     def exportData(self):
@@ -202,7 +206,23 @@ class Ui_MainWindow(QMainWindow):
         else:
             self.dataCollect = True
             self.collection_count += 1
+            self.m_ui.dataCollectionCount.setText(f'Data Set: {self.collection_count}')
             self.m_ui.startDataButton.setStyleSheet("*{border: 4px solid \'green\'; border-radius: 10px; font: bold 18px \"Arial Black\"; color: \'white\'; padding: 0px 0px; margin-left: 30; background: #555} *:hover{background: \'#369\';}")
+
+    def tabCheck(self):
+        i = self.m_ui.stackedWidget.currentIndex()
+        if i == 0:
+            self.m_ui.btn_page_1.setStyleSheet("QPushButton {color: rgb(255, 255, 255);background-color: rgb(75, 160, 245);border: 0px solid;font: bold 16px \"Arial Black\";} QPushButton:hover {background-color: rgb(85, 170, 255);}")
+        else:
+            self.m_ui.btn_page_1.setStyleSheet("QPushButton {color: rgb(255, 255, 255);background-color: rgb(35,35,35);border: 0px solid;font: bold 16px \"Arial Black\";} QPushButton:hover {background-color: rgb(85, 170, 255);}")
+        if i == 1:
+            self.m_ui.btn_page_2.setStyleSheet("QPushButton {color: rgb(255, 255, 255);background-color: rgb(75, 160, 245);border: 0px solid;font: bold 16px \"Arial Black\";} QPushButton:hover {background-color: rgb(85, 170, 255);}")
+        else:
+            self.m_ui.btn_page_2.setStyleSheet("QPushButton {color: rgb(255, 255, 255);background-color: rgb(35,35,35);border: 0px solid;font: bold 16px \"Arial Black\";} QPushButton:hover {background-color: rgb(85, 170, 255);}")
+        if i == 2:
+            self.m_ui.btn_page_3.setStyleSheet("QPushButton {color: rgb(255, 255, 255);background-color: rgb(75, 160, 245);border: 0px solid;font: bold 16px \"Arial Black\";} QPushButton:hover {background-color: rgb(85, 170, 255);}")
+        else:
+            self.m_ui.btn_page_3.setStyleSheet("QPushButton {color: rgb(255, 255, 255);background-color: rgb(35,35,35);border: 0px solid;font: bold 16px \"Arial Black\";} QPushButton:hover {background-color: rgb(85, 170, 255);}")
 
     def startRun(self):
         try:
@@ -299,7 +319,7 @@ class Ui_MainWindow(QMainWindow):
             while True:
                 forceReading = self.cellInstance.readForce()
                 forceReading_callback.emit(forceReading)
-                time.sleep(0.01)
+                time.sleep(0.0001)
         else:
             print("force reading thread already started.")
 
@@ -322,7 +342,7 @@ class Ui_MainWindow(QMainWindow):
             homeLimit = self.motor.homeLimit
             topLimit_callback.emit(topLimit)
             homeLimit_callback.emit(homeLimit)
-            time.sleep(0.1)
+            time.sleep(0.01)
 
     def start_worker_checkFlags(self):
         self.setWorker(self.thread_checkFlags)
@@ -332,10 +352,12 @@ class Ui_MainWindow(QMainWindow):
             self.position_threadStarted = 1
             while True:
                 if self.jogging == False:
-                    position = self.motor.updatePosition()
+                    position = float(self.motor.updatePosition())
+                    print("pos in thread: ", position)
                 else:
-                    position = None
+                    position = self.positionReading
                 positionReading_callback.emit(position)
+                # time.sleep(0.01)
         else:
             print("position reading thread already started.")
 

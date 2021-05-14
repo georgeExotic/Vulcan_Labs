@@ -64,8 +64,8 @@ class Motor:
         self.homingInitialVelocity = 10000
         self.homingMaxVelocity = 40000
             #running
-        self.runningInitialVelocity = 1000
-        self.runningMaxVelocity = 20000
+        self.runningInitialVelocity = 100
+        self.runningMaxVelocity = 1000
 
         ###accelerations###
             #jogging
@@ -75,8 +75,8 @@ class Motor:
         self.homingAcceleration = 5000000
         self.homingDeacceleration = 5000000
             #running
-        self.runningAcceleration = 5000000
-        self.runningDeacceleration = 5000000
+        self.runningAcceleration = 200000
+        self.runningDeacceleration = 200000
 
 
         ###hmt### motor behaivor
@@ -91,7 +91,7 @@ class Motor:
         ###Performance settings###
         self.holdingCurrent = 100                        #0x29#0 - 100
         self.controlBound = 0                           #0x91#best torque performance
-        self.microStep = 256                            #0x48
+        self.microStep = 256.000                            #0x48
 
 
 
@@ -99,8 +99,8 @@ class Motor:
         self.strokeLength = 30 # mm
         self.pistonDiameter = 19.05 #mm
         self.pistonRadius = self.pistonDiameter/2
-        self.leadTravel = 4 #mm per rev
-        self.stepPerRevolution = 200 * self.microStep       #200*256 = 51200 steps per rev
+        self.leadTravel = 4.000 #mm per rev
+        self.stepPerRevolution = 200.000 * self.microStep       #200*256 = 51200 steps per rev
 
 
         ###Flags
@@ -198,8 +198,8 @@ class Motor:
         return steps
 
     def _steps2mm(self,steps):
-        revs = steps/self.stepPerRevolution
-        displacement = revs * self.leadTravel
+        revs = float(steps/self.stepPerRevolution)
+        displacement = float(revs * self.leadTravel)
         return displacement
 
     def _moving(self):
@@ -240,7 +240,7 @@ class Motor:
                         complement = utils.get_list_2comp(ans,32)
                         reading = complement[0]
                     else:
-                        print(f"Motor Reading {reg} as output 1")
+                        # print(f"Motor Reading {reg} as output 1")
                         reading = 0 # TEMP
                 else:
                     regSize = 1
@@ -248,7 +248,7 @@ class Motor:
                     if reg is not None:
                         reading = reg[0]
                     else:
-                        print(f"Motor Reading {reg} as output 2")
+                        # print(f"Motor Reading {reg} as output 2")
                         pass
             except:
                 self._connectModbusClient()
@@ -328,6 +328,7 @@ class Motor:
 
     ###move platform +/- 
     def move(self,displacement):
+        self.setProfiles("running")
         print('move function called')
         steps2move = self._mm2steps(displacement)
         print("displacement", displacement, "steps2move = ",steps2move)
