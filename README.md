@@ -1,2 +1,3 @@
-# Vulcan_Labs
-ESET 419/420 Senior Design Project. VULCAN LABS.
+# BLACK BETTY
+
+Software for Black Betty, a Lab Testing Machine built Texas A&M University to characterize the pressure and desnity relationship of power bed for binder jetting AM development. 
