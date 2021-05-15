@@ -1,3 +1,10 @@
+'''
+Black Betty load cell library 
+hardware used : 
+    hx711
+    Load Cell = FC23 (0-50 lbf)
+'''
+
 import os
 import pickle
 import RPi.GPIO as GPIO #import I/O interface
@@ -9,86 +16,69 @@ class LoadCell():
         
         self.pd_sckPin=20
         self.dout_pin=21
+        self.gain = 128
+        self.channel = 'A'
         self.recorded_configFile_name = 'calibration.vlabs'
 
         ##HX711 object 
-        self.cell = HX711(self.dout_pin,self.pd_sckPin)
+        self.cell = HX711(self.dout_pin,self.pd_sckPin,self.gain,self.channel)
         ##Status
         self.calibrated = 0
+        self.calibrationPart1 = 0 
+        self.loadCalibrationFile()
 
-        self.checkCalibration()
-        self.reading = 0
-        self.initializing = 0
-        self.force_reading = 0
+        self.ratio = 0
+        self.knownWeight = 0 #kg
 
-
-
-    def checkCalibration(self):
+    def loadCalibrationFile(self):
         ##checking for previous calibration 
         if os.path.isfile('./' + self.recorded_configFile_name):
             with open(self.recorded_configFile_name,'rb') as File:
                 self.cell = pickle.load(File)   #loading calibrated HX711 object
-                print(self.cell)
- 
-    def userCalibrationPart1(self):
-        self.cell = HX711(self.dout_pin,self.pd_sckPin)
-        #send the user calibration message
-        err = self.cell.zero()
+                self.calibrated = 1 #update status
+        else: 
+            self.calibrated = 0 
+        return
+
+
+    def calibrateLoadCell_part1(self):
+        err = self.cell.zero() #set zero offset/ use to tare 
         if err:
-            raise ValueError('Tare is unsuccessful.')
-        self.initializing = 1
-        self.reading = self.cell.get_raw_data_mean()
-
-        print(f'raw_data_mean: {self.reading}, predicted ratio = {self.reading/198}')
-
-        print('getting initial data...')
-
-        self.initializing = 0
-
-
-    def userCalibrationPart2(self,knownGrams):
-        self.initializing = 1
-        self.reading = self.cell.get_data_mean()
-        fileName = 'calibration.vlabs'
-        print(f'get_data_mean: {self.reading}, predicted ratio = {self.reading/198}')
-
-        if self.reading:
-            known_weight_grams = knownGrams
-            try:
-                value = float(known_weight_grams)
-                print(value, 'grams')
-            except ValueError:
-                print('Expected integer or float and I have got:',
-                      known_weight_grams)
-
-            ratio = self.reading / value  # calculate the ratio for channel A and gain 128
-            print(ratio)
-            self.cell.set_scale_ratio(ratio)  # set ratio for current channel
-            print('Ratio is set.')
+            raise Exception('Something is very wrong JORGE')
         else:
-            raise ValueError(
-                'Cannot calculate mean value. Try debug mode. Variable reading:',
-                self.reading)
-                    
-        print('Saving the HX711 state to swap file on persistant memory')
-        with open(fileName, 'wb') as File:
-            pickle.dump(self.cell, File)
-            File.flush()
-            os.fsync(File.fileno())
-            # you have to flush, fsynch and close the file all the time.
-            # This will write the file to the drive. It is slow but safe.
+            #measure with no load --> raw data mean
+            firstReading = self.cell.get_raw_data_mean()
+            if firstReading:
+                print("first reading = ",firstReading)
+            else:
+                raise Exception('Something is very wrong JORGE')
+            self.calibrationPart1 = 1 
 
-        if os.path.isfile(self.recorded_configFile_name):
-            with open(self.recorded_configFile_name,'rb') as File:
-                self.cell = pickle.load(File)   #loading calibrated HX711 object
+
+    #place calibration object before running this function
+    #known weight must be in KG
+    def calibrateLoadCell_part2(self,knownWeight):
+        self.knownWeight = knownWeight
+        if not self.calibrationPart1:
+            raise Exception('calibration part 1 has issues')
+        else:
+            #measure with load --> data mean (raw data - offset)
+            secondReading = self.cell.get_data_mean()
+            if secondReading:
+                self.knownWeight = float(self.knownWeight) #KG
+                self.ratio = secondReading/self.knownWeight
+                self.cell.set_scale_ratio(self.ratio)
                 self.calibrated = 1
-        
-        self.initializing = 0
+                print("Calibration Finished")
+            else:
+                raise Exception('Something is very wrong JORGE')
+        return
     
     def readForce(self):
         try:
             force_reading_raw = self.cell.get_weight_mean(5)
             force_reading_kg = round(force_reading_raw,3)
+            print(force_reading_kg)
         except:
             force_reading_kg = 0
             print('ERROR WHILE READING LOAD CELL')
@@ -101,3 +91,10 @@ class LoadCell():
         print("Calibration is succesful")
 
 LC = LoadCell()
+LC.calibrateLoadCell_part1()
+weight=input("input known weight in KG")
+LC.calibrateLoadCell_part2(weight)
+while True:
+    LC.readForce()
+    
+
