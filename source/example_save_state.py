@@ -79,7 +79,7 @@ try:
     print("Now, I will read data in infinite loop. To exit press 'CTRL + C'")
     input('Press Enter to begin reading')
     while True:
-        print(hx.get_weight_mean(5), 'g')
+        print(hx.get_weight_mean(10), 'g')
 
 except (KeyboardInterrupt, SystemExit):
     print('Bye :)')

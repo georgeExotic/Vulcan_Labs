@@ -67,6 +67,9 @@ class Motor:
         self.runningInitialVelocity = 100
         self.runningMaxVelocity = 1000
 
+        # self.runningInitialVelocity = 1000
+        # self.runningMaxVelocity = 10000
+
         ###accelerations###
             #jogging
         self.joggingAcceleration = 5000000

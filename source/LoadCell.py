@@ -4,7 +4,8 @@ hardware used :
     hx711
     Load Cell = FC23 (0-50 lbf)
 '''
-
+import json
+import time
 import os
 import pickle
 import RPi.GPIO as GPIO #import I/O interface
@@ -25,10 +26,14 @@ class LoadCell():
         ##Status
         self.calibrated = 0
         self.calibrationPart1 = 0 
-        self.loadCalibrationFile()
+        # self.loadCalibrationFile()
 
         self.ratio = 0
         self.knownWeight = 0 #kg
+
+    def _closeGPIOconnection(self):
+        GPIO.cleanup()
+        return
 
     def loadCalibrationFile(self):
         ##checking for previous calibration 
@@ -90,11 +95,28 @@ class LoadCell():
 
         print("Calibration is succesful")
 
-LC = LoadCell()
-LC.calibrateLoadCell_part1()
-weight=input("input known weight in KG")
-LC.calibrateLoadCell_part2(weight)
-while True:
-    LC.readForce()
-    
+    def saveCalibration(self,ratio):
 
+        self.calibrationJson = {
+                                "ratio":None,
+                                "calibration date":None
+                                } 
+
+        self.ratio = ratio 
+        self.calibrationJson["ratio"] = self.ratio
+
+        with open("./jsonTest.json", "+w") as calibrationFile:
+            json.dump(self.calibrationJson,calibrationFile, indent=4)
+
+        return
+
+if __name__ == "__main__":
+    LC = LoadCell()
+    LC.calibrateLoadCell_part1()
+    weight=input("input known weight in KG")
+    LC.calibrateLoadCell_part2(weight)
+    LC.saveCalibration(LC.ratio)
+    while True:
+        LC.readForce()
+        time.sleep(0.1)
+        
