@@ -459,6 +459,18 @@ class ui_main(object):
         self.btn_page_2.clicked.connect(lambda: self.stackedWidget.setCurrentIndex(1))
         self.btn_page_3.clicked.connect(lambda: self.stackedWidget.setCurrentIndex(2))
 
+        ### DIALOG WINDOWS
+
+        self.runFirstDialogWindow = QDialog()
+        self.runFirstPopup = Ui_runFirstPopup()
+        self.runFirstPopup.setupUi(self.runFirstDialogWindow)
+
+        self.runSecondDialogWindow = QDialog()
+        self.runSecondPopup = Ui_runSecondPopup()
+        self.runSecondPopup.setupUi(self.runSecondDialogWindow)
+
+        ### END OF DIALOG WINDOWS
+
         self.retranslateUi(MainWindow)
         self.stackedWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -525,6 +537,14 @@ class ui_main(object):
         runErrorDialog.setupUi(self.runErrorDialogWindow)
         self.runErrorDialogWindow.show()
         self.runErrorDialogWindow.exec_()
+
+    def launchrunFirstPopup(self):
+        self.runFirstDialogWindow.show()
+        self.runFirstDialogWindow.exec_()
+
+    def launchrunSecondPopup(self):
+        self.runSecondDialogWindow.show()
+        self.runSecondDialogWindow.exec_()
 
 class Ui_powderDialog(object):
     def setupUi(self, PowderDialog):
@@ -603,3 +623,87 @@ class Ui_runErrorDialog(object):
         _translate = QtCore.QCoreApplication.translate
         runErrorDialog.setWindowTitle(_translate("runErrorDialog", "runErrorDialog"))
         self.label.setText(_translate("runErrorDialog", "ERROR - input parameters for run must be checked."))
+
+class Ui_runFirstPopup(object):
+    def setupUi(self, runFirstDialog):
+        runFirstDialog.setObjectName("runFirstDialog")
+        runFirstDialog.resize(630, 237)
+        runFirstDialog.setMaximumSize(QtCore.QSize(630, 16777215))
+        runFirstDialog.setStyleSheet("background: rgb(195,195,195);")
+        self.verticalLayoutWidget = QtWidgets.QWidget(runFirstDialog)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(29, 19, 570, 191))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.label.setStyleSheet("color: #333; margin: 20; font: 20px \"arial black\"")
+        self.label.setWordWrap(True)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.buttonBox = QtWidgets.QDialogButtonBox(self.verticalLayoutWidget)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStyleSheet("QDialogButtonBox:QPushButton {color: '#F00';}")
+        self.buttonBox.setObjectName("buttonBox")
+        self.horizontalLayout.addWidget(self.buttonBox)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+
+        self.retranslateUi(runFirstDialog)
+        self.buttonBox.accepted.connect(runFirstDialog.accept)
+        self.buttonBox.rejected.connect(runFirstDialog.reject)
+        QtCore.QMetaObject.connectSlotsByName(runFirstDialog)
+
+    def retranslateUi(self, runFirstDialog):
+        _translate = QtCore.QCoreApplication.translate
+        runFirstDialog.setWindowTitle(_translate("runFirstDialog", "runFirstDialog"))
+        self.label.setText(_translate("runFirstDialog", "Data Collection will automatically begin when starting the run. \nRemove top sliding plate then press OK to proceed."))
+
+
+class Ui_runSecondPopup(object):
+    def setupUi(self, runSecondDialog):
+        runSecondDialog.setObjectName("runSecondDialog")
+        runSecondDialog.resize(630, 237)
+        # PowderDialog.setMinimumSize(QtCore.QSize(630, 237))
+        # sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+        # sizePolicy.setHorizontalStretch(0)
+        # sizePolicy.setVerticalStretch(0)
+        # sizePolicy.setHeightForWidth(Dialog.sizePolicy().hasHeightForWidth())
+        # PowderDialog.setSizePolicy(sizePolicy)
+        runSecondDialog.setMaximumSize(QtCore.QSize(630, 16777215))
+        runSecondDialog.setStyleSheet("background: rgb(195,195,195);")
+        self.verticalLayoutWidget = QtWidgets.QWidget(runSecondDialog)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(29, 19, 570, 191))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.label.setStyleSheet("color: #333; margin: 20; font: 20px \"arial black\"")
+        self.label.setWordWrap(True)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.buttonBox = QtWidgets.QDialogButtonBox(self.verticalLayoutWidget)
+        self.lineedit = QtWidgets.QLineEdit()
+        # self.lineedit.setMinimumSize(QtCore.QSize(10,30))
+        self.lineedit.setStyleSheet("border: 2px solid \'#333\'; border-radius: 5px; font-size: 18px; color: #333; margin: 0 20")
+        self.horizontalLayout.addWidget(self.lineedit)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStyleSheet("QDialogButtonBox:QPushButton {color: '#F00';}")
+        self.buttonBox.setObjectName("buttonBox")
+        self.horizontalLayout.addWidget(self.buttonBox)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.horizontalLayout2 = QtWidgets.QHBoxLayout()
+
+        self.retranslateUi(runSecondDialog)
+        self.buttonBox.accepted.connect(runSecondDialog.accept)
+        self.buttonBox.rejected.connect(runSecondDialog.reject)
+        QtCore.QMetaObject.connectSlotsByName(runSecondDialog)
+
+    def retranslateUi(self, runSecondDialog):
+        _translate = QtCore.QCoreApplication.translate
+        runSecondDialog.setWindowTitle(_translate("runSecondDialog", "runSecondDialog"))
+        self.label.setText(_translate("runSecondDialog", "Record the mass of the test material and insert into the cylinder on top of the system.\nMass in grams: "))

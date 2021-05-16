@@ -72,6 +72,9 @@ class Ui_MainWindow(QMainWindow):
         self.m_ui.btn_page_2.clicked.connect(self.tabCheck)
         self.m_ui.btn_page_3.clicked.connect(self.tabCheck)
 
+        self.m_ui.runSecondDialogWindow.accepted.connect(self.runSecondPopupReturn)
+        self.m_ui.runFirstDialogWindow.accepted.connect(self.runSecondPopupLaunch)
+
     def clear_widgets(self):
         widgets = self.widgets
         for widget in widgets:
@@ -237,7 +240,10 @@ class Ui_MainWindow(QMainWindow):
                     ### ###
                     
                     print(f'sent run signal to motor with params LB:{LB}, LA:{LA}, LC:{LC}')
-                    self.motor.run(LB, LA, LC)
+                    self.m_ui.launchrunFirstPopup()
+
+
+                    # self.motor.run(LB, LA, LC)
 
                     ### ###
 
@@ -272,6 +278,13 @@ class Ui_MainWindow(QMainWindow):
             check_2 = True
         print(f'LB: {LB}, LA {LA}')
         return check_1, check_2, LB, LA, LC
+
+    def runSecondPopupLaunch(self):
+        self.m_ui.launchrunSecondPopup()
+
+    def runSecondPopupReturn(self):
+        self.mass = self.m_ui.runSecondPopup.lineedit.text()
+        print(self.mass)
 
     def openFileNameDialog(self):
         path = QFileDialog.getSaveFileName(self, 'Save file', '',

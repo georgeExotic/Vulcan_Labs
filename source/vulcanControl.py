@@ -395,21 +395,22 @@ class Motor:
         # self.home()
         self.move(-40)
         # print("pop up (1)")
-        input("press enter when top removed ")
+        input("When top is removed press ENTER to proceed.")
         self.move(40)
         # set pos to 0
-        input("ready to move down")
+        input("ready to move down, press ENTER to proceed.")
         self.move(-LB)
         # print("pop up (2) - add powder/top thing")
-        input("press enter when powder added and top is in place")
+        input("When powder is added and top is in place press ENTER to proceed.")
         # time.sleep(2)
         self.move(LB-LA)    #finished compression - calculate delta and density / store in database
         LC -= 1             #substracting a layer from LC (first layer)
 
         if LC > 0:
-            for _ in range(LC):
-                print("new layer")
+            for i in range(LC):
+                input(f"Layer {i} is ready, press ENTER to proceed.")
                 self.newLayer(LB,LA)
+            print("Run Complete")
 
 
     def newLayer(self,LB,LA):
