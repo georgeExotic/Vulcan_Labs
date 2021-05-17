@@ -8,7 +8,7 @@ import json
 import time
 import os
 import pickle
-import RPi.GPIO as GPIO #import I/O interface
+import RPi.GPIO as GPIO #import I/O interfaceq
 from hx711 import HX711 #import HX711 class
 
 class LoadCell():
@@ -26,7 +26,7 @@ class LoadCell():
         ##Status
         self.calibrated = 0
         self.calibrationPart1 = 0 
-        # self.loadCalibrationFile()
+        self.loadCalibrationFile()
 
         self.ratio = 0
         self.knownWeight = 0 #kg
@@ -54,7 +54,8 @@ class LoadCell():
             #measure with no load --> raw data mean
             firstReading = self.cell.get_raw_data_mean()
             if firstReading:
-                print("first reading = ",firstReading)
+                # print("first reading = ",firstReading)
+                pass
             else:
                 raise Exception('Something is very wrong JORGE')
             self.calibrationPart1 = 1 
@@ -80,22 +81,24 @@ class LoadCell():
         return
     
     def readForce(self):
-        try:
+
+        if self.calibrated == 1:
             force_reading_raw = self.cell.get_weight_mean(5)
             force_reading_kg = round(force_reading_raw,3)
-            print(force_reading_kg)
-        except:
+            # print(force_reading_kg)
+        else:
             force_reading_kg = 0
-            print('ERROR WHILE READING LOAD CELL')
+            print('CALIBRATION FILE NOT FOUND')
         return force_reading_kg
 
     def zeroCell(self):
+        
         self.cell.zero()
         self.tare = 1 
 
         print("Calibration is succesful")
 
-    def saveCalibration(self,ratio):
+    def saveCalibrationJSON(self,ratio):
 
         self.calibrationJson = {
                                 "ratio":None,
@@ -109,13 +112,21 @@ class LoadCell():
             json.dump(self.calibrationJson,calibrationFile, indent=4)
 
         return
+    
+    def saveCalibrationPICKLE(self):
+        
+        with open("./calibration.vlabs", 'wb') as savedCalibration:
+            pickle.dump(self.cell, savedCalibration)
+            savedCalibration.flush()
+            os.fsync(savedCalibration.fileno())
 
 if __name__ == "__main__":
     LC = LoadCell()
-    LC.calibrateLoadCell_part1()
-    weight=input("input known weight in KG")
-    LC.calibrateLoadCell_part2(weight)
-    LC.saveCalibration(LC.ratio)
+    # LC.calibrateLoadCell_part1()
+    # weight=input("input known weight in KG")
+    # LC.calibrateLoadCell_part2(weight)
+    # LC.saveCalibrationPICKLE()
+    LC.zeroCell()
     while True:
         LC.readForce()
         time.sleep(0.1)

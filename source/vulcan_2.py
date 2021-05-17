@@ -1120,7 +1120,6 @@ class Ui_MainWindow(QMainWindow):
                         running = 0
                     else:
                         pass
-                    time.sleep(0.01)
             self.waitForTopFlagStatus = False
             print("thread for job up ended.")
         else:

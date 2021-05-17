@@ -3,7 +3,7 @@ from pyModbusTCP import utils
 # import paho.mqtt.client as paho
 from ast import literal_eval #from hex to dec
 import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
-from hx711 import HX711 #import HX711 class
+from hx711 import HX711 #import HX711 classq
 
 import time
 import math
@@ -210,7 +210,7 @@ class Motor:
             self.moving = True
         else:
             self.moving = False
-        return
+        return self.moving
 
     ###checks the status of the switches and update flag
     def _checkLimits(self):
@@ -330,9 +330,9 @@ class Motor:
         return
 
     ###move platform +/- 
-    def move(self,displacement):
-        self.setProfiles("running")
+    def move(self,displacement,profile="running"):
         print('move function called')
+        self.setProfiles(profile)
         steps2move = self._mm2steps(displacement)
         print("displacement", displacement, "steps2move = ",steps2move)
         self._writeHoldingRegs(0x46,4,steps2move)
@@ -351,10 +351,18 @@ class Motor:
     #stops with thread looking for homeLimit 
     def home(self):
         if self.running == False and self.homeLimit == False:
-            # self._writeHoldingRegs(0x57,4,0)
+            self._writeHoldingRegs(0x57,4,0)
             print("motor.home running")
             self.setProfiles("homing")
-            self.move(-40)  
+            self.move(-40,"jogging")  
+        return
+
+    def flush(self):
+        if self.running == False and self.topLimit == False:
+            # self._writeHoldingRegs(0x57,4,0)
+            print("motor.flush running")
+            self.setProfiles("homing")
+            self.move(40,"jogging")  
         return
 
     def updatePosition(self):
@@ -393,10 +401,13 @@ class Motor:
         ###First Layer
 
         # self.home()
-        self.move(-40)
+        # self.home()
+        # self.move(-3)
         # print("pop up (1)")
-        input("When top is removed press ENTER to proceed.")
-        self.move(40)
+        # input("When top is removed press ENTER to proceed.")
+        
+        self.flush()
+        # self.move(3)
         # set pos to 0
         input("ready to move down, press ENTER to proceed.")
         self.move(-LB)

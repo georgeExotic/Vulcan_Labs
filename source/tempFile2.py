@@ -48,6 +48,13 @@ class Ui_MainWindow(QMainWindow):
         self.jogUpParam = 0.1
         self.jogDownParam = 0.1
 
+        self.waitForTopFlagStatus = False
+
+        self.LA = 0
+        self.LB = 0
+        self.LC = 0
+        self.mass = 0
+
         # self.start_worker_threadManager()
 
         # UI MODIFICATIONS
@@ -58,7 +65,7 @@ class Ui_MainWindow(QMainWindow):
         self.m_ui.connectLoad_button.clicked.connect(self.createCellInstance)
         self.m_ui.jogUp_button.clicked.connect(self.jogUp)
         self.m_ui.jogDown_button.clicked.connect(self.jogDown)
-        self.m_ui.home_button_page1.clicked.connect(self.home)
+        self.m_ui.home_button_page1.clicked.connect(self.flush)
         self.m_ui.stopButton_page1.clicked.connect(self.stop)
         self.m_ui.stopButton_page2.clicked.connect(self.stop)
         self.m_ui.runButton_page2.clicked.connect(self.startRun)
@@ -74,6 +81,11 @@ class Ui_MainWindow(QMainWindow):
 
         self.m_ui.runSecondDialogWindow.accepted.connect(self.runSecondPopupReturn)
         self.m_ui.runFirstDialogWindow.accepted.connect(self.runSecondPopupLaunch)
+        self.m_ui.runThirdDialogWindow.accepted.connect(self.runThirdPopupLaunch)
+        self.m_ui.runFourthDialogWindow.accepted.connect(self.runFourthPopupReturn)
+        self.m_ui.runFifthDialogWindow.accepted.connect(self.runFifthPopupReturn)
+        self.m_ui.runSixthDialogWindow.accepted.connect(self.runSixthPopupReturn)
+        self.m_ui.runSeventhDialogWindow.accepted.connect(self.runSeventhPopupReturn)
 
     def clear_widgets(self):
         widgets = self.widgets
@@ -105,30 +117,29 @@ class Ui_MainWindow(QMainWindow):
 
     def forceReading_return(self, n):
         self.forceReading = n
-        self.m_ui.loadReading_label.setText(f"{self.forceReading} g")
+        self.m_ui.loadReading_label.setText(f"{self.forceReading} kg")
         if self.dataCollect == True:
-            self.sdb.insert_data(self.collection_count, self.forceReading, self.positionReading)
+            self.sdb.insert_data(self.collection_count, self.forceReading, self.positionReading, self.mass)
 
     def topLimit_return(self, b):
         self.topLimit = b
+        if b == True and self.motor._moving() == True:
+            # self.motor._stop()
+            pass
 
     def homeLimit_return(self, b):
         self.homeLimit = b
+        if b == True and self.motor._moving() == True:
+            # self.motor._stop()
+            pass
         self.m_ui.flag_reading_label.setText(f'{self.topLimit}/{self.homeLimit}')
 
     def positionReading_return(self, n):
         self.positionReading = n
-        print("return",n)
         self.m_ui.positionReading_label.setText(f"{self.positionReading}")
 
     def saveFile_return(self, b):
         print(b)
-
-    def longer_test_fn(self, progress_callback):
-        for n in range(0,5):
-            time.sleep(1)
-            progress_callback.emit(n*100/4)
-        return "--"
 
     def setWorker(self, fn):
         worker = Worker(fn)
@@ -157,6 +168,7 @@ class Ui_MainWindow(QMainWindow):
     def createCellInstance(self):
         if self.cellConnected == False:
             self.cellInstance = LoadCell()
+            self.cellInstance.zeroCell()
             self.cellConnected = True
             self.m_ui.loadStatus_label.setText("Connected")
             self.start_worker_readForce()
@@ -166,15 +178,19 @@ class Ui_MainWindow(QMainWindow):
 
     def jogUp(self):
         self.jogging = True
-        # self.start_worker_waitForTopFlag()
-        self.motor.move(self.jogUpParam)
+        self.motor.setProfiles("jogging")
+        if self.topLimit == False:
+            # self.start_worker_waitForTopFlag()
+            self.motor.move(self.jogUpParam,"jogging")
         # time.sleep(0.1)
         self.jogging = False
 
     def jogDown(self):
         self.jogging = True
         # self.start_worker_waitForHomeFlag()
-        self.motor.move(-self.jogDownParam)
+        self.motor.setProfiles("jogging")
+        if self.homeLimit == False:
+            self.motor.move(-self.jogDownParam,"jogging")
         # time.sleep(0.1)
         self.jogging = False
 
@@ -194,13 +210,19 @@ class Ui_MainWindow(QMainWindow):
     def flush(self):
         self.jogging = True
         self.start_worker_waitForTopFlag()
-        self.motor.move(40)
+        self.motor.move(40,"jogging")
         # time.sleep(0.1)
         self.jogging = False
 
     def exportData(self):
         self.sdb.export_data()
         self.start_worker_saveFile()
+
+    def dataCollectForceOn(self):
+        self.dataCollect = True
+        self.collection_count += 1
+        self.m_ui.dataCollectionCount.setText(f'Data Set: {self.collection_count}')
+        self.m_ui.startDataButton.setStyleSheet("*{border: 4px solid \'green\'; border-radius: 10px; font: bold 18px \"Arial Black\"; color: \'white\'; padding: 0px 0px; margin-left: 30; background: #555} *:hover{background: \'#369\';}")
 
     def dataCollectToggle(self):
         if self.dataCollect == True:
@@ -241,7 +263,9 @@ class Ui_MainWindow(QMainWindow):
                     
                     print(f'sent run signal to motor with params LB:{LB}, LA:{LA}, LC:{LC}')
                     self.m_ui.launchrunFirstPopup()
-
+                    self.dataCollectForceOn()
+                    self.motor.setProfiles("running")
+                    # self.home()
 
                     # self.motor.run(LB, LA, LC)
 
@@ -277,14 +301,66 @@ class Ui_MainWindow(QMainWindow):
         else:
             check_2 = True
         print(f'LB: {LB}, LA {LA}')
+        self.LB = LB
+        self.LA = LA
+        self.LC = LC
+
         return check_1, check_2, LB, LA, LC
 
     def runSecondPopupLaunch(self):
+        self.motor.setProfiles("running")
+        self.dataCollectForceOn()
+        self.flush()
         self.m_ui.launchrunSecondPopup()
 
     def runSecondPopupReturn(self):
-        self.mass = self.m_ui.runSecondPopup.lineedit.text()
+        self.motor.setProfiles("running")
+        print(self.LB)
+        if self.LC > 0:
+            self.motor.move(-self.LB,"running")
+            self.LC -= 1
+            self.m_ui.launchrunThirdPopup()
+        else:
+            print("RUN COMPLETE")
+
+    def runThirdPopupLaunch(self):
+        self.motor.setProfiles("running")
+        self.mass = self.m_ui.runThirdPopup.lineedit.text()
         print(self.mass)
+        self.motor.move((self.LB-self.LA),"running")
+        self.m_ui.launchrunFourthPopup()
+
+    def runFourthPopupReturn(self):
+        self.motor.setProfiles("running")
+        if self.LC > 0:
+            self.motor.move(-self.LB,"running")
+            self.LC -= 1
+            self.m_ui.launchrunFifthPopup()
+        else:
+            print("RUN COMPLETE")
+
+    def runFifthPopupReturn(self):
+        self.motor.setProfiles("running")
+        self.mass = self.m_ui.runFifthPopup.lineedit.text()
+        print(self.mass)
+        self.motor.move((self.LB-self.LA),"running")
+        self.m_ui.launchrunSixthPopup()
+
+    def runSixthPopupReturn(self):
+        self.motor.setProfiles("running")
+        if self.LC > 0:
+            self.motor.move(-self.LB,"running")
+            self.LC -= 1
+            self.m_ui.launchrunSeventhPopup()
+        else:
+            print("RUN COMPLETE")
+
+    def runSeventhPopupReturn(self):
+        self.motor.setProfiles("running")
+        self.mass = self.m_ui.runSeventhPopup.lineedit.text()
+        print(self.mass)
+        self.motor.move((self.LB-self.LA),"running")
+        # self.m_ui.launchrunFourthPopup()
 
     def openFileNameDialog(self):
         path = QFileDialog.getSaveFileName(self, 'Save file', '',
@@ -366,7 +442,6 @@ class Ui_MainWindow(QMainWindow):
             while True:
                 if self.jogging == False:
                     position = float(self.motor.updatePosition())
-                    print("pos in thread: ", position)
                 else:
                     position = self.positionReading
                 positionReading_callback.emit(position)
@@ -381,10 +456,11 @@ class Ui_MainWindow(QMainWindow):
         while self.topLimit == False:
             print("false")
         self.motor._stop()
+        self.motor._writeHoldingRegs(0x57,4,0)
         print("TRUE STOP NOW")
 
     def start_worker_waitForTopFlag(self):
-        self.setWorker(self.thread_waitForTopFlag)
+        self.setWorker(self.thread_waitForTopFlag) #CHANGED to TEST
 
     def thread_waitForHomeFlag(self, progress_callback, forceReading_callback, topLimit_callback, homeLimit_callback, positionReading_callback, saveFile_callback):
         while self.homeLimit == False:

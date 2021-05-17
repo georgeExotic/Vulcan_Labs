@@ -177,6 +177,7 @@ class ui_main(object):
         self.position_static_label.setObjectName("position_static_label")
         self.gridLayout.addWidget(self.position_static_label, 5, 3, 1, 1)
         self.positionReading_label = QtWidgets.QLabel(self.page_1)
+        self.positionReading_label.setMinimumSize(QtCore.QSize(200, 10))
         self.positionReading_label.setStyleSheet("color: #fff; margin: 20; font: 18px \"arial black\"")
         self.positionReading_label.setObjectName("positionReading_label")
         self.gridLayout.addWidget(self.positionReading_label, 5, 6, 1, 1)
@@ -264,6 +265,11 @@ class ui_main(object):
         self.stopButton_page1.setStyleSheet("*{border: 4px solid \'#222\'; border-radius: 10px; font: bold 18px \"Arial Black\"; color: \'white\'; padding: 5px 5px; margin: 0px 0px; background: #555} *:hover{background: \'#369\';}")
         self.stopButton_page1.setObjectName("stopButton_page1")
         self.gridLayout.addWidget(self.stopButton_page1, 6, 0, 1, 1)
+        self.calibrateButton = QtWidgets.QPushButton(self.page_1)
+        self.calibrateButton.setMinimumSize(QtCore.QSize(0, 60))
+        self.calibrateButton.setStyleSheet("*{border: 4px solid \'#333\'; border-radius: 10px; font: bold 18px \"Arial Black\"; color: \'white\'; padding: 5px 5px; margin: 0px 0px; background: #555} *:hover{background: \'#369\';}")
+        self.calibrateButton.setObjectName("Calibrate")
+        self.gridLayout.addWidget(self.calibrateButton, 2, 1, 1, 1)
         self.jogup_comboBox = QtWidgets.QComboBox(self.page_1)
         self.jogup_comboBox.setMaximumSize(QtCore.QSize(16777215, 50))
         self.jogup_comboBox.setAccessibleDescription("")
@@ -469,6 +475,26 @@ class ui_main(object):
         self.runSecondPopup = Ui_runSecondPopup()
         self.runSecondPopup.setupUi(self.runSecondDialogWindow)
 
+        self.runThirdDialogWindow = QDialog()
+        self.runThirdPopup = Ui_runThirdPopup()
+        self.runThirdPopup.setupUi(self.runThirdDialogWindow)
+
+        self.runFourthDialogWindow = QDialog()
+        self.runFourthPopup = Ui_runFourthPopup()
+        self.runFourthPopup.setupUi(self.runFourthDialogWindow)
+
+        self.runFifthDialogWindow = QDialog()
+        self.runFifthPopup = Ui_runFifthPopup()
+        self.runFifthPopup.setupUi(self.runFifthDialogWindow)
+
+        self.runSixthDialogWindow = QDialog()
+        self.runSixthPopup = Ui_runFourthPopup()
+        self.runSixthPopup.setupUi(self.runSixthDialogWindow)
+
+        self.runSeventhDialogWindow = QDialog()
+        self.runSeventhPopup = Ui_runFifthPopup()
+        self.runSeventhPopup.setupUi(self.runSeventhDialogWindow)
+
         ### END OF DIALOG WINDOWS
 
         self.retranslateUi(MainWindow)
@@ -492,6 +518,7 @@ class ui_main(object):
         self.positionReading_label.setText(_translate("MainWindow", "--"))
         self.loadStatus_label.setText(_translate("MainWindow", "Not Connected"))
         self.connectLoad_button.setText(_translate("MainWindow", "Connect LoadCell"))
+        self.calibrateButton.setText(_translate("MainWindow", "Calibrate"))
         self.home_button_page1.setText(_translate("MainWindow", "Home Piston"))
         self.connectMotor_button.setText(_translate("MainWindow", "Connect Motor"))
         self.jogUp_button.setText(_translate("MainWindow", "Jog Up"))
@@ -545,6 +572,26 @@ class ui_main(object):
     def launchrunSecondPopup(self):
         self.runSecondDialogWindow.show()
         self.runSecondDialogWindow.exec_()
+
+    def launchrunThirdPopup(self):
+        self.runThirdDialogWindow.show()
+        self.runThirdDialogWindow.exec_()
+
+    def launchrunFourthPopup(self):
+        self.runFourthDialogWindow.show()
+        self.runFourthDialogWindow.exec_()
+
+    def launchrunFifthPopup(self):
+        self.runFifthDialogWindow.show()
+        self.runFifthDialogWindow.exec_()
+
+    def launchrunSixthPopup(self):
+        self.runSixthDialogWindow.show()
+        self.runSixthDialogWindow.exec_()
+
+    def launchrunSeventhPopup(self):
+        self.runSeventhDialogWindow.show()
+        self.runSeventhDialogWindow.exec_()
 
 class Ui_powderDialog(object):
     def setupUi(self, PowderDialog):
@@ -687,10 +734,10 @@ class Ui_runSecondPopup(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.buttonBox = QtWidgets.QDialogButtonBox(self.verticalLayoutWidget)
-        self.lineedit = QtWidgets.QLineEdit()
+        # self.lineedit = QtWidgets.QLineEdit()
         # self.lineedit.setMinimumSize(QtCore.QSize(10,30))
-        self.lineedit.setStyleSheet("border: 2px solid \'#333\'; border-radius: 5px; font-size: 18px; color: #333; margin: 0 20")
-        self.horizontalLayout.addWidget(self.lineedit)
+        # self.lineedit.setStyleSheet("border: 2px solid \'#333\'; border-radius: 5px; font-size: 18px; color: #333; margin: 0 20")
+        # self.horizontalLayout.addWidget(self.lineedit)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setStyleSheet("QDialogButtonBox:QPushButton {color: '#F00';}")
         self.buttonBox.setObjectName("buttonBox")
@@ -706,4 +753,145 @@ class Ui_runSecondPopup(object):
     def retranslateUi(self, runSecondDialog):
         _translate = QtCore.QCoreApplication.translate
         runSecondDialog.setWindowTitle(_translate("runSecondDialog", "runSecondDialog"))
-        self.label.setText(_translate("runSecondDialog", "Record the mass of the test material and insert into the cylinder on top of the system.\nMass in grams: "))
+        self.label.setText(_translate("runSecondDialog", "Wait for motor to stop moving and press OK."))
+
+class Ui_runThirdPopup(object):
+    def setupUi(self, runThirdDialog):
+        runThirdDialog.setObjectName("runThirdDialog")
+        runThirdDialog.resize(630, 237)
+        # PowderDialog.setMinimumSize(QtCore.QSize(630, 237))
+        # sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+        # sizePolicy.setHorizontalStretch(0)
+        # sizePolicy.setVerticalStretch(0)
+        # sizePolicy.setHeightForWidth(Dialog.sizePolicy().hasHeightForWidth())
+        # PowderDialog.setSizePolicy(sizePolicy)
+        runThirdDialog.setMaximumSize(QtCore.QSize(630, 16777215))
+        runThirdDialog.setStyleSheet("background: rgb(195,195,195);")
+        self.verticalLayoutWidget = QtWidgets.QWidget(runThirdDialog)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(29, 19, 570, 191))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.label.setStyleSheet("color: #333; margin: 20; font: 20px \"arial black\"")
+        self.label.setWordWrap(True)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.buttonBox = QtWidgets.QDialogButtonBox(self.verticalLayoutWidget)
+        self.lineedit = QtWidgets.QLineEdit()
+        # self.lineedit.setMinimumSize(QtCore.QSize(10,30))
+        self.lineedit.setStyleSheet("border: 2px solid \'#333\'; border-radius: 5px; font-size: 18px; color: #333; margin: 0 20")
+        self.horizontalLayout.addWidget(self.lineedit)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStyleSheet("QDialogButtonBox:QPushButton {color: '#F00';}")
+        self.buttonBox.setObjectName("buttonBox")
+        self.horizontalLayout.addWidget(self.buttonBox)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.horizontalLayout2 = QtWidgets.QHBoxLayout()
+
+        self.retranslateUi(runThirdDialog)
+        self.buttonBox.accepted.connect(runThirdDialog.accept)
+        self.buttonBox.rejected.connect(runThirdDialog.reject)
+        QtCore.QMetaObject.connectSlotsByName(runThirdDialog)
+
+    def retranslateUi(self, runThirdDialog):
+        _translate = QtCore.QCoreApplication.translate
+        runThirdDialog.setWindowTitle(_translate("runThirdDialog", "runThirdDialog"))
+        self.label.setText(_translate("runThirdDialog", "Record the mass of the test material and insert into the cylinder on top of the system.\nMass in grams: "))
+
+class Ui_runFourthPopup(object):
+    def setupUi(self, runFourthDialog):
+        runFourthDialog.setObjectName("runFourthDialog")
+        runFourthDialog.resize(630, 237)
+        # PowderDialog.setMinimumSize(QtCore.QSize(630, 237))
+        # sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+        # sizePolicy.setHorizontalStretch(0)
+        # sizePolicy.setVerticalStretch(0)
+        # sizePolicy.setHeightForWidth(Dialog.sizePolicy().hasHeightForWidth())
+        # PowderDialog.setSizePolicy(sizePolicy)
+        runFourthDialog.setMaximumSize(QtCore.QSize(630, 16777215))
+        runFourthDialog.setStyleSheet("background: rgb(195,195,195);")
+        self.verticalLayoutWidget = QtWidgets.QWidget(runFourthDialog)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(29, 19, 570, 191))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.label.setStyleSheet("color: #333; margin: 20; font: 20px \"arial black\"")
+        self.label.setWordWrap(True)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.buttonBox = QtWidgets.QDialogButtonBox(self.verticalLayoutWidget)
+        # self.lineedit = QtWidgets.QLineEdit()
+        # self.lineedit.setMinimumSize(QtCore.QSize(10,30))
+        # self.lineedit.setStyleSheet("border: 2px solid \'#333\'; border-radius: 5px; font-size: 18px; color: #333; margin: 0 20")
+        # self.horizontalLayout.addWidget(self.lineedit)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStyleSheet("QDialogButtonBox:QPushButton {color: '#F00';}")
+        self.buttonBox.setObjectName("buttonBox")
+        self.horizontalLayout.addWidget(self.buttonBox)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.horizontalLayout2 = QtWidgets.QHBoxLayout()
+
+        self.retranslateUi(runFourthDialog)
+        self.buttonBox.accepted.connect(runFourthDialog.accept)
+        self.buttonBox.rejected.connect(runFourthDialog.reject)
+        QtCore.QMetaObject.connectSlotsByName(runFourthDialog)
+
+    def retranslateUi(self, runFourthDialog):
+        _translate = QtCore.QCoreApplication.translate
+        runFourthDialog.setWindowTitle(_translate("runFourthDialog", "runFourthDialog"))
+        self.label.setText(_translate("runFourthDialog", "Layer complete, press OK to proceed."))
+
+class Ui_runFifthPopup(object):
+    def setupUi(self, runFifthDialog):
+        runFifthDialog.setObjectName("runFifthDialog")
+        runFifthDialog.resize(630, 237)
+        # PowderDialog.setMinimumSize(QtCore.QSize(630, 237))
+        # sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+        # sizePolicy.setHorizontalStretch(0)
+        # sizePolicy.setVerticalStretch(0)
+        # sizePolicy.setHeightForWidth(Dialog.sizePolicy().hasHeightForWidth())
+        # PowderDialog.setSizePolicy(sizePolicy)
+        runFifthDialog.setMaximumSize(QtCore.QSize(630, 16777215))
+        runFifthDialog.setStyleSheet("background: rgb(195,195,195);")
+        self.verticalLayoutWidget = QtWidgets.QWidget(runFifthDialog)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(29, 19, 570, 191))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.label.setStyleSheet("color: #333; margin: 20; font: 20px \"arial black\"")
+        self.label.setWordWrap(True)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.buttonBox = QtWidgets.QDialogButtonBox(self.verticalLayoutWidget)
+        self.lineedit = QtWidgets.QLineEdit()
+        self.lineedit.setMinimumSize(QtCore.QSize(10,30))
+        self.lineedit.setStyleSheet("border: 2px solid \'#333\'; border-radius: 5px; font-size: 18px; color: #333; margin: 0 20")
+        self.horizontalLayout.addWidget(self.lineedit)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStyleSheet("QDialogButtonBox:QPushButton {color: '#F00';}")
+        self.buttonBox.setObjectName("buttonBox")
+        self.horizontalLayout.addWidget(self.buttonBox)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.horizontalLayout2 = QtWidgets.QHBoxLayout()
+
+        self.retranslateUi(runFifthDialog)
+        self.buttonBox.accepted.connect(runFifthDialog.accept)
+        self.buttonBox.rejected.connect(runFifthDialog.reject)
+        QtCore.QMetaObject.connectSlotsByName(runFifthDialog)
+
+    def retranslateUi(self, runFifthDialog):
+        _translate = QtCore.QCoreApplication.translate
+        runFifthDialog.setWindowTitle(_translate("runFifthDialog", "runFifthDialog"))
+        self.label.setText(_translate("runFifthDialog", "Record the mass of the test material and insert into the cylinder on top of the system.\nMass in grams: "))
