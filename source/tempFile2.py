@@ -370,30 +370,30 @@ class Ui_MainWindow(QMainWindow):
 
     def jogParams(self):
         if self.m_ui.jogup_comboBox.currentIndex() == 0:
-            self.jogUpParam = 0.1
+            self.jogUpParam = 0.350
         elif self.m_ui.jogup_comboBox.currentIndex() == 1:
-            self.jogUpParam = 0.5
+            self.jogUpParam = 0.400
         elif self.m_ui.jogup_comboBox.currentIndex() == 2:
-            self.jogUpParam = 1
+            self.jogUpParam = 0.450
         elif self.m_ui.jogup_comboBox.currentIndex() == 3:
-            self.jogUpParam = 5
+            self.jogUpParam = 0.500
         elif self.m_ui.jogup_comboBox.currentIndex() == 4:
-            self.jogUpParam = 10
+            self.jogUpParam = 5
         elif self.m_ui.jogup_comboBox.currentIndex() == 2:
             try:
                 self.jogUpParam = self.m_ui.jogup_lineEdit.text()
             except:
                 print("Jog up custom input is invalid")
         if self.m_ui.jogdown_comboBox.currentIndex() == 0:
-            self.jogDownParam = 0.1
+            self.jogDownParam = 0.350
         elif self.m_ui.jogdown_comboBox.currentIndex() == 1:
-            self.jogDownParam = 0.5
+            self.jogDownParam = 0.400
         elif self.m_ui.jogdown_comboBox.currentIndex() == 2:
-            self.jogDownParam = 1
+            self.jogDownParam = 0.450
         elif self.m_ui.jogdown_comboBox.currentIndex() == 3:
-            self.jogDownParam = 5
+            self.jogDownParam = 0.500
         elif self.m_ui.jogdown_comboBox.currentIndex() == 4:
-            self.jogDownParam = 10
+            self.jogDownParam = 5
         elif self.m_ui.jogdown_comboBox.currentIndex() == 2:
             try:
                 self.jogDownParam = self.m_ui.jogdown_lineedit.text()

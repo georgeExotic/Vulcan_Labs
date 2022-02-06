@@ -85,7 +85,7 @@ class LoadCell():
         if self.calibrated == 1:
             force_reading_raw = self.cell.get_weight_mean(5)
             force_reading_kg = round(force_reading_raw,3)
-            # print(force_reading_kg)
+            print(force_reading_kg)
         else:
             force_reading_kg = 0
             print('CALIBRATION FILE NOT FOUND')
@@ -122,11 +122,11 @@ class LoadCell():
 
 if __name__ == "__main__":
     LC = LoadCell()
-    # LC.calibrateLoadCell_part1()
-    # weight=input("input known weight in KG")
-    # LC.calibrateLoadCell_part2(weight)
-    # LC.saveCalibrationPICKLE()
-    LC.zeroCell()
+    LC.calibrateLoadCell_part1()
+    weight=input("input known weight in KG")
+    LC.calibrateLoadCell_part2(weight)
+    LC.saveCalibrationPICKLE()
+   # LC.zeroCell()
     while True:
         LC.readForce()
         time.sleep(0.1)

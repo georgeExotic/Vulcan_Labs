@@ -58,22 +58,22 @@ class Motor:
 
         ###Velocities###
             #Jogging
-        self.joggingInitialVelocity = 10000
-        self.joggingMaxVelocity = 40000
+        self.joggingInitialVelocity = 500
+        self.joggingMaxVelocity = 1000
             #homing
         self.homingInitialVelocity = 10000
         self.homingMaxVelocity = 40000
             #running
-        self.runningInitialVelocity = 100
-        self.runningMaxVelocity = 1000
+        self.runningInitialVelocity = 1000
+        self.runningMaxVelocity = 10000
 
         # self.runningInitialVelocity = 1000
         # self.runningMaxVelocity = 10000
 
         ###accelerations###
             #jogging
-        self.joggingAcceleration = 5000000
-        self.joggingDeacceleration = 5000000
+        self.joggingAcceleration = 50000
+        self.joggingDeacceleration = 500000
             #homing
         self.homingAcceleration = 5000000
         self.homingDeacceleration = 5000000
